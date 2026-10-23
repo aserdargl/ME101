@@ -581,16 +581,51 @@ function buildPptExactVisualHtml(slide, slideIdx, totalSlides, lectureWeek) {
 }
 
 // ============================================================================
-// 1. ÖĞRENCİ YILDIZ PUANLAMA SİSTEMİ VE DİKEY DERS LİSTESİ
+// 1. ÖĞRENCİ YILDIZ PUANLAMA SİSTEMİ (SAHTE OYLAR YOK + SİLME DESTEKLİ)
 // ============================================================================
-const RATING_STORAGE_KEY = "me101_lecture_ratings_v1";
+const RATING_STORAGE_KEY = "me101_lecture_ratings_v2";
+const CUSTOM_LECTURES_KEY = "me101_custom_lectures_v1";
 
-const DEFAULT_RATINGS = {
-  "week-1": { baseSum: 58, baseCount: 12 },
-  "week-2": { baseSum: 47, baseCount: 10 },
-  "week-3": { baseSum: 44, baseCount: 9 },
-  "week-4": { baseSum: 39, baseCount: 8 }
-};
+function loadCustomLectures() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_LECTURES_KEY);
+    if (!raw) return;
+    const customArr = JSON.parse(raw);
+    if (Array.isArray(customArr)) {
+      customArr.forEach((c) => {
+        if (!LECTURES.some((l) => l.id === c.id)) {
+          LECTURES.push(c);
+        }
+      });
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function saveCustomLectureToStorage(newLec) {
+  try {
+    const raw = localStorage.getItem(CUSTOM_LECTURES_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    arr.push(newLec);
+    localStorage.setItem(CUSTOM_LECTURES_KEY, JSON.stringify(arr));
+  } catch {
+    // ignore
+  }
+}
+
+function deleteCustomLectureFromStorage(lecId) {
+  try {
+    const raw = localStorage.getItem(CUSTOM_LECTURES_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    const filtered = arr.filter((l) => l.id !== lecId);
+    localStorage.setItem(CUSTOM_LECTURES_KEY, JSON.stringify(filtered));
+  } catch {
+    // ignore
+  }
+  const idx = LECTURES.findIndex((l) => l.id === lecId);
+  if (idx !== -1) LECTURES.splice(idx, 1);
+}
 
 function getSavedUserRatings() {
   try {
@@ -604,82 +639,83 @@ function getSavedUserRatings() {
 function saveUserRating(lectureId, starValue) {
   try {
     const current = getSavedUserRatings();
-    current[lectureId] = starValue;
+    if (!starValue || starValue <= 0) {
+      delete current[lectureId];
+    } else {
+      current[lectureId] = starValue;
+    }
     localStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(current));
   } catch {
-    // localStorage kapalıysa sessizce devam et
+    // ignore
   }
-}
-
-function getLectureRatingStats(lectureId) {
-  const userRatings = getSavedUserRatings();
-  const userVote = userRatings[lectureId] || 0;
-  const base = DEFAULT_RATINGS[lectureId] || { baseSum: 23, baseCount: 5 };
-  const totalSum = base.baseSum + (userVote > 0 ? userVote : 0);
-  const totalCount = base.baseCount + (userVote > 0 ? 1 : 0);
-  const avg = (totalSum / totalCount).toFixed(1);
-  return { avg, totalCount, userVote };
 }
 
 function renderCatalog() {
   lectureGrid.innerHTML = "";
+  const ratings = getSavedUserRatings();
+
   LECTURES.forEach((lec) => {
     const card = document.createElement("article");
     card.className = "lecture-card";
     const pptxHref = lec.pptxUrl || "pptx/ME101-Hafta1.pptx";
     const downloadFileName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-ME101.pptx`;
 
-    const stats = getLectureRatingStats(lec.id);
-    const activeStarThreshold = stats.userVote > 0 ? stats.userVote : Math.round(parseFloat(stats.avg));
+    const userVote = ratings[lec.id] || 0;
 
     let starsHtml = "";
     for (let s = 1; s <= 5; s++) {
-      const filledClass = s <= activeStarThreshold ? "filled" : "";
+      const filledClass = s <= userVote ? "filled" : "";
       starsHtml += `<button type="button" class="star-btn ${filledClass}" data-lec="${lec.id}" data-val="${s}" title="${s} Yıldız Ver">&#9733;</button>`;
     }
 
+    const isCustom = String(lec.id).startsWith("custom-") || String(lec.id).startsWith("img-lec-");
+
     card.innerHTML = `
-      <div class="lecture-week-col">
-        <span class="week-tag">${lec.week}</span>
-        <span class="slide-count-tag">${lec.slides.length} Bölüm / Slayt</span>
-      </div>
-
-      <div class="lecture-info-col">
-        <h4>${lec.title}</h4>
-        <p>${lec.description}</p>
-        <div class="card-features">
-          ${lec.features.map((f) => `<span class="feature-chip">${f}</span>`).join("")}
+      <div class="lecture-row-top">
+        <div class="lecture-title-wrap">
+          <span class="week-tag">${lec.week}</span>
+          <h4>${lec.title}</h4>
+        </div>
+        <div class="lecture-meta-right">
+          <span class="slide-count-tag">${lec.slides.length} Slayt</span>
+          ${isCustom ? `<button type="button" class="btn-delete-lecture" data-del-lec="${lec.id}" title="Bu dersi sil">Dersi Sil</button>` : ""}
         </div>
       </div>
 
-      <div class="lecture-right-col">
-        <div class="rating-box" data-rating-box="${lec.id}">
-          <div class="star-group" data-star-group="${lec.id}">
-            ${starsHtml}
+      <div class="lecture-row-bottom">
+        <div class="lecture-desc-wrap">
+          <p title="${escapeXml(lec.description)}">${lec.description}</p>
+        </div>
+
+        <div class="lecture-controls-right">
+          <div class="rating-box" data-rating-box="${lec.id}">
+            <div class="star-group" data-star-group="${lec.id}">
+              ${starsHtml}
+            </div>
+            <span class="rating-meta">
+              ${userVote > 0 ? `<strong>${userVote}.0</strong> / 5` : `Puanlanmadı`}
+            </span>
+            ${userVote > 0 ? `<button type="button" class="btn-clear-rating" data-clear-rating="${lec.id}" title="Verilen yıldızları sil / sıfırla">&times; Sil</button>` : ""}
           </div>
-          <span class="rating-meta">
-            <strong>${stats.avg}</strong> / 5.0 (${stats.totalCount} oy)
-          </span>
-          ${stats.userVote > 0 ? `<span class="rating-user-note">Puanınız: ${stats.userVote}&#9733;</span>` : ""}
-        </div>
 
-        <div class="card-actions-3">
-          <button class="btn btn-secondary btn-read" data-id="${lec.id}">
-            Ders Notu
-          </button>
-          <button class="btn btn-primary btn-present" data-id="${lec.id}">
-            Sunumu Başlat
-          </button>
-          <a href="${pptxHref}" download="${downloadFileName}" class="btn btn-outline" title="Orijinal PowerPoint (.pptx) dosyasını indir">
-            PPTX İndir
-          </a>
+          <div class="card-actions-3">
+            <button class="btn btn-secondary btn-read" data-id="${lec.id}">
+              Ders Notu
+            </button>
+            <button class="btn btn-primary btn-present" data-id="${lec.id}">
+              Sunum
+            </button>
+            <a href="${pptxHref}" download="${downloadFileName}" class="btn btn-outline" title="PowerPoint (.pptx) dosyasını indir">
+              PPTX
+            </a>
+          </div>
         </div>
       </div>
     `;
     lectureGrid.appendChild(card);
   });
 
-  // Yıldız hover ve tıklama etkileşimleri
+  // Yıldız hover ve tıklama etkileşimleri (Aynı yıldıza tekrar tıklanırsa da sıfırlar)
   document.querySelectorAll(".star-group").forEach((groupEl) => {
     const buttons = Array.from(groupEl.querySelectorAll(".star-btn"));
     buttons.forEach((btn) => {
@@ -694,12 +730,38 @@ function renderCatalog() {
         e.stopPropagation();
         const lecId = btn.dataset.lec;
         const val = parseInt(btn.dataset.val, 10);
-        saveUserRating(lecId, val);
-        renderCatalog();
+        const currentRatings = getSavedUserRatings();
+        if (currentRatings[lecId] === val) {
+          saveUserRating(lecId, 0);
+        } else {
+          saveUserRating(lecId, val);
+        }
+        loadCustomLectures();
+renderCatalog();
       });
     });
     groupEl.addEventListener("mouseleave", () => {
       buttons.forEach((b) => b.classList.remove("hover-preview"));
+    });
+  });
+
+  // Yıldızları Sil / Sıfırla butonu
+  document.querySelectorAll(".btn-clear-rating").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      saveUserRating(btn.dataset.clearRating, 0);
+      loadCustomLectures();
+renderCatalog();
+    });
+  });
+
+  // Eklenen özel dersi silme butonu
+  document.querySelectorAll(".btn-delete-lecture").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteCustomLectureFromStorage(btn.dataset.delLec);
+      loadCustomLectures();
+renderCatalog();
     });
   });
 
@@ -940,7 +1002,7 @@ function prevStepOrSlide() {
 }
 
 // ============================================================================
-// 4. PPTX ENTEGRASYON MERKEZİ
+// 4. DERS EKLEME VE PPTX ENTEGRASYON MERKEZİ
 // ============================================================================
 const pptxModalBackdrop = document.getElementById("pptx-modal-backdrop");
 const inpPptxFile = document.getElementById("inp-pptx-file");
@@ -949,7 +1011,22 @@ const pptxFileStatus = document.getElementById("pptx-file-status");
 let selectedPptxFile = null;
 let selectedSlideImages = [];
 
-function openPptxModal() {
+function switchModalTab(tabId) {
+  document.querySelectorAll(".modal-tab").forEach((b) => {
+    b.classList.toggle("active", b.dataset.tab === tabId);
+  });
+  document.querySelectorAll(".tab-pane").forEach((p) => {
+    p.classList.toggle("hidden", p.id !== tabId);
+  });
+}
+
+function openPptxModal(defaultTabId) {
+  const nextWeekNum = LECTURES.length + 1;
+  const weekInput = document.getElementById("imp-week");
+  if (weekInput) weekInput.value = `${nextWeekNum}. Hafta`;
+  if (typeof defaultTabId === "string" && defaultTabId) {
+    switchModalTab(defaultTabId);
+  }
   pptxModalBackdrop.classList.remove("hidden");
 }
 
@@ -957,16 +1034,20 @@ function closePptxModal() {
   pptxModalBackdrop.classList.add("hidden");
 }
 
-document.getElementById("btn-open-pptx-modal").addEventListener("click", openPptxModal);
-document.getElementById("btn-hero-pptx-modal").addEventListener("click", openPptxModal);
+document.getElementById("btn-open-pptx-modal").addEventListener("click", () => openPptxModal("tab-add-manual"));
+document.getElementById("btn-hero-pptx-modal").addEventListener("click", () => openPptxModal("tab-add-manual"));
 document.getElementById("btn-close-pptx-modal").addEventListener("click", closePptxModal);
+
+// İkonik 1., 2., 3. Yöntem butonları ilgili sekmeyi açar
+document.querySelectorAll("[data-open-tab]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    openPptxModal(btn.dataset.openTab);
+  });
+});
 
 document.querySelectorAll(".modal-tab").forEach((tabBtn) => {
   tabBtn.addEventListener("click", () => {
-    document.querySelectorAll(".modal-tab").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".tab-pane").forEach((p) => p.classList.add("hidden"));
-    tabBtn.classList.add("active");
-    document.getElementById(tabBtn.dataset.tab).classList.remove("hidden");
+    switchModalTab(tabBtn.dataset.tab);
   });
 });
 
@@ -994,7 +1075,6 @@ inpPptxFile.addEventListener("change", (e) => {
 function handlePptxFileChosen(file) {
   selectedPptxFile = file;
   pptxFileStatus.innerHTML = `Seçilen dosya: <strong>${escapeXml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
-  btnProcessPptx.disabled = false;
   const titleInput = document.getElementById("imp-title");
   if (!titleInput.value.trim()) {
     titleInput.value = file.name.replace(/\.pptx$/i, "").replace(/[-_]/g, " ");
@@ -1002,15 +1082,76 @@ function handlePptxFileChosen(file) {
 }
 
 btnProcessPptx.addEventListener("click", async () => {
-  if (!selectedPptxFile) return;
+  const weekLabel = document.getElementById("imp-week").value.trim() || `${LECTURES.length + 1}. Hafta`;
+  const customTitleInput = document.getElementById("imp-title").value.trim();
+  const customDescInput = document.getElementById("imp-desc").value.trim();
+  const manualBulletsRaw = document.getElementById("imp-manual-bullets").value.trim();
+  const simType = document.getElementById("imp-sim-type").value;
+
+  // Durum A: .PPTX dosyası seçilmeden manuel ders ekleme
+  if (!selectedPptxFile) {
+    const finalTitle = customTitleInput || `${weekLabel} Ders İçeriği`;
+    const finalDesc = customDescInput || `${weekLabel} — ${finalTitle} ders notları ve sunumu.`;
+    const bulletLines = manualBulletsRaw
+      ? manualBulletsRaw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
+      : [
+          `${finalTitle} temel kavramları ve mühendislik ilkeleri.`,
+          "Temel denklemler, sınır şartları ve tasarım kriterleri.",
+          "Uygulama örnekleri ve sistem analizi."
+        ];
+
+    const bulletsHtml = bulletLines
+      .map(
+        (b, bIdx) => `
+        <li class="fragment">
+          <span class="bullet-marker">${String(bIdx + 1).padStart(2, "0")}</span>
+          <div>${escapeXml(b)}</div>
+        </li>
+      `
+      )
+      .join("");
+
+    const slidesArr = [
+      {
+        kicker: `${weekLabel.toUpperCase()} • BÖLÜM I`,
+        title: finalTitle,
+        pptSummaryBullets: bulletLines,
+        html: `<p class="lead">${escapeXml(finalDesc)}</p><ul class="bullet-list">${bulletsHtml}</ul>`
+      }
+    ];
+
+    if (simType !== "none") {
+      slidesArr.push(getSimulationSlideObject(simType, weekLabel.toUpperCase()));
+    }
+
+    const newLecture = {
+      id: `custom-${Date.now()}`,
+      week: weekLabel,
+      title: finalTitle,
+      description: finalDesc,
+      pptxUrl: "pptx/ME101-Hafta1.pptx",
+      features: ["Ders Notu", "Sunum Modu"],
+      slides: slidesArr
+    };
+
+    LECTURES.push(newLecture);
+    saveCustomLectureToStorage(newLecture);
+    loadCustomLectures();
+renderCatalog();
+    closePptxModal();
+    document.getElementById("imp-title").value = "";
+    document.getElementById("imp-desc").value = "";
+    document.getElementById("imp-manual-bullets").value = "";
+    return;
+  }
+
+  // Durum B: .PPTX dosyası seçilmişse JSZip ile ayrıştır
   btnProcessPptx.disabled = true;
   btnProcessPptx.textContent = "PPTX Çözümleniyor...";
 
   try {
     const zip = await JSZip.loadAsync(selectedPptxFile);
-    const weekLabel = document.getElementById("imp-week").value.trim() || `${LECTURES.length + 1}. Hafta`;
-    const customTitle = document.getElementById("imp-title").value.trim() || selectedPptxFile.name.replace(/\.pptx$/i, "");
-    const simType = document.getElementById("imp-sim-type").value;
+    const customTitle = customTitleInput || selectedPptxFile.name.replace(/\.pptx$/i, "");
 
     const mediaMap = {};
     const mediaFiles = Object.keys(zip.files).filter((k) => k.startsWith("ppt/media/"));
@@ -1111,22 +1252,26 @@ btnProcessPptx.addEventListener("click", async () => {
       id: `custom-${Date.now()}`,
       week: weekLabel,
       title: customTitle,
-      description: `${selectedPptxFile.name} dosyasından aktarılmış ders içeriği.`,
+      description: customDescInput || `${selectedPptxFile.name} dosyasından aktarılmış ders içeriği.`,
       pptxUrl: pptxBlobUrl,
       pptxFileName: selectedPptxFile.name,
-      features: ["PPTX'ten Aktarıldı", "Hibrit Slayt Modu", "PPTX Arşivi"],
+      features: ["PPTX'ten Aktarıldı", "Hibrit Slayt Modu"],
       slides: parsedSlides
     };
 
     LECTURES.push(newLecture);
-    renderCatalog();
+    saveCustomLectureToStorage(newLecture);
+    selectedPptxFile = null;
+    pptxFileStatus.textContent = "Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.";
+    loadCustomLectures();
+renderCatalog();
     closePptxModal();
     openLecture(newLecture.id, false);
   } catch (err) {
     alert("PPTX dosyası okunurken bir hata oluştu: " + err.message);
   } finally {
     btnProcessPptx.disabled = false;
-    btnProcessPptx.textContent = "Dosyayı Dönüştür ve Derslere Ekle";
+    btnProcessPptx.textContent = "+ Dersi Listeye Ekle";
   }
 });
 
@@ -1178,7 +1323,8 @@ btnProcessImages.addEventListener("click", () => {
   };
 
   LECTURES.push(newLec);
-  renderCatalog();
+  loadCustomLectures();
+renderCatalog();
   closePptxModal();
   openLecture(newLec.id, true);
 });
@@ -1884,4 +2030,5 @@ window.addEventListener("resize", () => {
   if (isPresentationMode) resizeDrawingCanvas();
 });
 
+loadCustomLectures();
 renderCatalog();

@@ -12,14 +12,14 @@
   --brown-accent: #8c5a3c;
   --brown-light: #e6ddd0;
   --border-color: #d8cfc2;
-  --border-strong: #bfaF9c;
+  --border-strong: #bfaf9c;
   --status-ok: #2d6a4f;
   --status-warn: #9b2226;
-  --shadow-sm: 0 2px 6px rgba(59, 40, 24, 0.06);
-  --shadow-md: 0 8px 24px rgba(59, 40, 24, 0.09);
+  --shadow-sm: 0 1px 4px rgba(59, 40, 24, 0.06);
+  --shadow-md: 0 6px 18px rgba(59, 40, 24, 0.09);
   --shadow-lg: 0 16px 40px rgba(36, 28, 21, 0.14);
-  --radius-lg: 8px;
-  --radius-md: 5px;
+  --radius-lg: 6px;
+  --radius-md: 4px;
 }
 
 * {
@@ -32,7 +32,7 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-main);
   color: var(--text-main);
-  line-height: 1.65;
+  line-height: 1.5;
   overflow-x: hidden;
 }
 
@@ -48,11 +48,11 @@ body {
   background: #fdfcfa;
   border-bottom: 2px solid var(--brown-primary);
   box-shadow: var(--shadow-sm);
-  padding: 0.85rem 2rem;
+  padding: 0.65rem 1.75rem;
 }
 
 .nav-container {
-  max-width: 1240px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -64,7 +64,7 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
+  gap: 0.75rem;
   cursor: pointer;
   user-select: none;
 }
@@ -72,8 +72,8 @@ body {
 .brand-mark {
   background: var(--brown-dark);
   color: #f5f2eb;
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -81,15 +81,14 @@ body {
   justify-content: center;
   font-family: 'Source Serif 4', Georgia, serif;
   font-weight: 700;
-  font-size: 0.85rem;
-  line-height: 1.1;
-  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+  line-height: 1.05;
   border: 1px solid var(--brown-accent);
 }
 
 .brand-mark span {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: #d8c3a5;
 }
@@ -97,16 +96,16 @@ body {
 .department-label {
   display: block;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   font-weight: 600;
   color: var(--brown-accent);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
 .course-title {
   font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.2rem;
+  font-size: 1.12rem;
   font-weight: 700;
   color: var(--brown-dark);
 }
@@ -114,14 +113,47 @@ body {
 .nav-right-group {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.55rem;
   flex-wrap: wrap;
+}
+
+/* İkonik Yöntem Butonları (Üst Bar) */
+.method-icon-bar {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.15rem;
+  gap: 0.15rem;
+}
+
+.icon-method-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.32rem 0.58rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-method-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--brown-dark);
+  border-color: var(--border-strong);
 }
 
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
@@ -129,9 +161,9 @@ body {
   background: var(--bg-subtle);
   border: 1px solid var(--border-strong);
   color: var(--brown-dark);
-  padding: 0.38rem 0.85rem;
+  padding: 0.32rem 0.75rem;
   border-radius: var(--radius-md);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
 }
 
@@ -139,11 +171,11 @@ body {
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.55rem 1.05rem;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
   border-radius: var(--radius-md);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   cursor: pointer;
   border: 1px solid transparent;
   transition: all 0.15s ease;
@@ -188,162 +220,107 @@ body {
   border-color: var(--brown-primary);
 }
 
-/* ==================== ANA SAYFA / KATALOG ==================== */
+/* ==================== ANA SAYFA / KOMPAKT ÜST BAR ==================== */
 .catalog-container {
-  max-width: 1240px;
-  margin: 2rem auto 4rem;
-  padding: 0 2rem;
+  max-width: 1200px;
+  margin: 1.25rem auto 3.5rem;
+  padding: 0 1.75rem;
 }
 
-.hero-banner {
+.compact-top-bar {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-top: 4px solid var(--brown-primary);
+  border-left: 4px solid var(--brown-primary);
   border-radius: var(--radius-lg);
-  padding: 2.25rem 2.5rem;
-  margin-bottom: 2.5rem;
-  box-shadow: var(--shadow-md);
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-sm);
 }
 
 .hero-kicker {
+  display: block;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--brown-accent);
   letter-spacing: 0.08em;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.15rem;
 }
 
-.hero-banner h2 {
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--brown-dark);
-  margin-bottom: 0.7rem;
-}
-
-.hero-banner p {
+.compact-top-left p {
   color: var(--text-secondary);
-  max-width: 860px;
-  font-size: 0.98rem;
-  margin-bottom: 1.5rem;
+  font-size: 0.86rem;
 }
 
-.hero-banner code {
-  background: var(--bg-subtle);
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.88em;
-  color: var(--brown-dark);
-}
-
-/* 3 Yöntem Kartları */
-.methods-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.4rem;
-}
-
-.method-pill {
-  background: var(--bg-main);
-  border: 1px solid var(--border-color);
-  border-left: 3px solid var(--brown-accent);
-  border-radius: var(--radius-md);
-  padding: 0.9rem 1.1rem;
+.compact-top-right {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.method-num {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  color: var(--brown-accent);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
-.method-pill strong {
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 0.98rem;
-  color: var(--brown-dark);
-}
-
-.method-pill span:last-child {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-
-.hero-shortcuts {
-  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   flex-wrap: wrap;
-  gap: 0.55rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
 }
 
-.shortcut-pill {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  padding: 0.28rem 0.68rem;
-  border-radius: var(--radius-md);
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-kbd {
-  background: #ffffff;
-  color: var(--brown-dark);
-  padding: 0.1rem 0.38rem;
-  border-radius: 3px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.74rem;
+.icon-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-main);
   border: 1px solid var(--border-strong);
+  color: var(--brown-dark);
+  padding: 0.35rem 0.68rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-pill-btn:hover {
+  background: var(--brown-primary);
+  color: #ffffff;
+  border-color: var(--brown-dark);
 }
 
 .section-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border-color);
-  flex-wrap: wrap;
   gap: 0.75rem;
 }
 
 .section-header h3 {
   font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--brown-dark);
 }
 
-.section-subtitle {
-  color: var(--text-muted);
-  font-size: 0.88rem;
-}
-
+/* ==================== DİKEY VE KOMPAKT DERS SATIRLARI ==================== */
 .lecture-grid {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.6rem;
 }
 
 .lecture-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-left: 5px solid var(--brown-primary);
+  border-left: 4px solid var(--brown-primary);
   border-radius: var(--radius-lg);
-  padding: 1.35rem 1.6rem;
-  display: grid;
-  grid-template-columns: 145px 1fr auto;
-  align-items: center;
-  gap: 1.5rem;
+  padding: 0.7rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .lecture-card:hover {
@@ -353,100 +330,143 @@ kbd {
   box-shadow: var(--shadow-md);
 }
 
-.lecture-week-col {
+/* Üst Satır: Hafta etiketi + Ders Başlığı yıldızların üstüne kadar tam genişlikte uzanır */
+.lecture-row-top {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
-  padding-right: 1rem;
-  border-right: 1px solid var(--bg-subtle);
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.lecture-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .week-tag {
   font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.05rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--brown-dark);
   background: var(--bg-subtle);
   border: 1px solid var(--border-strong);
-  padding: 0.3rem 0.75rem;
-  border-radius: 4px;
+  padding: 0.15rem 0.58rem;
+  border-radius: 3px;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.lecture-title-wrap h4 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--brown-dark);
+  line-height: 1.25;
+  flex: 1;
+}
+
+.lecture-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
 }
 
 .slide-count-tag {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.74rem;
-  color: var(--text-muted);
-}
-
-.lecture-info-col h4 {
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.18rem;
-  margin-bottom: 0.35rem;
-  color: var(--brown-dark);
-  line-height: 1.35;
-}
-
-.lecture-info-col p {
-  color: var(--text-secondary);
-  font-size: 0.88rem;
-  margin-bottom: 0.65rem;
-}
-
-.card-features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.feature-chip {
   font-size: 0.72rem;
+  color: var(--text-muted);
   background: var(--bg-main);
   border: 1px solid var(--border-color);
-  padding: 0.15rem 0.52rem;
-  border-radius: 4px;
-  color: var(--text-secondary);
+  padding: 0.12rem 0.48rem;
+  border-radius: 3px;
+  white-space: nowrap;
 }
 
-.lecture-right-col {
+.btn-delete-lecture {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  padding: 0.1rem 0.42rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-delete-lecture:hover {
+  background: var(--status-warn);
+  border-color: var(--status-warn);
+  color: #ffffff;
+}
+
+/* Alt Satır: Solda kısa açıklama, sağda yıldızlar ve butonlar */
+.lecture-row-bottom {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.75rem;
-  min-width: 290px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
-/* YILDIZ PUANLAMA SİSTEMİ */
-.rating-box {
+.lecture-desc-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1;
+  min-width: 240px;
+}
+
+.lecture-desc-wrap p {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lecture-controls-right {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* YILDIZ PUANLAMA SİSTEMİ (Sahte oylar kaldırıldı, silme/sıfırlama eklendi) */
+.rating-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
-  padding: 0.32rem 0.7rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 4px;
 }
 
 .star-group {
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
+  gap: 0.1rem;
 }
 
 .star-btn {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1.18rem;
+  font-size: 1.05rem;
   line-height: 1;
   color: #cfc5b7;
-  padding: 0 0.08rem;
-  transition: transform 0.12s ease, color 0.12s ease;
+  padding: 0 0.05rem;
+  transition: transform 0.1s ease, color 0.1s ease;
 }
 
 .star-btn:hover {
-  transform: scale(1.18);
+  transform: scale(1.15);
 }
 
 .star-btn.filled {
@@ -459,38 +479,47 @@ kbd {
 
 .rating-meta {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
-.rating-meta strong {
-  color: var(--brown-dark);
+.btn-clear-rating {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.08rem 0.36rem;
+  border-radius: 3px;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: all 0.12s ease;
 }
 
-.rating-user-note {
-  font-size: 0.7rem;
-  color: var(--status-ok);
-  font-weight: 600;
+.btn-clear-rating:hover {
+  background: var(--status-warn);
+  border-color: var(--status-warn);
+  color: #ffffff;
 }
 
 .card-actions-3 {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .card-actions-3 .btn {
   justify-content: center;
-  font-size: 0.8rem;
-  padding: 0.48rem 0.75rem;
+  font-size: 0.76rem;
+  padding: 0.32rem 0.65rem;
   white-space: nowrap;
 }
 
 /* ==================== OKUMA MODU (WEB SAYFASI GÖRÜNÜMÜ) ==================== */
 .lecture-view {
   max-width: 1120px;
-  margin: 1.5rem auto 4rem;
+  margin: 1.25rem auto 4rem;
   padding: 0 1.5rem;
 }
 
@@ -499,12 +528,12 @@ kbd {
   border: 1px solid var(--border-strong);
   border-left: 4px solid var(--brown-primary);
   border-radius: var(--radius-lg);
-  padding: 1.1rem 1.4rem;
+  padding: 0.9rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
   box-shadow: var(--shadow-sm);
 }
@@ -512,53 +541,52 @@ kbd {
 .reading-banner-top {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 0.25rem;
+  gap: 0.6rem;
+  margin-bottom: 0.2rem;
   flex-wrap: wrap;
 }
 
 .reading-banner-actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .badge-mode {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--brown-primary);
   letter-spacing: 0.06em;
 }
 
 .badge-sub {
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   background: var(--bg-subtle);
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
-  padding: 0.12rem 0.55rem;
+  padding: 0.1rem 0.5rem;
   border-radius: 4px;
 }
 
 .reading-banner-info p {
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   color: var(--text-muted);
 }
 
 .slides-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.75rem;
 }
 
-/* Her bir slayt hem okuma modunda bir "Bölüm" hem sunum modunda bir "Slayt"tır */
 .slide {
   background: var(--bg-slide);
   border: 1px solid var(--border-color);
   border-top: 4px solid var(--brown-primary);
   border-radius: var(--radius-lg);
-  padding: 2.4rem 2.8rem;
+  padding: 2.2rem 2.6rem;
   position: relative;
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -566,7 +594,7 @@ kbd {
 
 .slide-top-controls {
   position: absolute;
-  top: 1.15rem;
+  top: 1.1rem;
   right: 1.4rem;
   display: flex;
   align-items: center;
@@ -580,7 +608,7 @@ kbd {
   color: var(--brown-dark);
   font-size: 0.74rem;
   font-weight: 600;
-  padding: 0.28rem 0.65rem;
+  padding: 0.26rem 0.62rem;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -604,39 +632,38 @@ kbd {
   color: var(--text-muted);
   background: var(--bg-subtle);
   border: 1px solid var(--border-color);
-  padding: 0.24rem 0.6rem;
+  padding: 0.22rem 0.58rem;
   border-radius: 4px;
 }
 
 .slide-kicker {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   color: var(--brown-accent);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.3rem;
   font-weight: 600;
 }
 
 .slide h2 {
   font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.8rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 0.95rem;
   color: var(--brown-dark);
   line-height: 1.28;
   padding-right: 14rem;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.65rem;
+  padding-bottom: 0.6rem;
 }
 
 .slide p.lead {
-  font-size: 1.04rem;
+  font-size: 1.02rem;
   color: var(--text-secondary);
-  margin-bottom: 1.35rem;
+  margin-bottom: 1.25rem;
 }
 
-/* YÖNTEM 2: BİREBİR PPT GÖRSEL SLAYT GÖRÜNÜMÜ */
 .ppt-exact-frame {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -671,19 +698,18 @@ kbd {
   border-radius: 4px;
 }
 
-/* Slayt İçi Grid ve Akademik Bileşenler */
 .slide-grid-2 {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
-  gap: 1.8rem;
+  gap: 1.6rem;
   align-items: start;
 }
 
 .slide-grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.2rem;
-  margin-top: 1.1rem;
+  gap: 1.1rem;
+  margin-top: 1rem;
 }
 
 .info-card {
@@ -691,18 +717,18 @@ kbd {
   border: 1px solid var(--border-color);
   border-top: 3px solid var(--brown-accent);
   border-radius: var(--radius-md);
-  padding: 1.2rem;
+  padding: 1.1rem;
 }
 
 .info-card h4 {
   font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.02rem;
+  font-size: 1rem;
   color: var(--brown-dark);
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.4rem;
 }
 
 .info-card p {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--text-secondary);
 }
 
@@ -710,28 +736,28 @@ kbd {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .bullet-list li {
   display: flex;
   align-items: flex-start;
-  gap: 0.8rem;
+  gap: 0.75rem;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--brown-primary);
-  padding: 0.75rem 1rem;
+  padding: 0.68rem 0.95rem;
   border-radius: 0 4px 4px 0;
-  font-size: 0.96rem;
+  font-size: 0.94rem;
   color: var(--text-main);
 }
 
 .bullet-marker {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--brown-accent);
-  min-width: 1.4rem;
+  min-width: 1.3rem;
   padding-top: 0.1rem;
 }
 
@@ -740,10 +766,10 @@ kbd {
   border: 1px solid var(--border-strong);
   border-left: 4px solid var(--brown-dark);
   border-radius: var(--radius-md);
-  padding: 0.95rem 1.3rem;
-  margin: 0.9rem 0;
+  padding: 0.85rem 1.2rem;
+  margin: 0.8rem 0;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.08rem;
+  font-size: 1.04rem;
   font-weight: 600;
   color: var(--brown-dark);
   text-align: center;
@@ -752,10 +778,10 @@ kbd {
 .formula-sub {
   display: block;
   font-family: 'Inter', sans-serif;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 400;
   color: var(--text-muted);
-  margin-top: 0.3rem;
+  margin-top: 0.25rem;
 }
 
 /* ==================== TEKNİK SİMÜLASYON KUTULARI ==================== */
@@ -763,15 +789,15 @@ kbd {
   background: var(--bg-main);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
-  padding: 1.2rem;
+  padding: 1.1rem;
 }
 
 .sim-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.85rem;
-  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.45rem;
   border-bottom: 1px solid var(--border-color);
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -779,7 +805,7 @@ kbd {
 
 .sim-title {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--brown-dark);
   text-transform: uppercase;
@@ -793,19 +819,19 @@ kbd {
   background: #faf8f4;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  padding: 0.5rem;
+  padding: 0.45rem;
 }
 
 .sim-controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.85rem;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
 }
 
 .control-group {
   background: #ffffff;
-  padding: 0.6rem 0.8rem;
+  padding: 0.55rem 0.75rem;
   border-radius: 4px;
   border: 1px solid var(--border-color);
 }
@@ -813,9 +839,9 @@ kbd {
 .control-group label {
   display: flex;
   justify-content: space-between;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--text-secondary);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.25rem;
 }
 
 .control-group label strong {
@@ -834,18 +860,18 @@ kbd {
   background: var(--bg-main);
   color: var(--text-main);
   border: 1px solid var(--border-strong);
-  padding: 0.35rem;
+  padding: 0.32rem;
   border-radius: 4px;
   font-family: inherit;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   cursor: pointer;
 }
 
 .sim-readout {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.65rem;
-  margin-top: 0.85rem;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
 }
 
 .readout-item {
@@ -853,19 +879,19 @@ kbd {
   border: 1px solid var(--border-color);
   border-top: 2px solid var(--brown-primary);
   border-radius: 4px;
-  padding: 0.5rem 0.7rem;
+  padding: 0.45rem 0.65rem;
   text-align: center;
 }
 
 .readout-label {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 
 .readout-val {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.98rem;
+  font-size: 0.94rem;
   font-weight: 700;
   color: var(--brown-dark);
 }
@@ -947,19 +973,18 @@ body.presentation-mode .slide.active-slide {
 }
 
 body.presentation-mode .slide h2 {
-  font-size: 2.25rem;
+  font-size: 2.2rem;
 }
 
 body.presentation-mode .slide p.lead {
-  font-size: 1.18rem;
+  font-size: 1.15rem;
 }
 
 body.presentation-mode .bullet-list li {
-  font-size: 1.1rem;
-  padding: 0.85rem 1.15rem;
+  font-size: 1.08rem;
+  padding: 0.8rem 1.1rem;
 }
 
-/* FRAGMENT (Tıkladıkça Açılan Maddeler) */
 body.presentation-mode .fragment {
   opacity: 0;
   transform: translateY(10px);
@@ -1113,7 +1138,7 @@ body.presentation-mode .fragment.visible {
   transform: translate(-50%, -50%);
 }
 
-/* ==================== PPTX ENTEGRASYON MODALI ==================== */
+/* ==================== DERS EKLE / PPTX ENTEGRASYON MODALI ==================== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1123,7 +1148,7 @@ body.presentation-mode .fragment.visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .modal-card {
@@ -1132,7 +1157,7 @@ body.presentation-mode .fragment.visible {
   border-top: 4px solid var(--brown-dark);
   border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 700px;
+  max-width: 680px;
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
@@ -1141,14 +1166,14 @@ body.presentation-mode .fragment.visible {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.2rem 1.6rem;
+  padding: 1rem 1.4rem;
   background: var(--bg-main);
   border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h3 {
   font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   color: var(--brown-dark);
 }
 
@@ -1156,11 +1181,11 @@ body.presentation-mode .fragment.visible {
   background: #ffffff;
   border: 1px solid var(--border-strong);
   color: var(--text-secondary);
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 .modal-close-btn:hover {
@@ -1169,15 +1194,15 @@ body.presentation-mode .fragment.visible {
 }
 
 .modal-body {
-  padding: 1.5rem 1.6rem;
+  padding: 1.25rem 1.4rem;
 }
 
 .modal-tabs {
   display: flex;
-  gap: 0.45rem;
-  margin-bottom: 1.25rem;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.75rem;
+  padding-bottom: 0.65rem;
   flex-wrap: wrap;
 }
 
@@ -1185,9 +1210,9 @@ body.presentation-mode .fragment.visible {
   background: var(--bg-main);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  padding: 0.42rem 0.85rem;
+  padding: 0.38rem 0.78rem;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
@@ -1200,43 +1225,44 @@ body.presentation-mode .fragment.visible {
 }
 
 .modal-desc {
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   color: var(--text-secondary);
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 2fr;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
 .form-field label {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--brown-dark);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.25rem;
 }
 
 .form-field input,
-.form-field select {
+.form-field select,
+.form-field textarea {
   width: 100%;
   background: #ffffff;
   border: 1px solid var(--border-strong);
   color: var(--text-main);
-  padding: 0.52rem 0.75rem;
+  padding: 0.45rem 0.68rem;
   border-radius: 4px;
   font-family: inherit;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
 }
 
 .dropzone {
-  margin-top: 1rem;
+  margin-top: 0.85rem;
   border: 2px dashed var(--border-strong);
   background: var(--bg-main);
   border-radius: 6px;
-  padding: 1.6rem;
+  padding: 1.15rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1249,40 +1275,28 @@ body.presentation-mode .fragment.visible {
 
 .dropzone h4 {
   font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 0.98rem;
+  font-size: 0.92rem;
   color: var(--brown-dark);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .dropzone p {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
 }
 
 .modal-footer-actions {
-  margin-top: 1.25rem;
+  margin-top: 1rem;
   display: flex;
   justify-content: flex-end;
 }
 
 @media (max-width: 900px) {
-  .slide-grid-2, .slide-grid-3, .form-grid, .lecture-card {
+  .slide-grid-2, .slide-grid-3, .form-grid {
     grid-template-columns: 1fr;
   }
-  .lecture-week-col {
-    border-right: none;
-    border-bottom: 1px solid var(--bg-subtle);
-    padding-right: 0;
-    padding-bottom: 0.5rem;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
-  .lecture-right-col {
-    align-items: flex-start;
-    min-width: 0;
-    width: 100%;
+  .lecture-desc-wrap p {
+    white-space: normal;
   }
   body.presentation-mode .slide {
     padding: 1.5rem;

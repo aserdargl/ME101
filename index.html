@@ -23,8 +23,24 @@
       </div>
 
       <div class="nav-right-group">
-        <button id="btn-open-pptx-modal" class="btn btn-outline">
-          PPTX Yükle / Dönüştür
+        <!-- İkonik 3 Yöntem Butonları ve Ders Ekle -->
+        <div class="method-icon-bar" title="PPTX ve Ders Yöntemleri">
+          <button type="button" class="icon-method-btn" data-open-tab="tab-add-manual" title="Yöntem I: Web Slayt Dönüşümü / PPTX Aktar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg>
+            <span>I. Web Slayt</span>
+          </button>
+          <button type="button" class="icon-method-btn" data-open-tab="tab-method-2" title="Yöntem II: Birebir PPT Görsel Sunumu">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>II. PPT Görsel</span>
+          </button>
+          <button type="button" class="icon-method-btn" data-open-tab="tab-permanent" title="Yöntem III: PPTX Arşivi ve Kalıcı Kayıt">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>III. PPTX Arşiv</span>
+          </button>
+        </div>
+
+        <button id="btn-open-pptx-modal" class="btn btn-primary">
+          + Ders Ekle
         </button>
 
         <div id="lecture-nav-actions" class="nav-actions hidden">
@@ -45,53 +61,35 @@
 
   <!-- ANA SAYFA: DERS KATALOĞU -->
   <main id="catalog-view" class="catalog-container">
-    <section class="hero-banner">
-      <div class="hero-content">
-        <div class="hero-kicker">LİSANS DERSİ • DERS NOTLARI VE ETKİLEŞİMLİ SUNUM SİSTEMİ</div>
-        <h2>ME 101 — Makine Mühendisliğine Giriş</h2>
-        <p>
-          Haftalık ders içeriklerini bu portal üzerinden akademik ders notu düzeninde inceleyebilir, 
-          <strong>Sunum Moduna Geç</strong> seçeneğiyle sayfayı tam ekran ders sunumuna dönüştürebilir veya 
-          mevcut <code>.pptx</code> sunum dosyalarını sisteme aktarabilirsiniz.
-        </p>
-
-        <div class="methods-strip">
-          <div class="method-pill">
-            <span class="method-num">I. YÖNTEM</span>
-            <strong>Web Slayt Dönüşümü</strong>
-            <span>PPTX içindeki metin ve görselleri adım adım ilerleyen web slaytlarına aktarır.</span>
-          </div>
-          <div class="method-pill">
-            <span class="method-num">II. YÖNTEM</span>
-            <strong>Birebir Slayt Görünümü (Hibrit)</strong>
-            <span>Orijinal PowerPoint sayfa düzenini korur; slaytlar arasına teknik simülasyon eklenmesini sağlar.</span>
-          </div>
-          <div class="method-pill">
-            <span class="method-num">III. YÖNTEM</span>
-            <strong>Doğrudan PPTX Arşivi</strong>
-            <span>Her haftanın ders kartı üzerinden orijinal sunum dosyasının indirilmesine imkân tanır.</span>
-          </div>
-        </div>
-
-        <div class="hero-shortcuts">
-          <div class="shortcut-pill"><kbd>Sol Tık</kbd> / <kbd>&rarr;</kbd> İleri</div>
-          <div class="shortcut-pill"><kbd>&larr;</kbd> Geri</div>
-          <div class="shortcut-pill"><kbd>V</kbd> Görünüm Değiştir (Web / Slayt Levhası)</div>
-          <div class="shortcut-pill"><kbd>L</kbd> Lazer İşaretçi</div>
-          <div class="shortcut-pill"><kbd>C</kbd> Kalem / Çizim</div>
-          <div class="shortcut-pill"><kbd>F</kbd> Tam Ekran</div>
-        </div>
+    <!-- Kompakt Üst Başlık ve İkonik Yöntem Barı -->
+    <section class="compact-top-bar">
+      <div class="compact-top-left">
+        <span class="hero-kicker">ME 101 • LİSANS DERS NOTLARI VE ETKİLEŞİMLİ SUNUM PORTALI</span>
+        <p>Dersleri inceleyebilir, <strong>Sunum Moduna Geç</strong> ile tam ekran ders anlatımı yapabilir veya yeni ders ekleyebilirsiniz.</p>
+      </div>
+      <div class="compact-top-right">
+        <button type="button" class="icon-pill-btn" data-open-tab="tab-add-manual" title="Yöntem I: PPTX'ten Web Slaytlarına Dönüştür">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          I. Web Slayt
+        </button>
+        <button type="button" class="icon-pill-btn" data-open-tab="tab-method-2" title="Yöntem II: Birebir Slayt Görselleri (Hibrit)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          II. Görsel Mod
+        </button>
+        <button type="button" class="icon-pill-btn" data-open-tab="tab-permanent" title="Yöntem III: Doğrudan PPTX İndirme ve Klasör Aracı">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          III. PPTX Arşivi
+        </button>
       </div>
     </section>
 
     <section class="weeks-section">
       <div class="section-header">
         <div>
-          <h3>Haftalık Ders Programı ve İçerikler</h3>
-          <span class="section-subtitle">Ders notunu görüntülemek, sunumu başlatmak veya dosyayı indirmek için ilgili haftayı seçiniz.</span>
+          <h3>Haftalık Ders Programı</h3>
         </div>
-        <button id="btn-hero-pptx-modal" class="btn btn-secondary">
-          + Yeni PPTX Dosyası Aktar
+        <button id="btn-hero-pptx-modal" class="btn btn-primary">
+          + Ders Ekle
         </button>
       </div>
 
@@ -175,28 +173,28 @@
     </div>
   </div>
 
-  <!-- PPTX ENTEGRASYON MERKEZİ MODALI -->
+  <!-- DERS EKLE & PPTX ENTEGRASYON MODALI -->
   <div id="pptx-modal-backdrop" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
         <div>
           <span class="department-label">DERS İÇERİĞİ YÖNETİMİ</span>
-          <h3>PowerPoint (.pptx) Entegrasyon Merkezi</h3>
+          <h3>Yeni Ders Ekle / PowerPoint (.pptx) Aktar</h3>
         </div>
         <button id="btn-close-pptx-modal" class="modal-close-btn">&times;</button>
       </div>
 
       <div class="modal-body">
         <div class="modal-tabs">
-          <button class="modal-tab active" data-tab="tab-method-all">I. PPTX Dosyası Aktar</button>
+          <button class="modal-tab active" data-tab="tab-add-manual">+ Hızlı Ders / PPTX Ekle (Yöntem I)</button>
           <button class="modal-tab" data-tab="tab-method-2">II. Slayt Görselleri (PNG/JPG)</button>
           <button class="modal-tab" data-tab="tab-permanent">III. Kalıcı Klasör &amp; GitHub Aracı</button>
         </div>
 
-        <div id="tab-method-all" class="tab-pane active">
+        <!-- TAB 1: YENİ DERS EKLE (İster Manuel Metinle İster .PPTX Dosyasıyla) -->
+        <div id="tab-add-manual" class="tab-pane active">
           <p class="modal-desc">
-            Bilgisayarınızdaki bir <code>.pptx</code> dosyasını seçiniz. Dosya içindeki başlıklar, maddeler ve görseller 
-            otomatik ayrıştırılarak ders listesine eklenir.
+            Yeni bir haftalık ders eklemek için bilgileri girin. İsterseniz doğrudan <code>.pptx</code> dosyası yükleyebilir veya slayt maddelerini aşağıya yazabilirsiniz.
           </p>
 
           <div class="form-grid">
@@ -206,43 +204,54 @@
             </div>
             <div class="form-field">
               <label>Ders Başlığı</label>
-              <input type="text" id="imp-title" placeholder="Örn: Termodinamik ve Enerji Sistemleri" />
+              <input type="text" id="imp-title" placeholder="Örn: Termodinamik ve Enerji Dönüşüm Sistemleri" />
             </div>
           </div>
 
-          <div class="form-field" style="margin-top:0.85rem;">
-            <label>Eklenecek Teknik Simülasyon Modülü (İsteğe Bağlı)</label>
-            <select id="imp-sim-type">
-              <option value="none">Simülasyon Eklenmesin (Yalnızca PPTX İçeriği)</option>
-              <option value="gear" selected>Dişli Çark Çifti ve Tork İletimi Analizi</option>
-              <option value="beam">Ankastre Kiriş Eğilme ve Gerilme Analizi</option>
-              <option value="tensile">Çekme Deneyi ve Gerilme-Birim Uzama Diyagramı</option>
-              <option value="crank">Krank-Biyel (Piston) Kinematiği Analizi</option>
-            </select>
+          <div class="form-field" style="margin-top:0.65rem;">
+            <label>Kısa Ders Açıklaması</label>
+            <input type="text" id="imp-desc" placeholder="Örn: Termodinamiğin birinci ve ikinci yasaları, ısı makineleri ve verim." />
+          </div>
+
+          <div class="form-grid" style="margin-top:0.65rem; grid-template-columns: 1fr 1fr;">
+            <div class="form-field">
+              <label>Eklenecek Teknik Simülasyon Modülü</label>
+              <select id="imp-sim-type">
+                <option value="none">Simülasyon Eklenmesin</option>
+                <option value="gear">Dişli Çark Çifti ve Tork Analizi</option>
+                <option value="beam">Ankastre Kiriş Eğilme Analizi</option>
+                <option value="tensile">Çekme Deneyi (σ - ε) Analizi</option>
+                <option value="crank">Krank-Biyel Kinematiği Analizi</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Manuel Slayt Maddeleri (Her satır bir madde olur)</label>
+              <textarea id="imp-manual-bullets" rows="2" placeholder="PPTX seçmezseniz buraya yazdığınız satırlar slayt maddesi olur..."></textarea>
+            </div>
           </div>
 
           <div class="dropzone" id="pptx-dropzone">
             <input type="file" id="inp-pptx-file" accept=".pptx" class="hidden" />
-            <h4>.PPTX Dosyasını Buraya Sürükleyin veya Seçmek İçin Tıklayın</h4>
-            <p id="pptx-file-status">Henüz dosya seçilmedi.</p>
+            <h4>İsteğe Bağlı: .PPTX Dosyasını Buraya Sürükleyin veya Seçmek İçin Tıklayın</h4>
+            <p id="pptx-file-status">Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.</p>
           </div>
 
           <div class="modal-footer-actions">
-            <button id="btn-process-pptx" class="btn btn-primary" disabled>
-              Dosyayı Dönüştür ve Derslere Ekle
+            <button id="btn-process-pptx" class="btn btn-primary">
+              + Dersi Listeye Ekle
             </button>
           </div>
         </div>
 
+        <!-- TAB 2: SLAYT GÖRSELLERİ -->
         <div id="tab-method-2" class="tab-pane hidden">
           <p class="modal-desc">
-            PowerPoint üzerinden <strong>Farklı Kaydet &rarr; PNG / JPEG</strong> seçeneğiyle dışa aktarılmış slayt görsellerini seçiniz. 
-            Karmaşık şema ve tablolar birebir korunarak sunum oluşturulur.
+            PowerPoint üzerinden <strong>Farklı Kaydet &rarr; PNG / JPEG</strong> seçeneğiyle dışa aktarılmış slayt görsellerini seçiniz.
           </p>
           <div class="form-grid">
             <div class="form-field">
               <label>Hafta Bilgisi</label>
-              <input type="text" id="img-imp-week" value="Ek Ders" />
+              <input type="text" id="img-imp-week" value="5. Hafta" />
             </div>
             <div class="form-field">
               <label>Ders Başlığı</label>
@@ -261,6 +270,7 @@
           </div>
         </div>
 
+        <!-- TAB 3: KALICI GITHUB ARACI -->
         <div id="tab-permanent" class="tab-pane hidden">
           <p class="modal-desc">
             Yeni eklenen derslerin GitHub üzerinde kalıcı olarak yayınlanması için aşağıdaki iki yöntemden birini kullanabilirsiniz:
