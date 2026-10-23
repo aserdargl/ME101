@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ME 101 - Makine Mühendisliğine Giriş | Ders ve Sunum Portalı</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ÜST NAVİGASYON (Normal Modda Görünür) -->
+  <header id="top-navbar" class="navbar">
+    <div class="nav-container">
+      <div class="brand" id="btn-home" title="Ana Sayfaya Dön">
+        <div class="brand-icon">⚙️</div>
+        <div>
+          <span class="course-code">ME 101</span>
+          <h1 class="course-title">Makine Mühendisliğine Giriş</h1>
+        </div>
+      </div>
+
+      <div id="lecture-nav-actions" class="nav-actions hidden">
+        <button id="btn-back-catalog" class="btn btn-secondary">
+          <span>←</span> Ders Listesi
+        </button>
+        <div class="lecture-Active-badge" id="nav-current-lecture-title">1. Hafta</div>
+        <button id="btn-start-presentation" class="btn btn-primary btn-pulse">
+          <span>🖥️</span> Sunum Moduna Geç
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ANA SAYFA: DERS KATALOĞU -->
+  <main id="catalog-view" class="catalog-container">
+    <section class="hero-banner">
+      <div class="hero-content">
+        <div class="hero-badge">🎓 İnteraktif Ders &amp; Sunum Sistemi (GitHub Pages Uyumlu)</div>
+        <h2>Makine Mühendisliğine Giriş</h2>
+        <p>
+          Bu platformda haftalık ders notlarını normal bir <strong>web sayfası gibi okuyabilir</strong> veya 
+          <strong>"Sunum Moduna Geç"</strong> butonuna tıklayarak sayfayı canlı simülasyonlar içeren 
+          <strong>etkileşimli bir PowerPoint sunumuna</strong> dönüştürebilirsiniz.
+        </p>
+        <div class="hero-shortcuts">
+          <div class="shortcut-pill"><kbd>🖱️ Sol Tık</kbd> / <kbd>→</kbd> İleri (Adım / Slayt)</div>
+          <div class="shortcut-pill"><kbd>←</kbd> Geri</div>
+          <div class="shortcut-pill"><kbd>L</kbd> Lazer İmleci</div>
+          <div class="shortcut-pill"><kbd>C</kbd> Ekrana Çizim (Kalem)</div>
+          <div class="shortcut-pill"><kbd>F</kbd> Tam Ekran</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="weeks-section">
+      <div class="section-header">
+        <h3>📚 Haftalık Ders İçerikleri</h3>
+        <span class="section-subtitle">İncelemek veya sunum yapmak istediğiniz haftayı seçin</span>
+      </div>
+
+      <div id="lecture-grid" class="lecture-grid">
+        <!-- JS tarafından doldurulacak -->
+      </div>
+    </section>
+  </main>
+
+  <!-- DERS GÖRÜNÜMÜ (Hem Okuma Modu hem Sunum Modu olarak çalışır) -->
+  <div id="lecture-view" class="lecture-view hidden">
+    <!-- Okuma Modu Üst Bilgi Barı -->
+    <div id="reading-mode-banner" class="reading-banner">
+      <div class="reading-banner-info">
+        <span class="badge-mode">📖 Web Okuma Modu</span>
+        <p>Şu anda ders notu görünümündesiniz. Sınıfta projeksiyonla anlatım yapmak için sağdaki butona tıklayın.</p>
+      </div>
+      <button id="btn-banner-present" class="btn btn-primary">
+        🖥️ Sunum Moduna Geç (Slayt Görünümü)
+      </button>
+    </div>
+
+    <!-- Slaytların / Bölümlerin Yer Aldığı Konteyner -->
+    <div id="slides-viewport" class="slides-viewport">
+      <!-- Çizim Kanvası (Sunum modunda kalem aktifken kullanılır) -->
+      <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
+      <!-- Lazer İmleci -->
+      <div id="laser-pointer" class="laser-pointer hidden"></div>
+
+      <!-- Slayt İçerikleri JS ile buraya yüklenecek -->
+      <div id="slides-container" class="slides-container"></div>
+    </div>
+
+    <!-- SUNUM MODU ALT KONTROL ÇUBUĞU (Sadece Sunum Modunda Görünür) -->
+    <div id="presentation-toolbar" class="presentation-toolbar hidden">
+      <div class="toolbar-left">
+        <span id="pres-lecture-name" class="pres-lecture-name">1. Hafta</span>
+        <span class="toolbar-divider">|</span>
+        <span id="slide-counter" class="slide-counter">Slayt 1 / 5</span>
+        <span id="step-indicator" class="step-indicator" title="Slayt içi adım"></span>
+      </div>
+
+      <div class="toolbar-center">
+        <button id="btn-prev-slide" class="tool-btn" title="Önceki Adım / Slayt (Sol Ok)">
+          ◀ Önceki
+        </button>
+        <button id="btn-next-slide" class="tool-btn tool-btn-primary" title="Sonraki Adım / Slayt (Sağ Ok / Boşluk / Tıklama)">
+          Sonraki ▶
+        </button>
+      </div>
+
+      <div class="toolbar-right">
+        <button id="btn-toggle-laser" class="tool-btn" title="Lazer İmleci (Kısayol: L)">
+          🔴 Lazer
+        </button>
+        <button id="btn-toggle-pen" class="tool-btn" title="Kalem / Çizim Modu (Kısayol: C)">
+          ✏️ Kalem
+        </button>
+        <button id="btn-clear-pen" class="tool-btn hidden" title="Çizimleri Temizle (Kısayol: D)">
+          🗑️ Temizle
+        </button>
+        <button id="btn-fullscreen" class="tool-btn" title="Tam Ekran (Kısayol: F)">
+          ⛶ Tam Ekran
+        </button>
+        <button id="btn-exit-presentation" class="tool-btn tool-btn-danger" title="Sunumdan Çık (ESC)">
+          ✕ Sunumdan Çık
+        </button>
+      </div>
+
+      <!-- İlerleme Çubuğu -->
+      <div class="pres-progress-track">
+        <div id="pres-progress-bar" class="pres-progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
