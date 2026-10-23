@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Tarayıcı içi doğrudan .pptx okuma ve ayrıştırma için JSZip -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -21,14 +23,24 @@
         </div>
       </div>
 
-      <div id="lecture-nav-actions" class="nav-actions hidden">
-        <button id="btn-back-catalog" class="btn btn-secondary">
-          <span>←</span> Ders Listesi
+      <div class="nav-right-group">
+        <!-- Her zaman erişilebilen PPTX Entegrasyon Merkezi Butonu -->
+        <button id="btn-open-pptx-modal" class="btn btn-accent">
+          <span>📂</span> PPTX Ekle / Dönüştür
         </button>
-        <div class="lecture-Active-badge" id="nav-current-lecture-title">1. Hafta</div>
-        <button id="btn-start-presentation" class="btn btn-primary btn-pulse">
-          <span>🖥️</span> Sunum Moduna Geç
-        </button>
+
+        <div id="lecture-nav-actions" class="nav-actions hidden">
+          <button id="btn-back-catalog" class="btn btn-secondary">
+            <span>←</span> Ders Listesi
+          </button>
+          <div class="lecture-Active-badge" id="nav-current-lecture-title">1. Hafta</div>
+          <a id="btn-nav-download-pptx" href="#" download class="btn btn-secondary" title="Orijinal PowerPoint (.pptx) dosyasını indir">
+            <span>📥</span> PPTX İndir
+          </a>
+          <button id="btn-start-presentation" class="btn btn-primary btn-pulse">
+            <span>🖥️</span> Sunum Moduna Geç
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -37,18 +49,39 @@
   <main id="catalog-view" class="catalog-container">
     <section class="hero-banner">
       <div class="hero-content">
-        <div class="hero-badge">🎓 İnteraktif Ders &amp; Sunum Sistemi (GitHub Pages Uyumlu)</div>
+        <div class="hero-badge">🎓 3'ü 1 Arada Hibrit Ders &amp; PowerPoint Sistemi (ME 101)</div>
         <h2>Makine Mühendisliğine Giriş</h2>
         <p>
-          Bu platformda haftalık ders notlarını normal bir <strong>web sayfası gibi okuyabilir</strong> veya 
-          <strong>"Sunum Moduna Geç"</strong> butonuna tıklayarak sayfayı canlı simülasyonlar içeren 
-          <strong>etkileşimli bir PowerPoint sunumuna</strong> dönüştürebilirsiniz.
+          Bu platformda haftalık ders notlarını normal bir <strong>web sayfası gibi okuyabilir</strong>, 
+          <strong>"Sunum Moduna Geç"</strong> ile <strong>etkileşimli PowerPoint sunumu</strong> yapabilir veya 
+          elinizdeki <code>.pptx</code> dosyalarını <strong>3 farklı yöntemle</strong> kullanabilirsiniz:
         </p>
+
+        <!-- 3 YÖNTEM KARTLARI -->
+        <div class="methods-strip">
+          <div class="method-pill">
+            <span class="method-num">Yöntem 1</span>
+            <strong>📝 Otomatik Web Slaytı</strong>
+            <span>PPTX metin ve görsellerini tıkladıkça açılan interaktif web slaytlarına dönüştürür.</span>
+          </div>
+          <div class="method-pill">
+            <span class="method-num">Yöntem 2</span>
+            <strong>🖼️ Birebir PPT Görseli (Hibrit)</strong>
+            <span>Slayt tasarımını birebir korur, slayt üstünden tek tuşla görünüm değiştirir ve aralara simülasyon ekler.</span>
+          </div>
+          <div class="method-pill">
+            <span class="method-num">Yöntem 3</span>
+            <strong>📥 Orijinal PPTX İndir</strong>
+            <span>Her haftanın kartından veya ders içinden orijinal <code>.pptx</code> dosyasını doğrudan indirir.</span>
+          </div>
+        </div>
+
         <div class="hero-shortcuts">
           <div class="shortcut-pill"><kbd>🖱️ Sol Tık</kbd> / <kbd>→</kbd> İleri (Adım / Slayt)</div>
           <div class="shortcut-pill"><kbd>←</kbd> Geri</div>
+          <div class="shortcut-pill"><kbd>V</kbd> Web / PPT Görsel Görünümü Değiştir</div>
           <div class="shortcut-pill"><kbd>L</kbd> Lazer İmleci</div>
-          <div class="shortcut-pill"><kbd>C</kbd> Ekrana Çizim (Kalem)</div>
+          <div class="shortcut-pill"><kbd>C</kbd> Kalemle Çizim</div>
           <div class="shortcut-pill"><kbd>F</kbd> Tam Ekran</div>
         </div>
       </div>
@@ -56,8 +89,13 @@
 
     <section class="weeks-section">
       <div class="section-header">
-        <h3>📚 Haftalık Ders İçerikleri</h3>
-        <span class="section-subtitle">İncelemek veya sunum yapmak istediğiniz haftayı seçin</span>
+        <div>
+          <h3>📚 Haftalık Ders İçerikleri</h3>
+          <span class="section-subtitle">İncelemek, sunum yapmak veya .pptx indirmek istediğiniz haftayı seçin</span>
+        </div>
+        <button id="btn-hero-pptx-modal" class="btn btn-accent">
+          ➕ Bilgisayardan .PPTX Yükle / Entegre Et
+        </button>
       </div>
 
       <div id="lecture-grid" class="lecture-grid">
@@ -71,12 +109,23 @@
     <!-- Okuma Modu Üst Bilgi Barı -->
     <div id="reading-mode-banner" class="reading-banner">
       <div class="reading-banner-info">
-        <span class="badge-mode">📖 Web Okuma Modu</span>
-        <p>Şu anda ders notu görünümündesiniz. Sınıfta projeksiyonla anlatım yapmak için sağdaki butona tıklayın.</p>
+        <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.25rem;">
+          <span class="badge-mode">📖 Web Okuma &amp; Hibrit Ders Modu</span>
+          <span class="badge-sub">Her slaytta "📝 Web Slaytı" ve "🖼️ Birebir PPT Görseli" arasında geçiş yapabilirsiniz</span>
+        </div>
+        <p>Sınıfta projeksiyonla anlatım yapmak için <strong>Sunum Moduna Geç</strong> butonuna tıklayın.</p>
       </div>
-      <button id="btn-banner-present" class="btn btn-primary">
-        🖥️ Sunum Moduna Geç (Slayt Görünümü)
-      </button>
+      <div class="reading-banner-actions">
+        <button id="btn-toggle-all-slide-modes" class="btn btn-secondary" title="Tüm slaytları Birebir PPT Görseli veya İnteraktif Web görünümüne çevir">
+          🖼️ Tümünü PPT Görsel Moduna Al
+        </button>
+        <a id="btn-banner-download-pptx" href="#" download class="btn btn-secondary">
+          📥 Orijinal .PPTX İndir
+        </a>
+        <button id="btn-banner-present" class="btn btn-primary">
+          🖥️ Sunum Moduna Geç
+        </button>
+      </div>
     </div>
 
     <!-- Slaytların / Bölümlerin Yer Aldığı Konteyner -->
@@ -109,6 +158,9 @@
       </div>
 
       <div class="toolbar-right">
+        <button id="btn-pres-view-mode" class="tool-btn" title="Aktif Slaytı Web / Birebir PPT Görseli Arasında Değiştir (Kısayol: V)">
+          🖼️ PPT Görseli
+        </button>
         <button id="btn-toggle-laser" class="tool-btn" title="Lazer İmleci (Kısayol: L)">
           🔴 Lazer
         </button>
@@ -129,6 +181,128 @@
       <!-- İlerleme Çubuğu -->
       <div class="pres-progress-track">
         <div id="pres-progress-bar" class="pres-progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- 3 YÖNTEMLİ PPTX ENTEGRASYON MERKEZİ MODALI                              -->
+  <!-- ======================================================================= -->
+  <div id="pptx-modal-backdrop" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="course-code">3 YÖNTEM BİR ARADA</span>
+          <h3>📂 PowerPoint (.pptx) Entegrasyon Merkezi</h3>
+        </div>
+        <button id="btn-close-pptx-modal" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-tabs">
+          <button class="modal-tab active" data-tab="tab-method-all">🚀 Hızlı .PPTX Yükle (3 Yöntem Birden)</button>
+          <button class="modal-tab" data-tab="tab-method-2">🖼️ Yöntem 2: Slayt Görselleri + Simülasyon</button>
+          <button class="modal-tab" data-tab="tab-permanent">💻 Kalıcı GitHub Otomasyonu</button>
+        </div>
+
+        <!-- TAB 1: DOĞRUDAN .PPTX DOSYASI SEÇEREK İÇE AKTAR -->
+        <div id="tab-method-all" class="tab-pane active">
+          <p class="modal-desc">
+            Bilgisayarınızdaki herhangi bir <code>.pptx</code> dosyasını seçin. Sistem dosyanın içindeki metinleri, 
+            maddeleri ve gömülü resimleri otomatik ayrıştırarak hem <strong>Yöntem 1 (İnteraktif Web Slaytı)</strong>, 
+            hem <strong>Yöntem 2 (Birebir PPT Görsel Kartı)</strong> hem de <strong>Yöntem 3 (İndirilebilir PPTX)</strong> olarak ders listesine ekler!
+          </p>
+
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Hafta / Ders Kodu</label>
+              <input type="text" id="imp-week" placeholder="Örn: 5. Hafta" value="5. Hafta" />
+            </div>
+            <div class="form-field">
+              <label>Ders Başlığı (Boş bırakılırsa PPTX'ten alınır)</label>
+              <input type="text" id="imp-title" placeholder="Örn: Termodinamik ve Enerji Sistemleri" />
+            </div>
+          </div>
+
+          <div class="form-field" style="margin-top:0.85rem;">
+            <label>Aralara Eklenecek Canlı Mühendislik Simülasyonu (İsteğe Bağlı - Hibrit Mod)</label>
+            <select id="imp-sim-type">
+              <option value="none">Simülasyon Ekleme (Sadece PPTX Slaytları)</option>
+              <option value="gear" selected>⚙️ Dişli Çark Çifti ve Tork İletimi Simülasyonu Ekle</option>
+              <option value="beam">📊 Ankastre Kiriş Eğilme ve FEA Gerilme Simülasyonu Ekle</option>
+              <option value="tensile">🧪 Çekme Deneyi ve σ - ε Diyagramı Simülasyonu Ekle</option>
+              <option value="crank">🚗 Krank-Biyel (Piston) Mekanizması Simülasyonu Ekle</option>
+            </select>
+          </div>
+
+          <div class="dropzone" id="pptx-dropzone">
+            <input type="file" id="inp-pptx-file" accept=".pptx" class="hidden" />
+            <div class="dropzone-icon">📊</div>
+            <h4>.PPTX Dosyanızı Buraya Sürükleyin veya Seçmek İçin Tıklayın</h4>
+            <p id="pptx-file-status">Henüz dosya seçilmedi (Örn: <code>pptx/ME101-Hafta1.pptx</code> veya kendi sunumunuz)</p>
+          </div>
+
+          <div class="modal-footer-actions">
+            <button id="btn-process-pptx" class="btn btn-primary" disabled>
+              ⚡ PPTX'i Dönüştür ve Derslere Ekle
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: YÖNTEM 2 - BİREBİR SLAYT GÖRSELLERİ (.PNG / .JPG) + SİMÜLASYON -->
+        <div id="tab-method-2" class="tab-pane hidden">
+          <p class="modal-desc">
+            PowerPoint'te <strong>Dosya → Farklı Kaydet → PNG / JPEG</strong> diyerek dışa aktardığınız slayt görsellerini seçin. 
+            Karmaşık çizimleriniz %100 birebir korunur ve istediğiniz slaytların arasına canlı simülasyon eklenir.
+          </p>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Hafta Bilgisi</label>
+              <input type="text" id="img-imp-week" value="Özel Ders" />
+            </div>
+            <div class="form-field">
+              <label>Ders Başlığı</label>
+              <input type="text" id="img-imp-title" placeholder="Görsel Tabanlı Sunum" />
+            </div>
+          </div>
+          <div class="dropzone" id="img-dropzone" style="margin-top:0.85rem;">
+            <input type="file" id="inp-slide-images" accept="image/*" multiple class="hidden" />
+            <div class="dropzone-icon">🖼️</div>
+            <h4>Slayt Görsellerini Seçin (Çoklu PNG / JPG Seçebilirsiniz)</h4>
+            <p id="img-files-status">Görseller sıralı olarak tam ekran slayt haline getirilir.</p>
+          </div>
+          <div class="modal-footer-actions">
+            <button id="btn-process-images" class="btn btn-primary" disabled>
+              🖼️ Görsel Slaytları Oluştur ve Sunuma Başla
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 3: KALICI GITHUB OTOMASYONU -->
+        <div id="tab-permanent" class="tab-pane hidden">
+          <p class="modal-desc">
+            Yeni eklediğiniz bir dersi tüm öğrencilerinizin görebilmesi için GitHub'a kalıcı olarak kaydetmenin 2 kolay yolu vardır:
+          </p>
+          <div class="info-card" style="margin-bottom:0.85rem;">
+            <h4>1️⃣ Klasöre Kopyala &amp; Tek Tıkla Çalıştır (Otomatik Script)</h4>
+            <p>
+              Bilgisayarınızdaki <code>.pptx</code> dosyasını proje içindeki <code>pptx/</code> klasörüne atın ve 
+              <code>pptx-entegre-et.bat</code> dosyasına çift tıklayın. Script otomatik olarak:
+            </p>
+            <ul style="margin-top:0.5rem; padding-left:1.2rem; color:#cbd5e1; font-size:0.88rem;">
+              <li>PowerPoint içindeki metin ve resimleri ayıklar (<strong>Yöntem 1</strong>),</li>
+              <li>Bilgisayarınızda PowerPoint yüklüyse her slaytın 1920x1080 PNG görüntüsünü üretir (<strong>Yöntem 2</strong>),</li>
+              <li>Orijinal <code>.pptx</code> dosyasını indirme butonuna bağlar (<strong>Yöntem 3</strong>).</li>
+            </ul>
+          </div>
+          <div class="info-card">
+            <h4>2️⃣ İçe Aktarılan Dersin Kodunu İndir</h4>
+            <p style="margin-bottom:0.65rem;">
+              Tarayıcı üzerinden yüklediğiniz derslerin hazır veri yapısını buradan kopyalayabilirsiniz:
+            </p>
+            <button id="btn-export-json" class="btn btn-secondary">📋 Eklenen Derslerin Verisini (JSON) Kopyala</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
