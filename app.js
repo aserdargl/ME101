@@ -1,34 +1,33 @@
 // ============================================================================
-// ME 101 - MAKİNE MÜHENDİSLİĞİNE GİRİŞ | 3 YÖNTEMLİ DERS VE SUNUM MOTORU
+// ME 101 — MAKİNE MÜHENDİSLİĞİNE GİRİŞ | AKADEMİK DERS VE SUNUM MOTORU
 // ============================================================================
 
-// Yardımcı: Simülasyon HTML şablonları (İçe aktarılan PPTX'lere de eklenebilir)
 function getSimulationSlideObject(simType, weekLabel) {
   if (simType === "gear") {
     return {
-      kicker: `${weekLabel} • ETKİLEŞİMLİ LABORATUVAR`,
-      title: "Canlı Simülasyon: Dişli Çarklar, Çevrim Oranı ve Tork İletimi",
+      kicker: `${weekLabel} • UYGULAMA VE SİMÜLASYON`,
+      title: "Dişli Çarklar, Çevrim Oranı ve Tork İletimi",
       pptSummaryBullets: [
         "Çevrim Oranı: i = N₂ / N₁ = ω₁ / ω₂ = T₂ / T₁",
-        "Hız düşürülürken döndürme momenti (tork) aynı oranda artar.",
-        "Canlı simülasyon üzerinden N₁, N₂, devir ve tork değerlerini test edin."
+        "Açısal hız düşürülürken döndürme momenti (tork) aynı oranda artar.",
+        "Diş sayıları (N₁, N₂), giriş devri ve giriş torku parametrelerinin analizi."
       ],
       html: `
         <p class="lead">
-          Dişli çarklar hızı düşürüp <strong>torku (döndürme momentini) artırmak</strong> veya hızı artırmak için kullanılır. 
-          Aşağıdaki sürgüleri değiştirerek dişlilerin dönüşünü canlı inceleyin:
+          Dişli çark mekanizmaları açısal hızı düşürüp <strong>döndürme momentini (torku) artırmak</strong> veya hızı yükseltmek amacıyla kullanılır. 
+          Aşağıdaki parametreleri değiştirerek mekanizmanın kinematik ve dinamik davranışını inceleyiniz:
         </p>
         <div class="sim-box interactive-zone" data-sim="gear">
           <div class="sim-header">
-            <span class="sim-title">⚙️ İnteraktif Dişli Çark Çifti (i = N₂ / N₁ = ω₁ / ω₂ = T₂ / T₁)</span>
-            <span style="font-size:0.8rem; color:#94a3b8;">Sunum sırasında sürgüleri hareket ettirebilirsiniz</span>
+            <span class="sim-title">TEKNİK SİMÜLASYON I — DÜZ DİŞLİ ÇARK ÇİFTİ (i = N₂ / N₁ = ω₁ / ω₂ = T₂ / T₁)</span>
+            <span style="font-size:0.78rem; color:#6e6256;">Parametreleri değiştirmek için sürgüleri kullanınız</span>
           </div>
           <div class="slide-grid-2">
-            <div style="display:flex; justify-content:center; align-items:center; background:#070b14; border-radius:10px; padding:0.5rem;">
+            <div class="sim-canvas-wrap">
               <canvas id="gear-canvas" width="460" height="230"></canvas>
             </div>
             <div>
-              <div class="sim-controls" style="grid-template-columns:1fr;">
+              <div class="sim-controls" style="grid-template-columns:1fr; margin-top:0;">
                 <div class="control-group">
                   <label>Giriş Dişlisi Diş Sayısı (N₁): <strong id="val-n1">12 Diş</strong></label>
                   <input type="range" id="inp-n1" min="8" max="24" step="2" value="12" />
@@ -38,11 +37,11 @@ function getSimulationSlideObject(simType, weekLabel) {
                   <input type="range" id="inp-n2" min="10" max="36" step="2" value="24" />
                 </div>
                 <div class="control-group">
-                  <label>Motor Giriş Devri (n₁): <strong id="val-rpm1">60 d/dk</strong></label>
+                  <label>Giriş Devri (n₁): <strong id="val-rpm1">60 d/dk</strong></label>
                   <input type="range" id="inp-rpm1" min="10" max="120" step="5" value="60" />
                 </div>
                 <div class="control-group">
-                  <label>Giriş Torku (T₁): <strong id="val-t1">50 N·m</strong></label>
+                  <label>Giriş Momenti (T₁): <strong id="val-t1">50 N·m</strong></label>
                   <input type="range" id="inp-t1" min="10" max="200" step="10" value="50" />
                 </div>
               </div>
@@ -50,7 +49,7 @@ function getSimulationSlideObject(simType, weekLabel) {
           </div>
           <div class="sim-readout">
             <div class="readout-item">
-              <span class="readout-label">Çevrim Oranı (i = N₂/N₁)</span>
+              <span class="readout-label">Çevrim Oranı (i = N₂ / N₁)</span>
               <span class="readout-val" id="out-ratio">2.00</span>
             </div>
             <div class="readout-item">
@@ -58,7 +57,7 @@ function getSimulationSlideObject(simType, weekLabel) {
               <span class="readout-val" id="out-rpm2">30.0 d/dk</span>
             </div>
             <div class="readout-item">
-              <span class="readout-label">Çıkış Torku (T₂ = i · T₁)</span>
+              <span class="readout-label">Çıkış Momenti (T₂ = i · T₁)</span>
               <span class="readout-val" id="out-t2">100.0 N·m</span>
             </div>
           </div>
@@ -68,25 +67,25 @@ function getSimulationSlideObject(simType, weekLabel) {
   }
   if (simType === "beam") {
     return {
-      kicker: `${weekLabel} • ETKİLEŞİMLİ LABORATUVAR`,
-      title: "Canlı Simülasyon: Ankastre Kiriş Eğilme ve Gerilme Analizi",
+      kicker: `${weekLabel} • UYGULAMA VE SİMÜLASYON`,
+      title: "Ankastre Kiriş Eğilme ve Gerilme Analizi",
       pptSummaryBullets: [
-        "Maksimum Eğilme Momenti: M_max = F · L (Ankastre mesnette)",
-        "Maksimum Uç Çökmesi (Sehim): δ_max = (F · L³) / (3 · E · I)",
-        "Malzeme değişiminin (Çelik, Alüminyum, Titanyum) rijitliğe etkisi"
+        "Maksimum Eğilme Momenti: M_max = F · L (Ankastre mesnet kesitinde)",
+        "Maksimum Uç Sehimi (Çökme): δ_max = (F · L³) / (3 · E · I)",
+        "Malzeme Elastisite Modülünün (E) şekil değiştirmeye etkisi"
       ],
       html: `
         <p class="lead">
-          Sol ucundan duvara sabitlenmiş (ankastre) bir kirişin ucuna <strong>F kuvveti</strong> uygulandığında oluşan 
-          çökmeyi (δ_max) ve gerilmeyi (σ_max) malzeme değiştirerek test edin:
+          Sol ucundan ankastre mesnetlenmiş bir kirişin serbest ucuna tekil <strong>F kuvveti</strong> uygulandığında oluşan 
+          elastik eğriyi (δ_max) ve normal gerilme dağılımını (σ_max) farklı mühendislik malzemeleri için karşılaştırınız:
         </p>
         <div class="sim-box interactive-zone" data-sim="beam">
           <div class="sim-header">
-            <span class="sim-title">📊 Ankastre Kiriş FEA Gerilme &amp; Sehim Simülatörü</span>
-            <span id="beam-safety-badge" style="font-size:0.8rem; font-weight:700; color:#34d399;">✅ EMNİYETLİ BÖLGE</span>
+            <span class="sim-title">TEKNİK SİMÜLASYON II — ANKASTRE KİRİŞ GERİLME VE SEHİM ANALİZİ</span>
+            <span id="beam-safety-badge" style="font-size:0.78rem; font-weight:700; color:#2d6a4f;">EMNİYETLİ BÖLGE</span>
           </div>
           <div class="slide-grid-2">
-            <div style="display:flex; justify-content:center; align-items:center; background:#070b14; border-radius:10px; padding:0.5rem;">
+            <div class="sim-canvas-wrap">
               <canvas id="beam-canvas" width="460" height="220"></canvas>
             </div>
             <div class="sim-controls" style="grid-template-columns:1fr; margin-top:0;">
@@ -95,15 +94,15 @@ function getSimulationSlideObject(simType, weekLabel) {
                 <input type="range" id="inp-beam-f" min="200" max="5000" step="100" value="1500" />
               </div>
               <div class="control-group">
-                <label>Kiriş Uzunluğu (L): <strong id="val-beam-l">1.2 m</strong></label>
+                <label>Kiriş Açıklığı (L): <strong id="val-beam-l">1.2 m</strong></label>
                 <input type="range" id="inp-beam-l" min="0.5" max="2.5" step="0.1" value="1.2" />
               </div>
               <div class="control-group">
                 <label>Kiriş Malzemesi (Elastisite Modülü E):</label>
                 <select id="inp-beam-mat">
-                  <option value="210|250|Yapı Çeliği (S235)">Yapı Çeliği S235 (E = 210 GPa, σ_akma = 250 MPa)</option>
-                  <option value="70|270|Alüminyum 6061-T6">Alüminyum 6061-T6 (E = 70 GPa, σ_akma = 270 MPa)</option>
-                  <option value="114|880|Titanyum Alaşımı Ti-6Al-4V">Titanyum Ti-6Al-4V (E = 114 GPa, σ_akma = 880 MPa)</option>
+                  <option value="210|250|Yapı Çeliği (S235)">Yapı Çeliği S235 (E = 210 GPa, R_e = 250 MPa)</option>
+                  <option value="70|270|Alüminyum 6061-T6">Alüminyum 6061-T6 (E = 70 GPa, R_e = 270 MPa)</option>
+                  <option value="114|880|Titanyum Alaşımı Ti-6Al-4V">Titanyum Ti-6Al-4V (E = 114 GPa, R_e = 880 MPa)</option>
                 </select>
               </div>
             </div>
@@ -114,11 +113,11 @@ function getSimulationSlideObject(simType, weekLabel) {
               <span class="readout-val" id="out-beam-m">1800 N·m</span>
             </div>
             <div class="readout-item">
-              <span class="readout-label">Maks. Uç Çökmesi (δ_max)</span>
+              <span class="readout-label">Maks. Uç Sehimi (δ_max)</span>
               <span class="readout-val" id="out-beam-def">6.86 mm</span>
             </div>
             <div class="readout-item">
-              <span class="readout-label">Maks. Gerilme (σ_max)</span>
+              <span class="readout-label">Maks. Eğilme Gerilmesi (σ_max)</span>
               <span class="readout-val" id="out-beam-stress">108.0 MPa</span>
             </div>
           </div>
@@ -128,24 +127,24 @@ function getSimulationSlideObject(simType, weekLabel) {
   }
   if (simType === "tensile") {
     return {
-      kicker: `${weekLabel} • ETKİLEŞİMLİ LABORATUVAR`,
-      title: "Canlı Simülasyon: Çekme Deneyi ve σ - ε Diyagramı",
+      kicker: `${weekLabel} • UYGULAMA VE SİMÜLASYON`,
+      title: "Çekme Deneyi ve Gerilme – Birim Şekil Değiştirme (σ - ε) Diyagramı",
       pptSummaryBullets: [
-        "Elastik Bölge: Hooke Yasası (σ = E · ε) geçerlidir, kalıcı uzama olmaz.",
-        "Akma Noktası (Re): Kalıcı plastik şekil değiştirmenin başladığı sınır.",
+        "Elastik Bölge: Hooke Yasası (σ = E · ε) geçerlidir, kalıcı şekil değişimi oluşmaz.",
+        "Akma Sınırı (Re): Kalıcı plastik deformasyonun başladığı kritik gerilme.",
         "Pekleşme, Çekme Dayanımı (Rm), Boyun Verme (Necking) ve Kopma."
       ],
       html: `
         <p class="lead">
-          Sürgüyü sağa kaydırarak çelik numuneye çekme kuvveti uygulayın; numunenin <strong>elastik uzamasını, akmasını, boyun vermesini ve kopmasını</strong> canlı izleyin:
+          Standart bir metal çekme numunesine eksenel yük uygulandığında oluşan <strong>elastik uzama, akma sahanlığı, pekleşme, boyun verme ve kopma</strong> evrelerini inceleyiniz:
         </p>
         <div class="sim-box interactive-zone" data-sim="tensile">
           <div class="sim-header">
-            <span class="sim-title">🧪 İnteraktif Çekme Deneyi (Tensile Test)</span>
-            <span id="tensile-region-badge" style="font-size:0.82rem; font-weight:700; color:#38bdf8;">Bölge: Elastik Bölge (Kalıcı Deformasyon Yok)</span>
+            <span class="sim-title">TEKNİK SİMÜLASYON III — TEK EKSENLİ ÇEKME DENEYİ</span>
+            <span id="tensile-region-badge" style="font-size:0.78rem; font-weight:700; color:#5c3d28;">Bölge I: Elastik Bölge</span>
           </div>
-          <div style="display:flex; justify-content:center; align-items:center; background:#070b14; border-radius:10px; padding:0.6rem;">
-            <canvas id="tensile-canvas" width="760" height="245"></canvas>
+          <div class="sim-canvas-wrap">
+            <canvas id="tensile-canvas" width="760" height="240"></canvas>
           </div>
           <div class="sim-controls" style="grid-template-columns: 2fr 1fr; align-items:center;">
             <div class="control-group">
@@ -153,12 +152,12 @@ function getSimulationSlideObject(simType, weekLabel) {
               <input type="range" id="inp-strain" min="0" max="25" step="0.2" value="1" />
             </div>
             <div style="display:flex; gap:0.5rem;">
-              <button id="btn-play-tensile" class="btn btn-primary" style="width:100%; justify-content:center;">▶ Deneyi Otomatik Oynat</button>
+              <button id="btn-play-tensile" class="btn btn-primary" style="width:100%; justify-content:center;">Deneyi Otomatik Başlat</button>
             </div>
           </div>
           <div class="sim-readout">
             <div class="readout-item">
-              <span class="readout-label">Anlık Gerilme (σ)</span>
+              <span class="readout-label">Anlık Mühendislik Gerilmesi (σ)</span>
               <span class="readout-val" id="out-tensile-sigma">210 MPa</span>
             </div>
             <div class="readout-item">
@@ -176,29 +175,29 @@ function getSimulationSlideObject(simType, weekLabel) {
   }
   return {
     kicker: `${weekLabel} • MEKANİZMA TEKNİĞİ`,
-    title: "Krank-Biyel (Slider-Crank) Mekanizması",
+    title: "Krank-Biyel (Piston-Silindir) Mekanizması Kinematiği",
     pptSummaryBullets: [
-      "Tam dönme hareketini doğrusal gidip-gelme hareketine dönüştürür.",
-      "Kurs Boyu (Strok): H = 2 · r (ÜÖN ile AÖN arası mesafe)",
+      "Tam dönme hareketini doğrusal öteleme hareketine dönüştürür.",
+      "Kurs Boyu (Strok): H = 2 · r (Üst Ölü Nokta ile Alt Ölü Nokta arası)",
       "Anlık Piston Hızı: Vp = r · ω · (sin θ + (λ/2) · sin 2θ)"
     ],
     html: `
       <p class="lead">
-        İçten yanmalı motorlardan hava kompresörlerine kadar en yaygın kullanılan mekanizmadır. 
-        Krankın <strong>tam dönme hareketini</strong>, pistonun <strong>gidip-gelme (öteleme) hareketine</strong> dönüştürür:
+        İçten yanmalı motorlar ve pistonlu kompresörlerin temelini oluşturan krank-biyel mekanizması, 
+        krank milinin <strong>sürekli dönme hareketini</strong> pistonun <strong>doğrusal öteleme hareketine</strong> dönüştürür:
       </p>
       <div class="sim-box interactive-zone" data-sim="crank">
         <div class="sim-header">
-          <span class="sim-title">🚗 Canlı Krank-Biyel ve Piston Kinematiği Simülasyonu</span>
-          <span style="font-size:0.8rem; color:#94a3b8;">ÜÖN: Üst Ölü Nokta | AÖN: Alt Ölü Nokta</span>
+          <span class="sim-title">TEKNİK SİMÜLASYON IV — KRANK-BİYEL KİNEMATİĞİ</span>
+          <span style="font-size:0.78rem; color:#6e6256;">ÜÖN: Üst Ölü Nokta | AÖN: Alt Ölü Nokta</span>
         </div>
         <div class="slide-grid-2">
-          <div style="display:flex; justify-content:center; align-items:center; background:#070b14; border-radius:10px; padding:0.5rem;">
+          <div class="sim-canvas-wrap">
             <canvas id="crank-canvas" width="460" height="225"></canvas>
           </div>
           <div class="sim-controls" style="grid-template-columns:1fr; margin-top:0;">
             <div class="control-group">
-              <label>Krank Dönüş Hızı (RPM): <strong id="val-crank-rpm">60 d/dk</strong></label>
+              <label>Krank Açısal Hızı (n): <strong id="val-crank-rpm">60 d/dk</strong></label>
               <input type="range" id="inp-crank-rpm" min="0" max="180" step="5" value="60" />
             </div>
             <div class="control-group">
@@ -234,119 +233,119 @@ const LECTURES = [
   {
     id: "week-1",
     week: "1. Hafta",
-    title: "Makine Mühendisliği Nedir? Tarihçe, Temel Alanlar ve Güç İletimi",
+    title: "Makine Mühendisliğine Giriş, Tarihsel Gelişim ve Temel Disiplinler",
     description:
-      "Makine mühendisliğinin tanımı, Sanayi Devrimleri, 5 ana anabilim dalı ve canlı dişli çark mekanizması üzerinde tork-devir simülasyonu.",
+      "Makine mühendisliğinin tanımı, Sanayi Devrimleri, beş temel anabilim dalı ve dişli çark mekanizmaları üzerinde güç/moment iletimi analizi.",
     pptxUrl: "pptx/ME101-Hafta1.pptx",
-    features: ["⚙️ Canlı Dişli Simülasyonu", "🖼️ Hibrit PPT Görsel Modu", "📥 PPTX İndirilebilir"],
+    features: ["Dişli Çark Simülasyonu", "Hibrit Slayt Modu", "PPTX Arşivi"],
     slides: [
       {
-        kicker: "1. HAFTA • GİRİŞ",
-        title: "Makine Mühendisliği Nedir?",
+        kicker: "1. HAFTA • BÖLÜM I",
+        title: "Makine Mühendisliğinin Tanımı ve Kapsamı",
         pptSummaryBullets: [
-          "Fizik, matematik ve malzeme bilimi ilkeleriyle enerji ve hareket sistemleri tasarımı.",
-          "Fikirden ürüne: Doğadaki enerjiyi faydalı mekanik işe dönüştürür.",
-          "Güvenlik ve Mukavemet: Kırılmadan, eğilmeden ve yorulmadan çalışma.",
-          "Temel Denklem: Güç (P) = Tork (T) × Açısal Hız (ω)"
+          "Fizik, matematik ve malzeme bilimi ilkeleriyle mekanik ve ısıl sistemlerin tasarımı.",
+          "Enerji dönüşümü: Isı, akışkan ve elektrik enerjisinin mekanik işe dönüştürülmesi.",
+          "Yapısal bütünlük: Sistemlerin emniyetli, verimli ve uzun ömürlü çalışmasının sağlanması.",
+          "Temel İlişki: Güç (P) = Döndürme Momenti (T) × Açısal Hız (ω)"
         ],
         html: `
           <p class="lead">
-            Fizik, matematik ve malzeme bilimi ilkelerini kullanarak <strong>enerji dönüşümü</strong> ve 
-            <strong>hareket üreten sistemleri</strong> tasarlayan, analiz eden ve üreten temel mühendislik disiplinidir.
+            Makine mühendisliği; temel fizik, matematik ve malzeme bilimi yasalarını kullanarak <strong>enerji dönüşümü</strong> ve 
+            <strong>hareket üreten sistemleri</strong> tasarlayan, analiz eden ve imal eden mühendislik disiplinidir.
           </p>
           <div class="slide-grid-2">
             <ul class="bullet-list">
               <li class="fragment">
-                <span>💡</span>
-                <div><strong>Fikirden Ürüne:</strong> Doğadaki enerji kaynaklarını (ısı, akışkan, elektrik) faydalı mekanik işe dönüştürür.</div>
+                <span class="bullet-marker">I.</span>
+                <div><strong>Enerji ve Güç Dönüşümü:</strong> Doğadaki ısıl, hidrolik ve elektrik kaynaklarını faydalı mekanik işe dönüştüren sistemleri kurgular.</div>
               </li>
               <li class="fragment">
-                <span>🛡️</span>
-                <div><strong>Güvenlik ve Mukavemet:</strong> Sistemlerin kırılmadan, eğilmeden ve yorulmadan uzun ömürlü çalışmasını sağlar.</div>
+                <span class="bullet-marker">II.</span>
+                <div><strong>Mukavemet ve Güvenilirlik:</strong> Makine elemanlarının statik ve dinamik yükler altında kırılmadan, aşınmadan ve yorulmadan çalışmasını güvence altına alır.</div>
               </li>
               <li class="fragment">
-                <span>🤖</span>
-                <div><strong>Geleceğin Teknolojileri:</strong> Robotik, otonom araçlar, havacılık, biyomekanik ve yenilenebilir enerji sistemlerinin kalbidir.</div>
+                <span class="bullet-marker">III.</span>
+                <div><strong>İleri Uygulama Alanları:</strong> Savunma, havacılık, otomotiv, robotik, biyomekanik ve enerji santrallerinin temel yapı taşıdır.</div>
               </li>
             </ul>
             <div class="info-card fragment">
-              <h4>🎯 Bu Derste Neler Öğreneceğiz?</h4>
+              <h4>Dersin Temel Amacı</h4>
               <p style="margin-bottom:0.8rem;">
-                Bir makine mühendisinin dünyaya nasıl baktığını; kuvvet, gerilme, malzeme seçimi, mekanizmalar ve enerji ilkelerini görsel simülasyonlarla deneyimleyeceğiz.
+                Mühendislik problemlerinin formüle edilmesi, kuvvet-gerilme-malzeme ilişkisinin kurulması ve temel makine elemanlarının çalışma prensiplerinin incelenmesidir.
               </p>
               <div class="formula-box">
-                Güç (P) = Tork (T) × Açısal Hız (ω)
-                <span class="formula-sub">P [Watt] = T [N·m] × ω [rad/s]</span>
+                P = T · ω = (2 · π · n · T) / 60
+                <span class="formula-sub">P: Güç [W] &nbsp;|&nbsp; T: Döndürme Momenti [N·m] &nbsp;|&nbsp; ω: Açısal Hız [rad/s]</span>
               </div>
             </div>
           </div>
         `
       },
       {
-        kicker: "1. HAFTA • TARİHÇE",
-        title: "Sanayi Devrimleri ve Makine Mühendisliğinin Evrimi",
+        kicker: "1. HAFTA • BÖLÜM II",
+        title: "Endüstriyel Gelişim Süreci",
         pptSummaryBullets: [
-          "Endüstri 1.0 (1780'ler): James Watt buhar makinesi ve mekanizasyon.",
-          "Endüstri 2.0 (1870'ler): Seri üretim, elektrik ve içten yanmalı motorlar.",
-          "Endüstri 3.0 & 4.0: CNC, CAD/CAE, Robotik, 3B Baskı ve Dijital İkiz.",
-          "Mühendislik = Bilimsel Teori + Pratik Tasarım + Ekonomik Üretim"
+          "I. Sanayi Devrimi (1780): Buhar gücü ve mekanik tezgâhların doğuşu.",
+          "II. Sanayi Devrimi (1870): Seri üretim hatları, elektrik ve içten yanmalı motorlar.",
+          "III. ve IV. Sanayi Devrimi: CNC, CAD/CAE, robotik otomasyon ve dijital ikiz.",
+          "Mühendislik Tasarımı = Teorik Analiz + Deneysel Doğrulama + Ekonomik İmalat"
         ],
         html: `
           <p class="lead">
-            İnsanlık tarihindeki her büyük sıçrama, yeni bir makine veya enerji dönüşüm teknolojisiyle başlamıştır:
+            Üretim teknolojilerindeki tarihsel dönüm noktaları, makine mühendisliğinin geliştirdiği güç ve imalat yöntemleriyle şekillenmiştir:
           </p>
           <div class="slide-grid-3">
             <div class="info-card fragment">
-              <h4>🚂 Endüstri 1.0 (1780'ler)</h4>
-              <p><strong>Buhar Gücü ve Mekanizasyon:</strong> James Watt'ın buhar makinesini geliştirmesiyle kas gücünden makine gücüne geçiş.</p>
+              <h4>I. Sanayi Devrimi (1780)</h4>
+              <p><strong>Buhar Makinesi ve Mekanizasyon:</strong> James Watt'ın kondenserli buhar makinesi ile kas ve su gücünden termodinamik güç üretimine geçiş.</p>
             </div>
             <div class="info-card fragment">
-              <h4>⚡ Endüstri 2.0 (1870'ler)</h4>
-              <p><strong>Seri Üretim ve İçten Yanmalı Motorlar:</strong> Elektrik enerjisi, montaj hatları, Otto ve Diesel çevrimli motorlar.</p>
+              <h4>II. Sanayi Devrimi (1870)</h4>
+              <p><strong>Seri İmalat ve İçten Yanmalı Motorlar:</strong> Otto ve Diesel çevrimlerinin geliştirilmesi, standart yedek parça üretimi ve montaj hatları.</p>
             </div>
             <div class="info-card fragment">
-              <h4>🦾 Endüstri 3.0 & 4.0 (Günümüz)</h4>
-              <p><strong>CNC, Robotik ve Dijital İkiz:</strong> Bilgisayar destekli tasarım (CAD/CAE), eklemeli imalat (3B baskı) ve akıllı fabrikalar.</p>
+              <h4>III. &amp; IV. Sanayi Devrimi</h4>
+              <p><strong>Sayısal Kontrol ve Siber-Fiziksel Sistemler:</strong> CNC tezgâhlar, Sonlu Elemanlar Analizi (FEA), Hesaplamalı Akışkanlar Dinamiği (CFD) ve eklemeli imalat.</p>
             </div>
           </div>
-          <div class="formula-box fragment" style="margin-top:1.5rem;">
-            Mühendislik = Bilimsel Teori + Pratik Tasarım + Ekonomik Üretim
-            <span class="formula-sub">İyi bir mühendis, problemi en güvenli ve en optimum maliyetle çözen kişidir.</span>
+          <div class="formula-box fragment" style="margin-top:1.4rem;">
+            Mühendislik Çözümü = Bilimsel Doğruluk + Yapısal Emniyet + Optimum Maliyet
+            <span class="formula-sub">Mühendislik, kısıtlar altında en uygun (optimum) sistemi tasarlama sanatıdır.</span>
           </div>
         `
       },
       {
-        kicker: "1. HAFTA • ANABİLİM DALLARI",
-        title: "Makine Mühendisliğinin 5 Temel Sütunu",
+        kicker: "1. HAFTA • BÖLÜM III",
+        title: "Makine Mühendisliğinin Beş Ana Anabilim Dalı",
         pptSummaryBullets: [
-          "1. Konstrüksiyon ve İmalat (Makine elemanları, CAD, üretim)",
-          "2. Mekanik ve Mukavemet (Statik, FEA, gerilme analizi)",
-          "3. Termodinamik ve Isı Tekniği (Akışkanlar, ısı transferi, HVAC)",
-          "4. Makine Teorisi ve Kontrol (Mekanizmalar, titreşim, robotik)",
-          "5. Otomotiv ve Enerji Sistemleri (Taşıt dinamiği, güç aktarma)"
+          "01. Konstrüksiyon ve İmalat (Makine elemanları, CAD, talaşlı/talaşsız üretim)",
+          "02. Mekanik (Statik, mukavemet, elastisite, sonlu elemanlar analizi)",
+          "03. Termodinamik ve Isı Tekniği (Isı transferi, akışkanlar mekaniği, enerji)",
+          "04. Makine Teorisi, Sistem Dinamiği ve Kontrol (Mekanizmalar, titreşim, mekatronik)",
+          "05. Otomotiv ve Güç Aktarma Sistemleri (Taşıt mekaniği, motorlar, aerodinamik)"
         ],
         html: `
-          <p class="lead">Bölümümüzde eğitim boyunca karşılaşacağınız 5 ana uzmanlık alanı:</p>
+          <p class="lead">Makine mühendisliği lisans eğitimi ve akademik araştırmalar beş temel anabilim dalı üzerine inşa edilmiştir:</p>
           <ul class="bullet-list">
             <li class="fragment">
-              <span>1️⃣</span>
-              <div><strong>Konstrüksiyon ve İmalat:</strong> Makine elemanları (dişliler, rulmanlar, miller), CAD tasarımı, talaşlı ve talaşsız üretim yöntemleri.</div>
+              <span class="bullet-marker">01</span>
+              <div><strong>Konstrüksiyon ve İmalat:</strong> Makine elemanları (dişliler, yataklar, bağlantılar), bilgisayar destekli tasarım (CAD) ve modern üretim yöntemleri.</div>
             </li>
             <li class="fragment">
-              <span>2️⃣</span>
-              <div><strong>Mekanik (Katı Cisimler Mekaniği):</strong> Statik, mukavemet, sonlu elemanlar analizi (FEA) ve kompozit/metal malzemeler.</div>
+              <span class="bullet-marker">02</span>
+              <div><strong>Mekanik (Katı Cisimler Mekaniği):</strong> Statik, mukavemet, gerilme analizi, kırılma mekaniği ve kompozit malzemeler.</div>
             </li>
             <li class="fragment">
-              <span>3️⃣</span>
-              <div><strong>Termodinamik ve Isı Tekniği:</strong> Isı transferi, akışkanlar mekaniği, motorlar, türbinler, iklimlendirme (HVAC) ve enerji.</div>
+              <span class="bullet-marker">03</span>
+              <div><strong>Termodinamik ve Isı Tekniği:</strong> Termodinamik yasaları, akışkanlar mekaniği, ısı geçişi, güç santralleri ve iklimlendirme (HVAC).</div>
             </li>
             <li class="fragment">
-              <span>4️⃣</span>
-              <div><strong>Makine Teorisi, Sistem Dinamiği ve Kontrol:</strong> Mekanizma tekniği, mekanik titreşimler, mekatronik, otomatik kontrol ve robotik.</div>
+              <span class="bullet-marker">04</span>
+              <div><strong>Makine Teorisi, Sistem Dinamiği ve Kontrol:</strong> Mekanizma tekniği, mekanik titreşimler, otomatik kontrol sistemleri ve robotik.</div>
             </li>
             <li class="fragment">
-              <span>5️⃣</span>
-              <div><strong>Otomotiv / Enerji Sistemleri:</strong> Taşıt dinamiği, hibrit/elektrikli güç aktarma organları ve aerodinamik.</div>
+              <span class="bullet-marker">05</span>
+              <div><strong>Otomotiv ve Enerji Sistemleri:</strong> Taşıt dinamiği, içten yanmalı ve elektrikli tahrik sistemleri, alternatif enerji dönüşümleri.</div>
             </li>
           </ul>
         `
@@ -359,45 +358,45 @@ const LECTURES = [
     week: "2. Hafta",
     title: "Kuvvet, Moment ve Mukavemet: Kiriş Eğilme Analizi",
     description:
-      "Statik denge denklemleri, eğilme momenti kavramı ve ankastre bir kirişin yük altında çökme/gerilme analizi (FEA renk haritası simülasyonu).",
+      "Statik denge denklemleri, iç kuvvetler, eğilme momenti kavramı ve ankastre kirişlerin yük altında sehim/gerilme analizi.",
     pptxUrl: "pptx/ME101-Hafta2.pptx",
-    features: ["📊 Ankastre Kiriş FEA", "🖼️ Hibrit PPT Görsel Modu", "📥 PPTX İndirilebilir"],
+    features: ["Ankastre Kiriş Analizi", "Hibrit Slayt Modu", "PPTX Arşivi"],
     slides: [
       {
         kicker: "2. HAFTA • STATİK VE MUKAVEMET",
-        title: "Kuvvet, Moment ve Statik Denge",
+        title: "Kuvvet, Moment ve Statik Denge İlkeleri",
         pptSummaryBullets: [
-          "Düzlemde Statik Denge: ∑Fx = 0 , ∑Fy = 0 , ∑M_A = 0",
-          "Kuvvet (F [Newton]): Hareket veya şekil değiştirme etkisi.",
-          "Moment (M = F · d [N·m]): Kuvvetin döndürme ve eğme etkisi.",
-          "Mukavemet: Gerçek cisimler yük altında esner ve iç gerilme (σ) oluşur."
+          "Düzlemde Statik Denge Denklemleri: ∑Fx = 0 , ∑Fy = 0 , ∑M_A = 0",
+          "Kuvvet (F [N]): Cisimlerin hareket veya şekil değiştirme durumunu değiştiren etki.",
+          "Moment (M = F · d [N·m]): Kuvvetin bir eksene göre döndürme/eğme etkisi.",
+          "Mukavemet Analizi: Dış yükler altında oluşan iç gerilmelerin (σ, τ) hesabı."
         ],
         html: `
           <p class="lead">
-            Bir makine parçasının veya yapının yük altında dengede kalabilmesi için Newton'un birinci yasası gereği 
-            tüm kuvvetlerin ve momentlerin toplamı sıfır olmalıdır.
+            Bir taşıyıcı sistemin veya makine parçasının statik dengede kalabilmesi için üzerine etkiyen 
+            tüm dış kuvvetlerin ve momentlerin bileşkesi sıfır olmalıdır.
           </p>
           <div class="slide-grid-2">
             <div>
               <div class="formula-box fragment">
                 ∑ Fₓ = 0 , &nbsp; ∑ Fᵧ = 0 , &nbsp; ∑ M_A = 0
-                <span class="formula-sub">Düzlemde Statik Denge Denklemleri</span>
+                <span class="formula-sub">İki Boyutlu Rijit Cisim Denge Denklemleri</span>
               </div>
               <ul class="bullet-list">
                 <li class="fragment">
-                  <span>➡️</span>
-                  <div><strong>Kuvvet (F [Newton]):</strong> Cisimleri hareket ettirmeye veya şeklini değiştirmeye çalışan etkidir.</div>
+                  <span class="bullet-marker">I.</span>
+                  <div><strong>Kuvvet (F [Newton]):</strong> Doğrultusu, yönü ve şiddeti olan vektörel büyüklüktür.</div>
                 </li>
                 <li class="fragment">
-                  <span>🔄</span>
-                  <div><strong>Moment (M = F · d [N·m]):</strong> Kuvvetin bir dönme noktasına veya mesnete göre oluşturduğu döndürme/eğme etkisidir.</div>
+                  <span class="bullet-marker">II.</span>
+                  <div><strong>Moment (M = F · d [N·m]):</strong> Kuvvetin uygulama hattının referans noktasına olan dik uzaklığı ile çarpımıdır.</div>
                 </li>
               </ul>
             </div>
             <div class="info-card fragment">
-              <h4>🔍 Neden Sadece Statik Yetmez?</h4>
+              <h4>Rijit Cisimden Şekil Değiştiren Cisme Geçiş</h4>
               <p>
-                Statik dersinde cisimleri <em>rijit (şekil değiştirmeyen)</em> kabul ederiz. Ancak gerçekte her çelik mil, uçak kanadı veya vinç kolu yük altında esner ve içinde <strong>Gerilme (Stress)</strong> oluşur!
+                Statik analizde cisimler <em>rijit</em> kabul edilirken, mukavemet dersinde gerçek malzemelerin yük altında esnediği ve kesit içinde <strong>Gerilme (σ)</strong> oluştuğu dikkate alınır.
               </p>
             </div>
           </div>
@@ -409,46 +408,46 @@ const LECTURES = [
   {
     id: "week-3",
     week: "3. Hafta",
-    title: "Malzeme Bilimi: Çekme Deneyi ve Gerilme-Şekildeğiştirme (σ - ε)",
+    title: "Malzeme Bilimi: Çekme Deneyi ve Gerilme – Şekil Değiştirme (σ - ε)",
     description:
-      "Metallerin mekanik özellikleri, Hooke Yasası, elastik/plastik bölge, boyun verme ve interaktif çekme deneyi simülasyonu.",
+      "Mühendislik malzemelerinin mekanik davranışları, Hooke Yasası, elastik/plastik şekil değiştirme ve tek eksenli çekme deneyi.",
     pptxUrl: "pptx/ME101-Hafta3.pptx",
-    features: ["🧪 Canlı Çekme Deneyi", "🖼️ Hibrit PPT Görsel Modu", "📥 PPTX İndirilebilir"],
+    features: ["Çekme Deneyi Simülasyonu", "Hibrit Slayt Modu", "PPTX Arşivi"],
     slides: [
       {
         kicker: "3. HAFTA • MALZEME BİLİMİ",
-        title: "Gerilme (σ) ve Birim Şekil Değiştirme (ε)",
+        title: "Normal Gerilme (σ) ve Birim Şekil Değiştirme (ε)",
         pptSummaryBullets: [
           "Normal Gerilme: σ = F / A₀ [MPa = N/mm²]",
           "Birim Şekil Değiştirme: ε = ΔL / L₀ [Boyutsuz uzama oranı]",
-          "Hooke Yasası (Elastik Bölge): σ = E · ε",
-          "Elastisite Modülü (E): Malzemenin esnemeye karşı rijitliğini gösterir."
+          "Hooke Yasası (Lineer Elastik Bölge): σ = E · ε",
+          "Elastisite Modülü (E): Malzemenin elastik şekil değiştirmeye karşı direnci."
         ],
         html: `
           <p class="lead">
-            Bir malzemenin ne kadar sağlam olduğunu anlamak için boyutlardan bağımsız iki temel büyüklük tanımlanır:
+            Malzemelerin mekanik dayanımını geometri ve boyuttan bağımsız olarak tanımlamak için iki temel büyüklük kullanılır:
           </p>
           <div class="slide-grid-2">
             <div class="info-card fragment">
-              <h4>1. Normal Gerilme (σ - Sigma)</h4>
-              <p>Birim kesit alanına düşen iç kuvvettir. Birimi <strong>MPa (N/mm²)</strong>'dir.</p>
+              <h4>I. Mühendislik Gerilmesi (σ)</h4>
+              <p>Birim başlangıç kesit alanına etkiyen dik iç kuvvettir. Birimi <strong>MPa (N/mm²)</strong> olarak ifade edilir.</p>
               <div class="formula-box">
                 σ = F / A₀
-                <span class="formula-sub">F: Kuvvet [N] &nbsp;|&nbsp; A₀: Başlangıç Kesit Alanı [mm²]</span>
+                <span class="formula-sub">F: Eksenel Kuvvet [N] &nbsp;|&nbsp; A₀: İlk Kesit Alanı [mm²]</span>
               </div>
             </div>
             <div class="info-card fragment">
-              <h4>2. Birim Şekil Değiştirme (ε - Epsilon)</h4>
-              <p>Boyutsuz uzama oranıdır (Genellikle % veya mm/mm olarak ifade edilir).</p>
+              <h4>II. Birim Şekil Değiştirme (ε)</h4>
+              <p>Numunedeki boy değişiminin başlangıç ölçü boyuna oranıdır.</p>
               <div class="formula-box">
                 ε = ΔL / L₀ = (L - L₀) / L₀
                 <span class="formula-sub">L₀: İlk Ölçü Boyu &nbsp;|&nbsp; ΔL: Uzama Miktarı</span>
               </div>
             </div>
           </div>
-          <div class="formula-box fragment" style="margin-top:1.2rem;">
-            Hooke Yasası (Elastik Bölge): &nbsp; σ = E · ε
-            <span class="formula-sub">E (Elastisite / Young Modülü): Malzemenin rijitliğini (esnemeye karşı direncini) gösterir.</span>
+          <div class="formula-box fragment" style="margin-top:1.1rem;">
+            Hooke Yasası: &nbsp; σ = E · ε
+            <span class="formula-sub">E (Young / Elastisite Modülü): Doğrunun eğimi olup malzemenin rijitliğini temsil eder.</span>
           </div>
         `
       },
@@ -458,11 +457,11 @@ const LECTURES = [
   {
     id: "week-4",
     week: "4. Hafta",
-    title: "Mekanizma Tekniği: Krank-Biyel (Piston) Mekanizması",
+    title: "Mekanizma Tekniği: Krank-Biyel Mekanizması Kinematiği",
     description:
-      "Dönme hareketini doğrusal harekete çeviren krank-biyel mekanizmasının kinematik analizi ve canlı motor pistonu simülasyonu.",
+      "Dönme hareketini doğrusal harekete dönüştüren krank-biyel mekanizmasının konum, hız ve strok analizi.",
     pptxUrl: "pptx/ME101-Hafta4.pptx",
-    features: ["🚗 Canlı Piston Animasyonu", "🖼️ Hibrit PPT Görsel Modu", "📥 PPTX İndirilebilir"],
+    features: ["Krank-Biyel Simülasyonu", "Hibrit Slayt Modu", "PPTX Arşivi"],
     slides: [getSimulationSlideObject("crank", "4. HAFTA")]
   }
 ];
@@ -476,18 +475,15 @@ let currentSlideIndex = 0;
 let animationFrameId = null;
 let allSlidesInPptVisualMode = false;
 
-// Simülasyon durum değişkenleri
 let gearAngle1 = 0;
 let gearAngle2 = 0;
 let crankAngle = 0;
 let tensileAutoTimer = null;
 
-// Kalem & Lazer durumu
 let isLaserActive = false;
 let isPenActive = false;
 let isDrawing = false;
 
-// DOM Referansları
 const catalogView = document.getElementById("catalog-view");
 const lectureView = document.getElementById("lecture-view");
 const lectureGrid = document.getElementById("lecture-grid");
@@ -504,9 +500,6 @@ const laserPointer = document.getElementById("laser-pointer");
 const drawingCanvas = document.getElementById("drawing-canvas");
 const drawCtx = drawingCanvas.getContext("2d");
 
-// ============================================================================
-// YÖNTEM 2: BİREBİR POWERPOINT GÖRSEL LEVHASI ÜRETİCİ (SVG / GÖRSEL)
-// ============================================================================
 function escapeXml(unsafe) {
   return String(unsafe || "")
     .replace(/&/g, "&amp;")
@@ -516,83 +509,79 @@ function escapeXml(unsafe) {
     .replace(/'/g, "&apos;");
 }
 
+// ============================================================================
+// YÖNTEM 2: BİREBİR POWERPOINT GÖRSEL LEVHASI ÜRETİCİ (KLASİK AKADEMİK TEMA)
+// ============================================================================
 function buildPptExactVisualHtml(slide, slideIdx, totalSlides, lectureWeek) {
-  // Eğer doğrudan dışa aktarılmış PNG/JPG slayt görseli varsa onu göster
   if (slide.pptImageUrl) {
     return `
       <div class="ppt-exact-frame">
         <img src="${slide.pptImageUrl}" alt="${escapeXml(slide.title)}" />
-        <span class="ppt-frame-badge">🖼️ Orijinal PowerPoint Slayt Görseli (Yöntem 2)</span>
+        <span class="ppt-frame-badge">Orijinal PowerPoint Slayt Görseli (Yöntem II)</span>
       </div>
     `;
   }
 
-  // Yoksa PowerPoint 16:9 (1280x720) teknik slayt levhasını birebir vektörel oluştur
   const bullets = slide.pptSummaryBullets || [
-    "ME 101 - Makine Mühendisliğine Giriş Ders Notu",
-    "Üstteki butondan İnteraktif Web Modu ile PPT Görsel Modu arasında geçiş yapabilirsiniz."
+    "ME 101 — Makine Mühendisliğine Giriş Ders Notu",
+    "Üstteki butondan Web Görünümü ile PPT Levha Görünümü arasında geçiş yapabilirsiniz."
   ];
 
   const bulletSvgItems = bullets
     .slice(0, 6)
     .map((b, i) => {
-      const y = 245 + i * 68;
+      const y = 250 + i * 68;
       const text = b.length > 78 ? b.slice(0, 75) + "..." : b;
       return `
         <g transform="translate(85, ${y})">
-          <rect x="0" y="-24" width="10" height="32" rx="4" fill="#38bdf8" />
-          <text x="26" y="0" fill="#f1f5f9" font-family="Inter, sans-serif" font-size="25" font-weight="500">${escapeXml(text)}</text>
+          <rect x="0" y="-20" width="8" height="24" fill="#5c3d28" />
+          <text x="24" y="0" fill="#241c15" font-family="Inter, sans-serif" font-size="24" font-weight="500">${escapeXml(text)}</text>
         </g>
       `;
     })
     .join("");
 
-  // Gömülü medya görseli varsa sağ tarafa yerleştir
   const embeddedImg =
     slide.extractedImages && slide.extractedImages.length > 0
       ? `<image href="${slide.extractedImages[0]}" x="820" y="210" width="380" height="360" preserveAspectRatio="xMidYMid contain" />`
       : `
-        <g transform="translate(920, 320)">
-          <circle cx="90" cy="90" r="85" fill="none" stroke="rgba(56,189,248,0.25)" stroke-width="10" stroke-dasharray="18 10" />
-          <circle cx="90" cy="90" r="45" fill="rgba(99,102,241,0.2)" stroke="#6366f1" stroke-width="4" />
-          <text x="90" y="98" text-anchor="middle" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="22" font-weight="700">ME 101</text>
+        <g transform="translate(940, 320)">
+          <rect x="0" y="0" width="220" height="180" fill="#f5f2eb" stroke="#bfaf9c" stroke-width="2" />
+          <line x1="0" y1="45" x2="220" y2="45" stroke="#d8cfc2" />
+          <text x="110" y="30" text-anchor="middle" fill="#5c3d28" font-family="JetBrains Mono, monospace" font-size="16" font-weight="700">ME 101</text>
+          <text x="110" y="105" text-anchor="middle" fill="#3b2818" font-family="Source Serif 4, Georgia, serif" font-size="22" font-weight="700">Teknik Şema</text>
+          <text x="110" y="135" text-anchor="middle" fill="#6e6256" font-family="Inter, sans-serif" font-size="14">Slayt ${slideIdx + 1}</text>
         </g>
       `;
 
   return `
     <div class="ppt-exact-frame">
       <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="pptBg_${slideIdx}" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#0f172a" />
-            <stop offset="100%" stop-color="#1e293b" />
-          </linearGradient>
-        </defs>
-        <rect width="1280" height="720" fill="url(#pptBg_${slideIdx})" />
-        <!-- Üst Şerit -->
-        <rect x="0" y="0" width="1280" height="14" fill="#38bdf8" />
-        <rect x="60" y="48" width="1160" height="110" rx="12" fill="rgba(15,23,42,0.75)" stroke="rgba(56,189,248,0.35)" />
-        <text x="88" y="85" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="18" font-weight="700">${escapeXml(slide.kicker || lectureWeek)}</text>
-        <text x="88" y="132" fill="#ffffff" font-family="Inter, sans-serif" font-size="34" font-weight="800">${escapeXml(slide.title)}</text>
+        <rect width="1280" height="720" fill="#fdfcfa" />
+        <!-- Üst Akademik Başlık Bandı -->
+        <rect x="0" y="0" width="1280" height="145" fill="#3b2818" />
+        <rect x="0" y="145" width="1280" height="6" fill="#8c5a3c" />
+        <text x="75" y="55" fill="#d8c3a5" font-family="JetBrains Mono, monospace" font-size="17" font-weight="600">${escapeXml(slide.kicker || lectureWeek)}</text>
+        <text x="75" y="108" fill="#ffffff" font-family="Source Serif 4, Georgia, serif" font-size="34" font-weight="700">${escapeXml(slide.title)}</text>
 
         <!-- Maddeler -->
         ${bulletSvgItems}
 
-        <!-- Sağ Görsel / Diyagram Alanı -->
+        <!-- Sağ Teknik Kutu / Görsel -->
         ${embeddedImg}
 
-        <!-- Alt Bilgi Çubuğu (PowerPoint Footer) -->
-        <line x1="60" y1="650" x2="1220" y2="650" stroke="rgba(148,163,184,0.25)" stroke-width="2" />
-        <text x="60" y="685" fill="#94a3b8" font-family="Inter, sans-serif" font-size="18">ME 101 - Makine Mühendisliğine Giriş | PowerPoint Slayt Görünümü (Yöntem 2)</text>
-        <text x="1220" y="685" text-anchor="end" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="18" font-weight="700">Slayt ${slideIdx + 1} / ${totalSlides}</text>
+        <!-- Alt Bilgi Çubuğu -->
+        <line x1="60" y1="650" x2="1220" y2="650" stroke="#d8cfc2" stroke-width="2" />
+        <text x="60" y="685" fill="#6e6256" font-family="Inter, sans-serif" font-size="17">ME 101 — Makine Mühendisliğine Giriş | PowerPoint Slayt Levhası</text>
+        <text x="1220" y="685" text-anchor="end" fill="#3b2818" font-family="JetBrains Mono, monospace" font-size="17" font-weight="700">${slideIdx + 1} / ${totalSlides}</text>
       </svg>
-      <span class="ppt-frame-badge">🖼️ Birebir PPT Görsel Modu (Yöntem 2)</span>
+      <span class="ppt-frame-badge">PPT Levha Görünümü (Yöntem II)</span>
     </div>
   `;
 }
 
 // ============================================================================
-// 1. KATALOG OLUŞTURMA (3 YÖNTEM BUTONLARI İLE)
+// 1. KATALOG OLUŞTURMA
 // ============================================================================
 function renderCatalog() {
   lectureGrid.innerHTML = "";
@@ -606,7 +595,7 @@ function renderCatalog() {
       <div>
         <div class="card-top-meta">
           <span class="week-tag">${lec.week}</span>
-          <span class="slide-count-tag">📑 ${lec.slides.length} Slayt / Bölüm</span>
+          <span class="slide-count-tag">${lec.slides.length} Bölüm / Slayt</span>
         </div>
         <h4>${lec.title}</h4>
         <p>${lec.description}</p>
@@ -615,14 +604,14 @@ function renderCatalog() {
         </div>
       </div>
       <div class="card-actions-3">
-        <button class="btn btn-secondary btn-read" data-id="${lec.id}" title="Yöntem 1 & 2: Ders notu ve hibrit görünümde aç">
-          📖 Oku
+        <button class="btn btn-secondary btn-read" data-id="${lec.id}">
+          Ders Notu
         </button>
-        <button class="btn btn-primary btn-present" data-id="${lec.id}" title="Tam ekran PowerPoint sunum modunda başlat">
-          🖥️ Sunumu Başlat
+        <button class="btn btn-primary btn-present" data-id="${lec.id}">
+          Sunumu Başlat
         </button>
-        <a href="${pptxHref}" download="${downloadFileName}" class="btn btn-secondary" title="Yöntem 3: Orijinal PowerPoint (.pptx) dosyasını indir">
-          📥 .PPTX
+        <a href="${pptxHref}" download="${downloadFileName}" class="btn btn-outline" title="Orijinal PowerPoint (.pptx) dosyasını indir">
+          PPTX İndir
         </a>
       </div>
     `;
@@ -638,7 +627,7 @@ function renderCatalog() {
 }
 
 // ============================================================================
-// 2. DERS AÇMA (OKUMA VEYA SUNUM MODU + YÖNTEM 1/2/3 DESTEĞİ)
+// 2. DERS AÇMA
 // ============================================================================
 function openLecture(lectureId, startInPresentation = false) {
   const lec = LECTURES.find((l) => l.id === lectureId);
@@ -653,7 +642,6 @@ function openLecture(lectureId, startInPresentation = false) {
   navCurrentLectureTitle.textContent = `${lec.week}: ${lec.title.split(":")[0]}`;
   presLectureName.textContent = `${lec.week}`;
 
-  // Yöntem 3: PPTX İndirme butonlarını güncelle
   const pptxHref = lec.pptxUrl || "pptx/ME101-Hafta1.pptx";
   const downloadName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-ME101.pptx`;
   const navDl = document.getElementById("btn-nav-download-pptx");
@@ -663,21 +651,20 @@ function openLecture(lectureId, startInPresentation = false) {
   bannerDl.href = pptxHref;
   bannerDl.setAttribute("download", downloadName);
 
-  // Slaytları oluştur (Her slaytta Yöntem 1 [Web] ve Yöntem 2 [Birebir PPT Görseli] katmanı bulunur)
   slidesContainer.innerHTML = "";
   lec.slides.forEach((s, idx) => {
     const slideEl = document.createElement("section");
     slideEl.className = "slide";
     slideEl.dataset.index = idx;
-    slideEl.dataset.viewMode = s.defaultViewMode || "web"; // "web" (Yöntem 1) veya "ppt" (Yöntem 2)
+    slideEl.dataset.viewMode = s.defaultViewMode || "web";
 
     const pptVisualHtml = buildPptExactVisualHtml(s, idx, lec.slides.length, lec.week);
     const isPptMode = slideEl.dataset.viewMode === "ppt";
 
     slideEl.innerHTML = `
       <div class="slide-top-controls interactive-zone">
-        <button class="btn-slide-mode-switch ${isPptMode ? "ppt-visual-active" : ""}" data-slide-idx="${idx}" title="Yöntem 1 (İnteraktif Web) ve Yöntem 2 (Birebir PPT Görseli) arasında geçiş yap">
-          ${isPptMode ? "📝 İnteraktif Web Moduna Geç" : "🖼️ Birebir PPT Görseli"}
+        <button class="btn-slide-mode-switch ${isPptMode ? "ppt-visual-active" : ""}" data-slide-idx="${idx}">
+          ${isPptMode ? "Web Görünümüne Geç" : "PPT Levha Görünümü"}
         </button>
         <span class="slide-number-badge">Slayt ${idx + 1} / ${lec.slides.length}</span>
       </div>
@@ -689,7 +676,6 @@ function openLecture(lectureId, startInPresentation = false) {
     slidesContainer.appendChild(slideEl);
   });
 
-  // Slayt üstü Yöntem 1 <-> Yöntem 2 geçiş butonlarını bağla
   document.querySelectorAll(".btn-slide-mode-switch").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -698,7 +684,6 @@ function openLecture(lectureId, startInPresentation = false) {
     });
   });
 
-  // Simülasyonları bağla
   initSimulations();
 
   if (startInPresentation) {
@@ -723,17 +708,16 @@ function toggleSingleSlideViewMode(slideIdx) {
     webBody.classList.add("hidden");
     pptBody.classList.remove("hidden");
     switchBtn.classList.add("ppt-visual-active");
-    switchBtn.textContent = "📝 İnteraktif Web Moduna Geç";
+    switchBtn.textContent = "Web Görünümüne Geç";
   } else {
     pptBody.classList.add("hidden");
     webBody.classList.remove("hidden");
     switchBtn.classList.remove("ppt-visual-active");
-    switchBtn.textContent = "🖼️ Birebir PPT Görseli";
+    switchBtn.textContent = "PPT Levha Görünümü";
   }
   updatePresentationHUD();
 }
 
-// Tüm slaytları topluca Yöntem 2 (PPT Görsel) veya Yöntem 1 (Web) moduna alma
 document.getElementById("btn-toggle-all-slide-modes").addEventListener("click", () => {
   allSlidesInPptVisualMode = !allSlidesInPptVisualMode;
   const targetMode = allSlidesInPptVisualMode ? "ppt" : "web";
@@ -744,8 +728,8 @@ document.getElementById("btn-toggle-all-slide-modes").addEventListener("click", 
     }
   });
   document.getElementById("btn-toggle-all-slide-modes").textContent = allSlidesInPptVisualMode
-    ? "📝 Tümünü İnteraktif Web Moduna Al"
-    : "🖼️ Tümünü PPT Görsel Moduna Al";
+    ? "Tümünü Web Görünümüne Al"
+    : "Tümünü PPT Levha Görünümüne Al";
 });
 
 function goHome() {
@@ -759,7 +743,7 @@ function goHome() {
 }
 
 // ============================================================================
-// 3. SUNUM MODU (POWERPOINT MODU) YÖNETİMİ
+// 3. SUNUM MODU YÖNETİMİ
 // ============================================================================
 function enterPresentationMode() {
   if (!currentLecture) return;
@@ -813,7 +797,7 @@ function updatePresentationHUD() {
     const isPptMode = activeSlide.dataset.viewMode === "ppt";
     const presViewBtn = document.getElementById("btn-pres-view-mode");
     if (presViewBtn) {
-      presViewBtn.textContent = isPptMode ? "📝 Web Slaytı" : "🖼️ PPT Görseli";
+      presViewBtn.textContent = isPptMode ? "Web Görünümü" : "PPT Levhası";
     }
 
     const allFragments = activeSlide.querySelectorAll(".slide-body-web .fragment");
@@ -835,7 +819,6 @@ function nextStepOrSlide() {
   const activeSlide = document.querySelector(".slide.active-slide");
   if (!activeSlide) return;
 
-  // Eğer slayt Yöntem 1 (Web) modundaysa önce gizli fragment maddelerini sırayla aç
   if (activeSlide.dataset.viewMode !== "ppt") {
     const hiddenFragments = activeSlide.querySelectorAll(".slide-body-web .fragment:not(.visible)");
     if (hiddenFragments.length > 0) {
@@ -872,7 +855,7 @@ function prevStepOrSlide() {
 }
 
 // ============================================================================
-// 4. PPTX ENTEGRASYON MERKEZİ (TARAYICI İÇİ .PPTX AYRIŞTIRICI - YÖNTEM 1, 2, 3)
+// 4. PPTX ENTEGRASYON MERKEZİ
 // ============================================================================
 const pptxModalBackdrop = document.getElementById("pptx-modal-backdrop");
 const inpPptxFile = document.getElementById("inp-pptx-file");
@@ -893,7 +876,6 @@ document.getElementById("btn-open-pptx-modal").addEventListener("click", openPpt
 document.getElementById("btn-hero-pptx-modal").addEventListener("click", openPptxModal);
 document.getElementById("btn-close-pptx-modal").addEventListener("click", closePptxModal);
 
-// Modal Sekmeleri
 document.querySelectorAll(".modal-tab").forEach((tabBtn) => {
   tabBtn.addEventListener("click", () => {
     document.querySelectorAll(".modal-tab").forEach((b) => b.classList.remove("active"));
@@ -903,15 +885,14 @@ document.querySelectorAll(".modal-tab").forEach((tabBtn) => {
   });
 });
 
-// Dropzone 1: .PPTX Dosyası Seçimi
 const pptxDropzone = document.getElementById("pptx-dropzone");
 pptxDropzone.addEventListener("click", () => inpPptxFile.click());
 pptxDropzone.addEventListener("dragover", (e) => {
   e.preventDefault();
-  pptxDropzone.style.borderColor = "#38bdf8";
+  pptxDropzone.style.borderColor = "#5c3d28";
 });
 pptxDropzone.addEventListener("dragleave", () => {
-  pptxDropzone.style.borderColor = "rgba(56, 189, 248, 0.45)";
+  pptxDropzone.style.borderColor = "#bfaf9c";
 });
 pptxDropzone.addEventListener("drop", (e) => {
   e.preventDefault();
@@ -927,7 +908,7 @@ inpPptxFile.addEventListener("change", (e) => {
 
 function handlePptxFileChosen(file) {
   selectedPptxFile = file;
-  pptxFileStatus.innerHTML = `✅ Seçilen dosya: <strong>${escapeXml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+  pptxFileStatus.innerHTML = `Seçilen dosya: <strong>${escapeXml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
   btnProcessPptx.disabled = false;
   const titleInput = document.getElementById("imp-title");
   if (!titleInput.value.trim()) {
@@ -935,11 +916,10 @@ function handlePptxFileChosen(file) {
   }
 }
 
-// JSZip ile .PPTX Dosyasını Tarayıcıda Çözümleme (Yöntem 1 + Yöntem 2 + Yöntem 3)
 btnProcessPptx.addEventListener("click", async () => {
   if (!selectedPptxFile) return;
   btnProcessPptx.disabled = true;
-  btnProcessPptx.textContent = "⏳ PPTX Çözümleniyor...";
+  btnProcessPptx.textContent = "PPTX Çözümleniyor...";
 
   try {
     const zip = await JSZip.loadAsync(selectedPptxFile);
@@ -947,7 +927,6 @@ btnProcessPptx.addEventListener("click", async () => {
     const customTitle = document.getElementById("imp-title").value.trim() || selectedPptxFile.name.replace(/\.pptx$/i, "");
     const simType = document.getElementById("imp-sim-type").value;
 
-    // 1. Gömülü Görselleri (ppt/media/*) Base64 URL olarak çıkar
     const mediaMap = {};
     const mediaFiles = Object.keys(zip.files).filter((k) => k.startsWith("ppt/media/"));
     for (const mediaPath of mediaFiles) {
@@ -959,7 +938,6 @@ btnProcessPptx.addEventListener("click", async () => {
       }
     }
 
-    // 2. Slayt XML dosyalarını sırayla bul (ppt/slides/slide1.xml, slide2.xml...)
     const slideFiles = Object.keys(zip.files)
       .filter((k) => /^ppt\/slides\/slide\d+\.xml$/.test(k))
       .sort((a, b) => {
@@ -977,7 +955,6 @@ btnProcessPptx.addEventListener("click", async () => {
       const xmlText = await zip.file(slidePath).async("text");
       const xmlDoc = parser.parseFromString(xmlText, "application/xml");
 
-      // Slayttaki ilişkili görselleri kontrol et (ppt/slides/_rels/slideX.xml.rels)
       const relPath = `ppt/slides/_rels/slide${slideNum}.xml.rels`;
       const slideImages = [];
       if (zip.file(relPath)) {
@@ -993,7 +970,6 @@ btnProcessPptx.addEventListener("click", async () => {
         });
       }
 
-      // Paragrafları (<a:p>) oku
       const pNodes = Array.from(xmlDoc.getElementsByTagName("a:p"));
       const lines = [];
       pNodes.forEach((p) => {
@@ -1002,14 +978,14 @@ btnProcessPptx.addEventListener("click", async () => {
         if (lineStr) lines.push(lineStr);
       });
 
-      const slideTitle = lines.length > 0 ? lines[0] : `${customTitle} - Slayt ${slideNum}`;
-      const bulletLines = lines.length > 1 ? lines.slice(1) : ["Bu slayt PowerPoint (.pptx) dosyasından otomatik aktarılmıştır."];
+      const slideTitle = lines.length > 0 ? lines[0] : `${customTitle} — Bölüm ${slideNum}`;
+      const bulletLines = lines.length > 1 ? lines.slice(1) : ["PowerPoint (.pptx) dosyasından aktarılmış içerik."];
 
       const bulletsHtml = bulletLines
         .map(
-          (b) => `
+          (b, bIdx) => `
           <li class="fragment">
-            <span>🔹</span>
+            <span class="bullet-marker">${String(bIdx + 1).padStart(2, "0")}</span>
             <div>${escapeXml(b)}</div>
           </li>
         `
@@ -1020,8 +996,8 @@ btnProcessPptx.addEventListener("click", async () => {
         slideImages.length > 0
           ? `
           <div class="info-card fragment" style="text-align:center;">
-            <h4>🖼️ Slayt Görseli / Diyagramı</h4>
-            <img src="${slideImages[0]}" style="max-width:100%; max-height:280px; border-radius:8px; margin-top:0.5rem;" alt="PPTX Görseli" />
+            <h4>Slayt Şeması / Görseli</h4>
+            <img src="${slideImages[0]}" style="max-width:100%; max-height:280px; border-radius:4px; margin-top:0.5rem;" alt="Slayt Görseli" />
           </div>
         `
           : "";
@@ -1032,7 +1008,7 @@ btnProcessPptx.addEventListener("click", async () => {
           : `<ul class="bullet-list">${bulletsHtml}</ul>`;
 
       parsedSlides.push({
-        kicker: `${weekLabel.toUpperCase()} • PPTX SLAYT ${slideNum}`,
+        kicker: `${weekLabel.toUpperCase()} • BÖLÜM ${slideNum}`,
         title: slideTitle,
         pptSummaryBullets: bulletLines,
         extractedImages: slideImages,
@@ -1040,22 +1016,20 @@ btnProcessPptx.addEventListener("click", async () => {
       });
     }
 
-    // Seçildiyse canlı mühendislik simülasyonunu da ekle
     if (simType !== "none") {
       parsedSlides.push(getSimulationSlideObject(simType, weekLabel.toUpperCase()));
     }
 
-    // Yöntem 3: İndirilebilir PPTX Blob URL oluştur
     const pptxBlobUrl = URL.createObjectURL(selectedPptxFile);
 
     const newLecture = {
       id: `custom-${Date.now()}`,
       week: weekLabel,
       title: customTitle,
-      description: `${selectedPptxFile.name} dosyasından 3 yöntemle (Web Slaytı + Birebir PPT Görseli + İndirilebilir PPTX) içe aktarıldı.`,
+      description: `${selectedPptxFile.name} dosyasından aktarılmış ders içeriği.`,
       pptxUrl: pptxBlobUrl,
       pptxFileName: selectedPptxFile.name,
-      features: ["📝 PPTX'ten Otomatik Dönüştürüldü", "🖼️ Hibrit Görsel Modu", "📥 Orijinal PPTX"],
+      features: ["PPTX'ten Aktarıldı", "Hibrit Slayt Modu", "PPTX Arşivi"],
       slides: parsedSlides
     };
 
@@ -1067,11 +1041,11 @@ btnProcessPptx.addEventListener("click", async () => {
     alert("PPTX dosyası okunurken bir hata oluştu: " + err.message);
   } finally {
     btnProcessPptx.disabled = false;
-    btnProcessPptx.textContent = "⚡ PPTX'i Dönüştür ve Derslere Ekle";
+    btnProcessPptx.textContent = "Dosyayı Dönüştür ve Derslere Ekle";
   }
 });
 
-// TAB 2: Çoklu Slayt Görseli (.PNG / .JPG) ile Yöntem 2 Sunumu Oluşturma
+// TAB 2: Çoklu Slayt Görseli (.PNG / .JPG)
 const imgDropzone = document.getElementById("img-dropzone");
 const inpSlideImages = document.getElementById("inp-slide-images");
 const btnProcessImages = document.getElementById("btn-process-images");
@@ -1081,28 +1055,28 @@ inpSlideImages.addEventListener("change", (e) => {
   selectedSlideImages = Array.from(e.target.files || []);
   if (selectedSlideImages.length > 0) {
     document.getElementById("img-files-status").innerHTML =
-      `✅ <strong>${selectedSlideImages.length} adet</strong> slayt görseli seçildi.`;
+      `<strong>${selectedSlideImages.length} adet</strong> slayt görseli seçildi.`;
     btnProcessImages.disabled = false;
   }
 });
 
 btnProcessImages.addEventListener("click", () => {
   if (selectedSlideImages.length === 0) return;
-  const weekLabel = document.getElementById("img-imp-week").value.trim() || "Görsel Sunum";
-  const titleLabel = document.getElementById("img-imp-title").value.trim() || "Birebir PowerPoint Görsel Sunumu";
+  const weekLabel = document.getElementById("img-imp-week").value.trim() || "Ek Ders";
+  const titleLabel = document.getElementById("img-imp-title").value.trim() || "PowerPoint Görsel Sunumu";
 
   const imageSlides = selectedSlideImages.map((file, idx) => {
     const imgUrl = URL.createObjectURL(file);
     return {
       kicker: `${weekLabel.toUpperCase()} • SLAYT ${idx + 1}`,
-      title: `${titleLabel} - Slayt ${idx + 1}`,
+      title: `${titleLabel} — Slayt ${idx + 1}`,
       defaultViewMode: "ppt",
       pptImageUrl: imgUrl,
       pptSummaryBullets: [file.name],
       html: `
         <div class="ppt-exact-frame">
           <img src="${imgUrl}" alt="Slayt ${idx + 1}" />
-          <span class="ppt-frame-badge">🖼️ Orijinal PowerPoint Slayt Görseli</span>
+          <span class="ppt-frame-badge">Orijinal PowerPoint Slayt Görseli</span>
         </div>
       `
     };
@@ -1112,9 +1086,9 @@ btnProcessImages.addEventListener("click", () => {
     id: `img-lec-${Date.now()}`,
     week: weekLabel,
     title: titleLabel,
-    description: `${selectedSlideImages.length} adet orijinal slayt görseli ile oluşturulmuş birebir sunum.`,
+    description: `${selectedSlideImages.length} adet slayt görseli ile oluşturulmuş sunum.`,
     pptxUrl: "pptx/ME101-Hafta1.pptx",
-    features: ["🖼️ %100 Birebir Görsel Koruma", "🔴 Lazer & Kalem Destekli"],
+    features: ["Birebir Görsel Koruma", "Lazer ve Kalem Destekli"],
     slides: imageSlides
   };
 
@@ -1124,21 +1098,40 @@ btnProcessImages.addEventListener("click", () => {
   openLecture(newLec.id, true);
 });
 
-// TAB 3: JSON Verisini Kopyala
 document.getElementById("btn-export-json").addEventListener("click", () => {
   const jsonStr = JSON.stringify(LECTURES, null, 2);
   navigator.clipboard.writeText(jsonStr).then(() => {
     const btn = document.getElementById("btn-export-json");
-    btn.textContent = "✅ Tüm Ders Verisi Panoya Kopyalandı!";
+    btn.textContent = "Ders Verisi Panoya Kopyalandı";
     setTimeout(() => {
-      btn.textContent = "📋 Eklenen Derslerin Verisini (JSON) Kopyala";
+      btn.textContent = "Ders Verisini (JSON) Kopyala";
     }, 2500);
   });
 });
 
 // ============================================================================
-// 5. ETKİLEŞİMLİ MÜHENDİSLİK SİMÜLASYONLARI
+// 5. TEKNİK MÜHENDİSLİK SİMÜLASYONLARI (AÇIK RENK TEKNİK ÇİZİM STİLİ)
 // ============================================================================
+function drawDraftingGrid(ctx, w, h) {
+  ctx.fillStyle = "#faf8f4";
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = "#ece6dc";
+  ctx.lineWidth = 1;
+  const step = 24;
+  for (let x = step; x < w; x += step) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  for (let y = step; y < h; y += step) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+}
+
 function initSimulations() {
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   if (tensileAutoTimer) clearInterval(tensileAutoTimer);
@@ -1189,7 +1182,7 @@ function setupGearSim() {
   updateGearReadouts();
 }
 
-function drawGear(ctx, cx, cy, teeth, modulePitch, angle, color, label) {
+function drawGear(ctx, cx, cy, teeth, modulePitch, angle, fillColor, strokeColor, label) {
   const pitchRadius = (teeth * modulePitch) / 2;
   const outerRadius = pitchRadius + modulePitch * 0.9;
   const rootRadius = pitchRadius - modulePitch * 1.1;
@@ -1214,30 +1207,31 @@ function drawGear(ctx, cx, cy, teeth, modulePitch, angle, color, label) {
     ctx.lineTo(Math.cos(a4) * rootRadius, Math.sin(a4) * rootRadius);
   }
   ctx.closePath();
-  ctx.fillStyle = color;
+  ctx.fillStyle = fillColor;
   ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "#e2e8f0";
+  ctx.lineWidth = 1.8;
+  ctx.strokeStyle = strokeColor;
   ctx.stroke();
 
+  // Kamalı mil ekseni işareti
   ctx.beginPath();
   ctx.moveTo(0, 0);
-  ctx.lineTo(pitchRadius * 0.8, 0);
-  ctx.strokeStyle = "#0f172a";
-  ctx.lineWidth = 3;
+  ctx.lineTo(pitchRadius * 0.78, 0);
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 2.5;
   ctx.stroke();
 
   ctx.beginPath();
   ctx.arc(0, 0, Math.max(8, rootRadius * 0.32), 0, Math.PI * 2);
-  ctx.fillStyle = "#0f172a";
+  ctx.fillStyle = "#faf8f4";
   ctx.fill();
-  ctx.strokeStyle = "#94a3b8";
+  ctx.strokeStyle = strokeColor;
   ctx.lineWidth = 2;
   ctx.stroke();
 
   ctx.restore();
 
-  ctx.fillStyle = "#cbd5e1";
+  ctx.fillStyle = "#3b2818";
   ctx.font = "600 12px Inter, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(label, cx, cy + outerRadius + 18);
@@ -1261,7 +1255,7 @@ function stepGearAnimation() {
   gearAngle1 += omega1 * dt * 0.35;
   gearAngle2 = -(gearAngle1 * n1) / n2 + Math.PI / n2;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawDraftingGrid(ctx, canvas.width, canvas.height);
 
   const totalSpan = r1 * 2 + r2 * 2;
   const startX = (canvas.width - totalSpan) / 2 + r1;
@@ -1269,8 +1263,8 @@ function stepGearAnimation() {
   const cx1 = startX;
   const cx2 = cx1 + r1 + r2 + mod * 0.25;
 
-  drawGear(ctx, cx1, cy, n1, mod, gearAngle1, "#38bdf8", `Giriş (N₁=${n1})`);
-  drawGear(ctx, cx2, cy, n2, mod, gearAngle2, "#f97316", `Çıkış (N₂=${n2})`);
+  drawGear(ctx, cx1, cy, n1, mod, gearAngle1, "#d8c3a5", "#3b2818", `Giriş Dişlisi (N₁=${n1})`);
+  drawGear(ctx, cx2, cy, n2, mod, gearAngle2, "#c29b77", "#3b2818", `Çıkış Dişlisi (N₂=${n2})`);
 }
 
 function setupBeamSim() {
@@ -1305,37 +1299,38 @@ function setupBeamSim() {
 
     const badge = document.getElementById("beam-safety-badge");
     if (sigma_MPa > yieldMPa) {
-      badge.textContent = `⚠️ AKMA SINIRI AŞILDI! (σ > ${yieldMPa} MPa)`;
-      badge.style.color = "#ef4444";
+      badge.textContent = `AKMA SINIRI AŞILDI (σ > ${yieldMPa} MPa)`;
+      badge.style.color = "#9b2226";
     } else {
-      const sf = (yieldMPa / sigma_MPa).toFixed(1);
-      badge.textContent = `✅ EMNİYETLİ (Emniyet Katsayısı: ${sf})`;
-      badge.style.color = "#34d399";
+      const sf = (yieldMPa / sigma_MPa).toFixed(2);
+      badge.textContent = `EMNİYETLİ (Emniyet Katsayısı S = ${sf})`;
+      badge.style.color = "#2d6a4f";
     }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawDraftingGrid(ctx, canvas.width, canvas.height);
 
-    ctx.fillStyle = "#334155";
-    ctx.fillRect(35, 30, 18, 160);
-    ctx.strokeStyle = "#94a3b8";
-    ctx.lineWidth = 2;
+    // Ankastre mesnet taraması
+    ctx.fillStyle = "#d8cfc2";
+    ctx.fillRect(35, 30, 18, 155);
+    ctx.strokeStyle = "#3b2818";
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(53, 30);
-    ctx.lineTo(53, 190);
+    ctx.lineTo(53, 185);
     ctx.stroke();
 
     const beamPxLen = 140 + L * 95;
-    const y0 = 90;
+    const y0 = 85;
     ctx.save();
     ctx.setLineDash([5, 5]);
-    ctx.strokeStyle = "rgba(148, 163, 184, 0.4)";
+    ctx.strokeStyle = "#8c7d70";
     ctx.beginPath();
     ctx.moveTo(53, y0);
     ctx.lineTo(53 + beamPxLen, y0);
     ctx.stroke();
     ctx.restore();
 
-    const maxVisualDef = Math.min(75, delta_mm * 2.2);
+    const maxVisualDef = Math.min(72, delta_mm * 2.2);
     const segments = 30;
     for (let i = 0; i < segments; i++) {
       const xi1 = i / segments;
@@ -1347,10 +1342,13 @@ function setupBeamSim() {
       const x2 = 53 + xi2 * beamPxLen;
 
       const stressRatio = Math.min(1, (1 - xi1) * (sigma_MPa / yieldMPa));
-      const hue = Math.max(0, 220 - stressRatio * 220);
+      // Kahverengi/Bronzdan Koyu Kırmızıya teknik gerilme gradyanı
+      const rCol = Math.round(92 + stressRatio * 95);
+      const gCol = Math.round(61 - stressRatio * 35);
+      const bCol = Math.round(40 - stressRatio * 20);
 
-      ctx.strokeStyle = `hsl(${hue}, 90%, 55%)`;
-      ctx.lineWidth = 18;
+      ctx.strokeStyle = `rgb(${rCol}, ${gCol}, ${bCol})`;
+      ctx.lineWidth = 16;
       ctx.lineCap = "butt";
       ctx.beginPath();
       ctx.moveTo(x1, y0 + def1);
@@ -1360,27 +1358,27 @@ function setupBeamSim() {
 
     const tipX = 53 + beamPxLen;
     const tipY = y0 + maxVisualDef;
-    ctx.strokeStyle = "#f97316";
-    ctx.fillStyle = "#f97316";
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#9b2226";
+    ctx.fillStyle = "#9b2226";
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(tipX, tipY - 48);
-    ctx.lineTo(tipX, tipY - 12);
+    ctx.moveTo(tipX, tipY - 46);
+    ctx.lineTo(tipX, tipY - 11);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(tipX, tipY - 8);
-    ctx.lineTo(tipX - 6, tipY - 18);
-    ctx.lineTo(tipX + 6, tipY - 18);
+    ctx.moveTo(tipX, tipY - 7);
+    ctx.lineTo(tipX - 5, tipY - 17);
+    ctx.lineTo(tipX + 5, tipY - 17);
     ctx.closePath();
     ctx.fill();
 
-    ctx.font = "700 13px JetBrains Mono, monospace";
-    ctx.fillText(`F = ${F} N`, tipX - 35, tipY - 55);
+    ctx.font = "700 12px JetBrains Mono, monospace";
+    ctx.fillText(`F = ${F} N`, tipX - 35, tipY - 52);
 
-    ctx.fillStyle = "#94a3b8";
+    ctx.fillStyle = "#4a3f35";
     ctx.font = "11px Inter, sans-serif";
-    ctx.fillText("FEA Gerilme Dağılımı: Kırmızı = Maks. Moment (Mesnet) | Mavi = Düşük Gerilme", 55, 208);
+    ctx.fillText("Kesit: 40×25 mm Dikdörtgen | Maksimum eğilme momenti ankastre mesnet (x = 0) noktasındadır.", 53, 206);
   }
 
   [inpF, inpL, inpMat].forEach((el) => el.addEventListener("input", renderBeam));
@@ -1416,27 +1414,27 @@ function setupTensileSim() {
 
     document.getElementById("val-strain").textContent = `%${eps.toFixed(1)}`;
     document.getElementById("out-tensile-sigma").textContent =
-      eps > 23.5 ? "KOPTU (0 MPa)" : `${sigma.toFixed(0)} MPa`;
+      eps > 23.5 ? "KOPMA (0 MPa)" : `${sigma.toFixed(0)} MPa`;
 
     const badge = document.getElementById("tensile-region-badge");
     if (eps <= 1.2) {
-      badge.textContent = "Bölge: 1. Elastik Bölge (Yük kalkarsa ilk boyuna döner)";
-      badge.style.color = "#38bdf8";
+      badge.textContent = "Bölge I: Elastik Bölge (Hooke Yasası Geçerli)";
+      badge.style.color = "#5c3d28";
     } else if (eps <= 2.5) {
-      badge.textContent = "Bölge: 2. Akma Sahanlığı (Kalıcı plastik deformasyon başladı)";
-      badge.style.color = "#facc15";
+      badge.textContent = "Bölge II: Akma Sahanlığı (Lüders Bantları / Kalıcı Deformasyon)";
+      badge.style.color = "#8c5a3c";
     } else if (eps <= 16) {
-      badge.textContent = "Bölge: 3. Pekleşme Bölgesi (Malzeme dayanımı R_m'ye yükseliyor)";
-      badge.style.color = "#34d399";
+      badge.textContent = "Bölge III: Pekleşme Bölgesi (Dislokasyon Yoğunluğu Artışı)";
+      badge.style.color = "#2d6a4f";
     } else if (eps <= 23.5) {
-      badge.textContent = "Bölge: 4. Boyun Verme (Kesit yerel olarak daralıyor!)";
-      badge.style.color = "#f97316";
+      badge.textContent = "Bölge IV: Boyun Verme (Yerel Kesit Daralması)";
+      badge.style.color = "#9b2226";
     } else {
-      badge.textContent = "Bölge: 5. KOPMA (Numune ikiye ayrıldı)";
-      badge.style.color = "#ef4444";
+      badge.textContent = "Bölge V: KOPMA (Numune Ayrılması)";
+      badge.style.color = "#9b2226";
     }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawDraftingGrid(ctx, canvas.width, canvas.height);
 
     const specY = 95;
     const baseLen = 140;
@@ -1444,7 +1442,7 @@ function setupTensileSim() {
     const totalLen = baseLen + stretchPx;
     const startX = 45;
 
-    ctx.fillStyle = "#475569";
+    ctx.fillStyle = "#5c3d28";
     ctx.fillRect(startX - 22, specY - 22, 22, 44);
     ctx.fillRect(startX + totalLen, specY - 22, 22, 44);
 
@@ -1453,7 +1451,10 @@ function setupTensileSim() {
     const neckHalfThick = halfThick * (1 - neckFactor);
     const midX = startX + totalLen / 2;
 
-    ctx.fillStyle = eps > 23.5 ? "#ef4444" : "#93c5fd";
+    ctx.fillStyle = eps > 23.5 ? "#9b2226" : "#b08968";
+    ctx.strokeStyle = "#3b2818";
+    ctx.lineWidth = 1.5;
+
     if (eps <= 23.5) {
       ctx.beginPath();
       ctx.moveTo(startX, specY - halfThick);
@@ -1462,12 +1463,15 @@ function setupTensileSim() {
       ctx.quadraticCurveTo(midX, specY + neckHalfThick, startX, specY + halfThick);
       ctx.closePath();
       ctx.fill();
+      ctx.stroke();
     } else {
       ctx.fillRect(startX, specY - halfThick, totalLen * 0.44, halfThick * 2);
+      ctx.strokeRect(startX, specY - halfThick, totalLen * 0.44, halfThick * 2);
       ctx.fillRect(startX + totalLen * 0.56, specY - halfThick, totalLen * 0.44, halfThick * 2);
+      ctx.strokeRect(startX + totalLen * 0.56, specY - halfThick, totalLen * 0.44, halfThick * 2);
     }
 
-    ctx.fillStyle = "#cbd5e1";
+    ctx.fillStyle = "#3b2818";
     ctx.font = "600 12px Inter, sans-serif";
     ctx.fillText("Çekme Numunesi (L₀ + ΔL)", startX + 15, specY + 55);
 
@@ -1476,7 +1480,7 @@ function setupTensileSim() {
     const gw = 380;
     const gh = 175;
 
-    ctx.strokeStyle = "#64748b";
+    ctx.strokeStyle = "#3b2818";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(gx, gy - gh);
@@ -1484,10 +1488,10 @@ function setupTensileSim() {
     ctx.lineTo(gx + gw, gy);
     ctx.stroke();
 
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "11px Inter, sans-serif";
+    ctx.fillStyle = "#3b2818";
+    ctx.font = "600 11px Inter, sans-serif";
     ctx.fillText("σ (Gerilme [MPa])", gx + 8, gy - gh + 10);
-    ctx.fillText("ε (% Uzama)", gx + gw - 70, gy - 8);
+    ctx.fillText("ε (% Birim Uzama)", gx + gw - 105, gy - 8);
 
     ctx.beginPath();
     for (let e = 0; e <= 23.5; e += 0.25) {
@@ -1497,7 +1501,7 @@ function setupTensileSim() {
       if (e === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
-    ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+    ctx.strokeStyle = "#d8cfc2";
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -1510,15 +1514,15 @@ function setupTensileSim() {
       if (e === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = "#5c3d28";
+    ctx.lineWidth = 3;
     ctx.stroke();
 
     const curX = gx + (limitE / 25) * gw;
     const curY = gy - (computeStress(limitE) / 460) * gh;
     ctx.beginPath();
-    ctx.arc(curX, curY, 6, 0, Math.PI * 2);
-    ctx.fillStyle = "#f97316";
+    ctx.arc(curX, curY, 5.5, 0, Math.PI * 2);
+    ctx.fillStyle = "#9b2226";
     ctx.fill();
   }
 
@@ -1528,17 +1532,17 @@ function setupTensileSim() {
       if (tensileAutoTimer) {
         clearInterval(tensileAutoTimer);
         tensileAutoTimer = null;
-        btnPlay.textContent = "▶ Deneyi Otomatik Oynat";
+        btnPlay.textContent = "Deneyi Otomatik Başlat";
         return;
       }
       inpStrain.value = 0;
-      btnPlay.textContent = "⏸ Durdur";
+      btnPlay.textContent = "Durdur";
       tensileAutoTimer = setInterval(() => {
         let v = parseFloat(inpStrain.value) + 0.25;
         if (v > 25) {
           clearInterval(tensileAutoTimer);
           tensileAutoTimer = null;
-          btnPlay.textContent = "↺ Tekrar Oynat";
+          btnPlay.textContent = "Deneyi Tekrar Başlat";
           return;
         }
         inpStrain.value = v;
@@ -1600,12 +1604,12 @@ function stepCrankAnimation() {
   document.getElementById("out-crank-angle").textContent = `${deg}°`;
   document.getElementById("out-crank-vel").textContent = `${Math.abs(vel).toFixed(2)} m/s`;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawDraftingGrid(ctx, canvas.width, canvas.height);
 
   const minPistonX = cx + l - r;
   const maxPistonX = cx + l + r;
-  ctx.strokeStyle = "#475569";
-  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#6e6256";
+  ctx.lineWidth = 3.5;
   ctx.beginPath();
   ctx.moveTo(minPistonX - 18, cy - 32);
   ctx.lineTo(maxPistonX + 52, cy - 32);
@@ -1615,31 +1619,31 @@ function stepCrankAnimation() {
 
   ctx.save();
   ctx.setLineDash([4, 4]);
-  ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+  ctx.strokeStyle = "#8c5a3c";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
-  ctx.strokeStyle = "#38bdf8";
-  ctx.lineWidth = 8;
+  ctx.strokeStyle = "#3b2818";
+  ctx.lineWidth = 7;
   ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(cx, cy);
   ctx.lineTo(pinX, pinY);
   ctx.stroke();
 
-  ctx.strokeStyle = "#f97316";
-  ctx.lineWidth = 6;
+  ctx.strokeStyle = "#8c5a3c";
+  ctx.lineWidth = 5.5;
   ctx.beginPath();
   ctx.moveTo(pinX, pinY);
   ctx.lineTo(pistonX, cy);
   ctx.stroke();
 
-  ctx.fillStyle = "#94a3b8";
+  ctx.fillStyle = "#d8c3a5";
   ctx.fillRect(pistonX - 14, cy - 28, 42, 56);
-  ctx.strokeStyle = "#f8fafc";
+  ctx.strokeStyle = "#3b2818";
   ctx.lineWidth = 2;
   ctx.strokeRect(pistonX - 14, cy - 28, 42, 56);
 
@@ -1649,17 +1653,17 @@ function stepCrankAnimation() {
     [pistonX, cy]
   ].forEach(([mx, my]) => {
     ctx.beginPath();
-    ctx.arc(mx, my, 5, 0, Math.PI * 2);
-    ctx.fillStyle = "#0f172a";
+    ctx.arc(mx, my, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = "#faf8f4";
     ctx.fill();
-    ctx.strokeStyle = "#fff";
+    ctx.strokeStyle = "#3b2818";
     ctx.lineWidth = 2;
     ctx.stroke();
   });
 }
 
 // ============================================================================
-// 6. LAZER İMLECİ & BEYAZ TAHTA KALEMİ (ÇİZİM MODU)
+// 6. LAZER İMLECİ & KALEM MODU
 // ============================================================================
 function toggleLaser(forceState) {
   isLaserActive = typeof forceState === "boolean" ? forceState : !isLaserActive;
@@ -1711,8 +1715,8 @@ drawingCanvas.addEventListener("mousemove", (e) => {
   if (!isPenActive || !isDrawing) return;
   const rect = drawingCanvas.getBoundingClientRect();
   drawCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-  drawCtx.strokeStyle = "#ef4444";
-  drawCtx.lineWidth = 3.5;
+  drawCtx.strokeStyle = "#9b2226";
+  drawCtx.lineWidth = 3;
   drawCtx.lineCap = "round";
   drawCtx.stroke();
 });
@@ -1729,7 +1733,7 @@ window.addEventListener("mousemove", (e) => {
 });
 
 // ============================================================================
-// 7. OLAY DİNLEYİCİLERİ (KLAVYE, FARE TIKLAMASI, BUTONLAR)
+// 7. OLAY DİNLEYİCİLERİ
 // ============================================================================
 document.getElementById("btn-home").addEventListener("click", goHome);
 document.getElementById("btn-back-catalog").addEventListener("click", goHome);
@@ -1795,5 +1799,4 @@ window.addEventListener("resize", () => {
   if (isPresentationMode) resizeDrawingCanvas();
 });
 
-// Başlangıçta kataloğu yükle
 renderCatalog();
