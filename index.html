@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -25,6 +25,9 @@
       <div class="nav-right-group">
         <!-- SADECE YÖNETİCİ (ÖĞRETİM ÜYESİ) GİRİŞİ YAPILDIĞINDA GÖRÜNEN ARAÇLAR -->
         <div id="admin-toolbar" class="admin-toolbar hidden">
+          <button id="btn-open-student-roster" class="btn btn-secondary" title="Derse kayıtlı öğrenci numaralarını tanımla veya düzenle">
+            Öğrenci Listesi
+          </button>
           <button id="btn-clear-all-ratings" class="btn btn-outline" title="Yeni dönem için tüm derslerin yıldız puanlarını sıfırla">
             Tüm Yıldızları Temizle
           </button>
@@ -32,6 +35,12 @@
             + Ders Ekle
           </button>
         </div>
+
+        <!-- ÖĞRENCİ NUMARASI GİRİŞ / ÇIKIŞ BUTONU -->
+        <button id="btn-student-toggle" class="btn btn-student-login" title="Öğrenci Numarası ile Giriş Yap">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span id="student-login-label">Öğrenci Girişi</span>
+        </button>
 
         <!-- ÖĞRETİM ÜYESİ GİRİŞ / ÇIKIŞ BUTONU -->
         <button id="btn-admin-toggle" class="btn btn-admin-lock" title="Öğretim Üyesi / Yönetici Girişi">
@@ -103,6 +112,9 @@
           <h3>Haftalık Ders Programı</h3>
         </div>
         <div id="admin-section-actions" class="admin-toolbar hidden">
+          <button id="btn-section-student-roster" class="btn btn-secondary" title="Derse kayıtlı öğrenci numaralarını tanımla veya düzenle">
+            Öğrenci Listesi
+          </button>
           <button id="btn-section-clear-all-ratings" class="btn btn-outline" title="Yeni dönem için tüm derslerin yıldız puanlarını sıfırla">
             Tüm Yıldızları Temizle
           </button>
@@ -192,6 +204,36 @@
     </div>
   </div>
 
+  <!-- ÖĞRENCİ NUMARASI DOĞRULAMA MODALI -->
+  <div id="student-login-backdrop" class="modal-backdrop hidden">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div>
+          <span class="department-label">ME 101 DERS KAYIT DOĞRULAMASI</span>
+          <h3>Öğrenci Numarası ile Giriş</h3>
+        </div>
+        <button id="btn-close-student-login" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="student-login-prompt-desc" class="modal-desc">
+          Derslere yıldız puanı verebilmek ve sunum dosyalarını (<code>.pptx</code>) indirebilmek için derse kayıtlı <strong>Öğrenci Numaranızı</strong> giriniz. Her öğrenci her ders için yalnızca 1 kez oy kullanabilir.
+        </p>
+        <div class="form-field">
+          <label>Öğrenci Numarası</label>
+          <input type="text" id="inp-student-no" placeholder="Örn: 20261001" autocomplete="off" />
+        </div>
+        <p id="student-login-error" class="hidden" style="color:#9b2226; font-size:0.78rem; margin-top:0.45rem; font-weight:600;">
+          Girilen öğrenci numarası ME 101 ders listesinde bulunamadı. Lütfen öğretim üyesinin tanımladığı öğrenci numaranızı giriniz.
+        </p>
+        <div class="modal-footer-actions">
+          <button id="btn-submit-student-login" class="btn btn-primary" style="width:100%; justify-content:center;">
+            Doğrula ve Devam Et
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ÖĞRETİM ÜYESİ (YÖNETİCİ) GİRİŞ MODALI -->
   <div id="admin-login-backdrop" class="modal-backdrop hidden">
     <div class="modal-card" style="max-width: 420px;">
@@ -204,7 +246,7 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          Ders ekleme, PPTX yükleme, ders silme ve yıldız sıfırlama işlemleri yalnızca dersi veren öğretim üyesine açıktır.
+          Ders ekleme, PPTX yükleme, öğrenci listesi tanımlama ve yıldız sıfırlama işlemleri yalnızca dersi veren öğretim üyesine açıktır.
         </p>
         <div class="form-field">
           <label>Yönetici Parolası</label>
@@ -227,8 +269,8 @@
     <div class="modal-card">
       <div class="modal-header">
         <div>
-          <span class="department-label">ÖĞRETİM ÜYESİ PANELİ • DERS YÖNETİMİ</span>
-          <h3>Yeni Ders Ekle / PowerPoint (.pptx) Aktar</h3>
+          <span class="department-label">ÖĞRETİM ÜYESİ PANELİ • DERS VE ÖĞRENCİ YÖNETİMİ</span>
+          <h3>Yeni Ders Ekle / Öğrenci Listesi Tanımla</h3>
         </div>
         <button id="btn-close-pptx-modal" class="modal-close-btn">&times;</button>
       </div>
@@ -238,6 +280,7 @@
           <button class="modal-tab active" data-tab="tab-add-manual">+ Hızlı Ders / PPTX Ekle (Yöntem I)</button>
           <button class="modal-tab" data-tab="tab-method-2">II. Slayt Görselleri (PNG/JPG)</button>
           <button class="modal-tab" data-tab="tab-permanent">III. Kalıcı Klasör &amp; GitHub Aracı</button>
+          <button class="modal-tab" data-tab="tab-student-roster">IV. Öğrenci Listesi (OBS)</button>
         </div>
 
         <!-- TAB 1: YENİ DERS EKLE -->
@@ -339,10 +382,48 @@
             <button id="btn-export-json" class="btn btn-secondary">Ders Verisini (JSON) Kopyala</button>
           </div>
         </div>
+
+        <!-- TAB 4: ÖĞRENCİ NUMARASI LİSTESİ TANIMLAMA (OBS / EXCEL / CSV) -->
+        <div id="tab-student-roster" class="tab-pane hidden">
+          <p class="modal-desc">
+            OBS veya Excel listenizdeki <strong>Öğrenci Numaralarını</strong> (isteğe bağlı olarak yanına Ad Soyad ile birlikte) aşağıya yapıştırarak veya <code>.csv / .txt</code> dosyası seçerek derse kayıtlı öğrencileri tanımlayabilirsiniz. Yalnızca bu listedeki numaralar yıldız puanı verebilir ve <code>.pptx</code> indirebilir.
+          </p>
+
+          <div class="form-grid" style="grid-template-columns: 1.15fr 0.85fr; align-items: start;">
+            <div class="form-field">
+              <label>Öğrenci Numarası Listesi (Her satıra bir öğrenci: <code>ÖğrenciNo</code> veya <code>ÖğrenciNo - Ad Soyad</code>)</label>
+              <textarea id="inp-roster-bulk" rows="6" placeholder="Örn:&#10;20261001 - Ahmet Yılmaz&#10;20261002 - Ayşe Kaya&#10;20261003"></textarea>
+              <div style="display:flex; gap:0.45rem; flex-wrap:wrap; margin-top:0.55rem;">
+                <button type="button" id="btn-roster-append" class="btn btn-primary">
+                  + Listeye Ekle / Güncelle
+                </button>
+                <button type="button" id="btn-roster-replace" class="btn btn-outline" title="Mevcut listeyi silip yalnızca yukarıda yazanları kaydeder">
+                  Listeyi Sıfırla ve Yeniden Tanımla
+                </button>
+                <label class="btn btn-secondary" style="cursor:pointer; margin:0;">
+                  CSV / TXT Dosyası Yükle
+                  <input type="file" id="inp-roster-file" accept=".csv,.txt" class="hidden" />
+                </label>
+              </div>
+            </div>
+
+            <div class="roster-list-box">
+              <div class="roster-list-header">
+                <span>Kayıtlı Öğrenciler (<strong id="roster-count-badge">0</strong>)</span>
+                <button type="button" id="btn-copy-roster-code" class="btn-clear-rating" title="Kalıcı olması için app.js içine yapıştırılabilecek JSON listesini kopyala">
+                  Listeyi Kopyala
+                </button>
+              </div>
+              <div id="roster-items-container" class="roster-items-container">
+                <!-- JS ile doldurulacak -->
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

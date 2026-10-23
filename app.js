@@ -581,23 +581,82 @@ function buildPptExactVisualHtml(slide, slideIdx, totalSlides, lectureWeek) {
 }
 
 // ============================================================================
-// 1. ÖĞRETİM ÜYESİ (YÖNETİCİ) YETKİLENDİRME VE GERÇEK ÖĞRENCİ PUANLAMA SİSTEMİ
+// 1. ÖĞRETİM ÜYESİ YETKİLENDİRME, ÖĞRENCİ LİSTESİ (OBS) VE PUANLAMA SİSTEMİ
 // ============================================================================
 // Eski önbellek anahtarlarını temizle
 try {
   localStorage.removeItem("me101_lecture_ratings_v1");
   localStorage.removeItem("me101_lecture_ratings_v2");
+  localStorage.removeItem("me101_student_votes_v3");
 } catch {
   // ignore
 }
 
-const RATING_STORAGE_KEY = "me101_student_votes_v3";
+const RATING_STORAGE_KEY = "me101_student_votes_v4";
 const CUSTOM_LECTURES_KEY = "me101_custom_lectures_v1";
+const STUDENT_ROSTER_KEY = "me101_student_roster_v1";
 const ADMIN_SESSION_KEY = "me101_instructor_unlocked";
+const STUDENT_SESSION_KEY = "me101_active_student_no";
+
 // Varsayılan öğretim üyesi parolası: me101
 const INSTRUCTOR_PASS_HASH = "me101";
 
+// Varsayılan Örnek Öğrenci Listesi (Öğretim üyesi panelinden güncellenebilir veya buraya yapıştırılabilir)
+const DEFAULT_STUDENT_ROSTER = [
+  { no: "20261001", name: "Örnek Öğrenci 1" },
+  { no: "20261002", name: "Örnek Öğrenci 2" },
+  { no: "20261003", name: "Örnek Öğrenci 3" },
+  { no: "20261004", name: "Örnek Öğrenci 4" },
+  { no: "20261005", name: "Örnek Öğrenci 5" }
+];
+
 let isAdminAuthenticated = sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
+let activeStudentNo = sessionStorage.getItem(STUDENT_SESSION_KEY) || null;
+let pendingStudentAction = null; // { type: 'vote', lecId, val } veya { type: 'download', href, fileName }
+
+function getStudentRoster() {
+  try {
+    const raw = localStorage.getItem(STUDENT_ROSTER_KEY);
+    if (!raw) return [...DEFAULT_STUDENT_ROSTER];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [...DEFAULT_STUDENT_ROSTER];
+  } catch {
+    return [...DEFAULT_STUDENT_ROSTER];
+  }
+}
+
+function saveStudentRoster(rosterArr) {
+  try {
+    localStorage.setItem(STUDENT_ROSTER_KEY, JSON.stringify(rosterArr));
+  } catch {
+    // ignore
+  }
+}
+
+function findStudentInRoster(studentNoInput) {
+  const cleanNo = String(studentNoInput || "").trim();
+  if (!cleanNo) return null;
+  const roster = getStudentRoster();
+  return roster.find((s) => String(s.no).trim().toLowerCase() === cleanNo.toLowerCase()) || null;
+}
+
+function parseRosterText(rawText) {
+  const lines = String(rawText || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const parsed = [];
+  lines.forEach((line) => {
+    // "20261001 - Ad Soyad", "20261001;Ad Soyad", "20261001,Ad Soyad" veya "20261001\tAd Soyad" desteklenir
+    const parts = line.split(/\s*[-;,\t]\s*/);
+    const no = (parts[0] || "").trim();
+    const name = parts.slice(1).join(" ").trim();
+    if (no) {
+      parsed.push({ no, name });
+    }
+  });
+  return parsed;
+}
 
 function updateAdminUI() {
   const adminToolbar = document.getElementById("admin-toolbar");
@@ -615,6 +674,30 @@ function updateAdminUI() {
     if (adminSectionActions) adminSectionActions.classList.add("hidden");
     adminToggleBtn.classList.remove("unlocked");
     adminLockLabel.textContent = "Öğretim Üyesi";
+  }
+}
+
+function updateStudentUI() {
+  const studentBtn = document.getElementById("btn-student-toggle");
+  const studentLabel = document.getElementById("student-login-label");
+  if (!studentBtn || !studentLabel) return;
+
+  if (activeStudentNo) {
+    const stu = findStudentInRoster(activeStudentNo);
+    if (!stu) {
+      activeStudentNo = null;
+      sessionStorage.removeItem(STUDENT_SESSION_KEY);
+      studentBtn.classList.remove("logged-in");
+      studentLabel.textContent = "Öğrenci Girişi";
+      return;
+    }
+    studentBtn.classList.add("logged-in");
+    studentLabel.textContent = stu.name
+      ? `Öğrenci: ${stu.no} (${stu.name}) • Çıkış`
+      : `Öğrenci: ${stu.no} (Çıkış)`;
+  } else {
+    studentBtn.classList.remove("logged-in");
+    studentLabel.textContent = "Öğrenci Girişi";
   }
 }
 
@@ -660,26 +743,31 @@ function deleteCustomLectureFromStorage(lecId) {
   if (idx !== -1) LECTURES.splice(idx, 1);
 }
 
-// Yalnızca gerçek öğrenci oylarını saklar (Başlangıçta tamamen boş: 0 oy)
+// Yalnızca kayıtlı öğrencilerin oylarını saklar: { [lectureId]: { [studentNo]: starValue } }
 function getAllStudentVotes() {
   try {
     const raw = localStorage.getItem(RATING_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     return {};
   }
 }
 
-function addStudentVote(lectureId, starValue) {
+function setStudentVote(lectureId, studentNo, starValue) {
+  const stu = findStudentInRoster(studentNo);
+  if (!stu) return false;
   try {
     const all = getAllStudentVotes();
-    if (!Array.isArray(all[lectureId])) {
-      all[lectureId] = [];
+    if (!all[lectureId] || typeof all[lectureId] !== "object" || Array.isArray(all[lectureId])) {
+      all[lectureId] = {};
     }
-    all[lectureId].push(starValue);
+    // Aynı öğrenci aynı derse tekrar oy verirse eski oyunu günceller (mükerrer oy engellenir)
+    all[lectureId][stu.no] = starValue;
     localStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(all));
+    return true;
   } catch {
-    // ignore
+    return false;
   }
 }
 
@@ -709,23 +797,39 @@ function clearAllStudentVotes() {
 
 function getLectureVoteStats(lectureId) {
   const all = getAllStudentVotes();
-  const votes = Array.isArray(all[lectureId]) ? all[lectureId] : [];
-  const count = votes.length;
+  const lecMap = all[lectureId] && typeof all[lectureId] === "object" && !Array.isArray(all[lectureId])
+    ? all[lectureId]
+    : {};
+  const values = Object.values(lecMap).map((v) => Number(v)).filter((v) => v >= 1 && v <= 5);
+  const count = values.length;
+  const myVote = activeStudentNo && lecMap[activeStudentNo] ? Number(lecMap[activeStudentNo]) : null;
+
   if (count === 0) {
-    return { avg: 0, avgText: "0.0", count: 0, filledStars: 0 };
+    return { avg: 0, avgText: "0.0", count: 0, filledStars: 0, myVote: null };
   }
-  const sum = votes.reduce((a, b) => a + b, 0);
+  const sum = values.reduce((a, b) => a + b, 0);
   const avg = sum / count;
   return {
     avg,
     avgText: avg.toFixed(1),
     count,
-    filledStars: Math.round(avg)
+    filledStars: Math.round(avg),
+    myVote
   };
+}
+
+function triggerDirectFileDownload(href, fileName) {
+  const tempLink = document.createElement("a");
+  tempLink.href = href;
+  if (fileName) tempLink.setAttribute("download", fileName);
+  document.body.appendChild(tempLink);
+  tempLink.click();
+  document.body.removeChild(tempLink);
 }
 
 function renderCatalog() {
   updateAdminUI();
+  updateStudentUI();
   lectureGrid.innerHTML = "";
 
   LECTURES.forEach((lec) => {
@@ -743,6 +847,7 @@ function renderCatalog() {
     }
 
     const isCustom = String(lec.id).startsWith("custom-") || String(lec.id).startsWith("img-lec-");
+    const myVoteBadge = stats.myVote ? ` • Sizin: ${stats.myVote}★` : "";
 
     card.innerHTML = `
       <div class="lecture-row-top">
@@ -767,7 +872,7 @@ function renderCatalog() {
               ${starsHtml}
             </div>
             <span class="rating-meta">
-              ${stats.count > 0 ? `<strong>${stats.avgText}</strong> (${stats.count} oy)` : `0 oy`}
+              ${stats.count > 0 ? `<strong>${stats.avgText}</strong> (${stats.count} oy${myVoteBadge})` : `0 oy`}
             </span>
             ${isAdminAuthenticated && stats.count > 0 ? `<button type="button" class="btn-clear-rating" data-clear-rating="${lec.id}" title="Yönetici: Bu dersin yıldızlarını temizle">&times; Temizle</button>` : ""}
           </div>
@@ -779,7 +884,7 @@ function renderCatalog() {
             <button class="btn btn-primary btn-present" data-id="${lec.id}">
               Sunum
             </button>
-            <a href="${pptxHref}" download="${downloadFileName}" class="btn btn-outline" title="PowerPoint (.pptx) dosyasını indir">
+            <a href="${pptxHref}" download="${downloadFileName}" class="btn btn-outline btn-protected-pptx" data-pptx-href="${pptxHref}" data-pptx-name="${downloadFileName}" title="PowerPoint (.pptx) dosyasını indir (Öğrenci No gerektirir)">
               PPTX
             </a>
           </div>
@@ -789,7 +894,7 @@ function renderCatalog() {
     lectureGrid.appendChild(card);
   });
 
-  // Yıldız hover ve öğrenci oy verme etkileşimleri
+  // Yıldız hover ve kayıtlı öğrenci oy verme etkileşimleri
   document.querySelectorAll(".star-group").forEach((groupEl) => {
     const buttons = Array.from(groupEl.querySelectorAll(".star-btn"));
     buttons.forEach((btn) => {
@@ -804,12 +909,32 @@ function renderCatalog() {
         e.stopPropagation();
         const lecId = btn.dataset.lec;
         const val = parseInt(btn.dataset.val, 10);
-        addStudentVote(lecId, val);
+        if (!activeStudentNo) {
+          openStudentLoginModal({ type: "vote", lecId, val });
+          return;
+        }
+        setStudentVote(lecId, activeStudentNo, val);
         renderCatalog();
       });
     });
     groupEl.addEventListener("mouseleave", () => {
       buttons.forEach((b) => b.classList.remove("hover-preview"));
+    });
+  });
+
+  // PPTX İndirme Koruması (Kayıtlı Öğrenci veya Öğretim Üyesi)
+  document.querySelectorAll(".btn-protected-pptx").forEach((linkEl) => {
+    linkEl.addEventListener("click", (e) => {
+      if (isAdminAuthenticated || activeStudentNo) {
+        return; // Doğrudan indirilebilir
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      openStudentLoginModal({
+        type: "download",
+        href: linkEl.dataset.pptxHref,
+        fileName: linkEl.dataset.pptxName
+      });
     });
   });
 
@@ -865,6 +990,18 @@ function openLecture(lectureId, startInPresentation = false) {
   navDl.setAttribute("download", downloadName);
   bannerDl.href = pptxHref;
   bannerDl.setAttribute("download", downloadName);
+
+  [navDl, bannerDl].forEach((dlEl) => {
+    dlEl.onclick = (e) => {
+      if (isAdminAuthenticated || activeStudentNo) return;
+      e.preventDefault();
+      openStudentLoginModal({
+        type: "download",
+        href: pptxHref,
+        fileName: downloadName
+      });
+    };
+  });
 
   slidesContainer.innerHTML = "";
   lec.slides.forEach((s, idx) => {
@@ -1070,18 +1207,182 @@ function prevStepOrSlide() {
 }
 
 // ============================================================================
-// 4. DERS EKLEME VE PPTX ENTEGRASYON MERKEZİ (ÖĞRETİM ÜYESİ KORUMALI)
+// 4. DERS EKLEME, ÖĞRENCİ LİSTESİ (OBS) VE GİRİŞ DOĞRULAMA MERKEZİ
 // ============================================================================
 const pptxModalBackdrop = document.getElementById("pptx-modal-backdrop");
 const adminLoginBackdrop = document.getElementById("admin-login-backdrop");
 const inpAdminPass = document.getElementById("inp-admin-pass");
 const adminLoginError = document.getElementById("admin-login-error");
+
+const studentLoginBackdrop = document.getElementById("student-login-backdrop");
+const inpStudentNo = document.getElementById("inp-student-no");
+const studentLoginError = document.getElementById("student-login-error");
+
 const inpPptxFile = document.getElementById("inp-pptx-file");
 const btnProcessPptx = document.getElementById("btn-process-pptx");
 const pptxFileStatus = document.getElementById("pptx-file-status");
 let selectedPptxFile = null;
 let selectedSlideImages = [];
 let pendingAdminTab = null;
+
+// --- ÖĞRENCİ GİRİŞİ VE DOĞRULAMA ---
+function openStudentLoginModal(actionAfterLogin = null) {
+  pendingStudentAction = actionAfterLogin;
+  inpStudentNo.value = "";
+  studentLoginError.classList.add("hidden");
+  studentLoginBackdrop.classList.remove("hidden");
+  setTimeout(() => inpStudentNo.focus(), 50);
+}
+
+function closeStudentLoginModal() {
+  studentLoginBackdrop.classList.add("hidden");
+  pendingStudentAction = null;
+}
+
+function handleStudentLoginSubmit() {
+  const enteredNo = inpStudentNo.value.trim();
+  const matchedStu = findStudentInRoster(enteredNo);
+  if (!matchedStu) {
+    studentLoginError.classList.remove("hidden");
+    return;
+  }
+
+  activeStudentNo = matchedStu.no;
+  sessionStorage.setItem(STUDENT_SESSION_KEY, matchedStu.no);
+  const actionToRun = pendingStudentAction;
+  closeStudentLoginModal();
+  renderCatalog();
+
+  if (actionToRun) {
+    if (actionToRun.type === "vote") {
+      setStudentVote(actionToRun.lecId, activeStudentNo, actionToRun.val);
+      renderCatalog();
+    } else if (actionToRun.type === "download") {
+      triggerDirectFileDownload(actionToRun.href, actionToRun.fileName);
+    }
+  }
+}
+
+document.getElementById("btn-student-toggle").addEventListener("click", () => {
+  if (activeStudentNo) {
+    activeStudentNo = null;
+    sessionStorage.removeItem(STUDENT_SESSION_KEY);
+    renderCatalog();
+  } else {
+    openStudentLoginModal(null);
+  }
+});
+
+document.getElementById("btn-close-student-login").addEventListener("click", closeStudentLoginModal);
+document.getElementById("btn-submit-student-login").addEventListener("click", handleStudentLoginSubmit);
+inpStudentNo.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") handleStudentLoginSubmit();
+});
+
+// --- ÖĞRETİM ÜYESİ: ÖĞRENCİ NUMARASI LİSTESİ (OBS) YÖNETİMİ ---
+function renderRosterAdminList() {
+  const roster = getStudentRoster();
+  const countBadge = document.getElementById("roster-count-badge");
+  const container = document.getElementById("roster-items-container");
+  if (!countBadge || !container) return;
+
+  countBadge.textContent = String(roster.length);
+  container.innerHTML = "";
+
+  if (roster.length === 0) {
+    container.innerHTML = `<div style="padding:0.65rem; font-size:0.78rem; color:#6e6256;">Henüz kayıtlı öğrenci bulunmuyor. Sol taraftan öğrenci numaralarını ekleyebilirsiniz.</div>`;
+    return;
+  }
+
+  roster.forEach((stu) => {
+    const row = document.createElement("div");
+    row.className = "roster-item";
+    row.innerHTML = `
+      <span class="roster-item-no">${escapeXml(stu.no)}</span>
+      <span class="roster-item-name">${escapeXml(stu.name || "—")}</span>
+      <button type="button" class="btn-clear-rating" data-remove-stu="${escapeXml(stu.no)}" title="Bu öğrenciyi listeden çıkar">&times; Sil</button>
+    `;
+    container.appendChild(row);
+  });
+
+  container.querySelectorAll("[data-remove-stu]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!isAdminAuthenticated) return;
+      const targetNo = btn.dataset.removeStu;
+      const updated = getStudentRoster().filter(
+        (s) => String(s.no).trim().toLowerCase() !== String(targetNo).trim().toLowerCase()
+      );
+      saveStudentRoster(updated);
+      renderRosterAdminList();
+      renderCatalog();
+    });
+  });
+}
+
+function appendOrUpdateRosterFromText(rawText, replaceAll = false) {
+  if (!isAdminAuthenticated) return;
+  const incoming = parseRosterText(rawText);
+  if (incoming.length === 0) {
+    alert("Lütfen en az bir öğrenci numarası giriniz.");
+    return;
+  }
+
+  const baseList = replaceAll ? [] : getStudentRoster();
+  const mapByNo = new Map();
+  baseList.forEach((s) => {
+    mapByNo.set(String(s.no).trim().toLowerCase(), { no: String(s.no).trim(), name: s.name || "" });
+  });
+  incoming.forEach((s) => {
+    const key = String(s.no).trim().toLowerCase();
+    const existing = mapByNo.get(key);
+    mapByNo.set(key, {
+      no: String(s.no).trim(),
+      name: s.name || (existing ? existing.name : "")
+    });
+  });
+
+  const merged = Array.from(mapByNo.values());
+  saveStudentRoster(merged);
+  document.getElementById("inp-roster-bulk").value = "";
+  renderRosterAdminList();
+  renderCatalog();
+}
+
+document.getElementById("btn-roster-append").addEventListener("click", () => {
+  const txt = document.getElementById("inp-roster-bulk").value;
+  appendOrUpdateRosterFromText(txt, false);
+});
+
+document.getElementById("btn-roster-replace").addEventListener("click", () => {
+  const txt = document.getElementById("inp-roster-bulk").value;
+  if (!txt.trim()) {
+    alert("Sıfırlayıp yeniden tanımlamak için önce metin kutusuna yeni öğrenci listesini yapıştırınız.");
+    return;
+  }
+  appendOrUpdateRosterFromText(txt, true);
+});
+
+document.getElementById("inp-roster-file").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById("inp-roster-bulk").value = String(reader.result || "");
+  };
+  reader.readAsText(file, "utf-8");
+});
+
+document.getElementById("btn-copy-roster-code").addEventListener("click", () => {
+  const roster = getStudentRoster();
+  const codeStr = JSON.stringify(roster, null, 2);
+  navigator.clipboard.writeText(codeStr).then(() => {
+    const btn = document.getElementById("btn-copy-roster-code");
+    btn.textContent = "Kopyalandı";
+    setTimeout(() => {
+      btn.textContent = "Listeyi Kopyala";
+    }, 2000);
+  });
+});
 
 function openAdminLoginModal(targetTab) {
   pendingAdminTab = typeof targetTab === "string" ? targetTab : null;
@@ -1136,6 +1437,9 @@ function switchModalTab(tabId) {
   document.querySelectorAll(".tab-pane").forEach((p) => {
     p.classList.toggle("hidden", p.id !== tabId);
   });
+  if (tabId === "tab-student-roster") {
+    renderRosterAdminList();
+  }
 }
 
 function openPptxModal(defaultTabId) {
@@ -1146,6 +1450,7 @@ function openPptxModal(defaultTabId) {
   const nextWeekNum = LECTURES.length + 1;
   const weekInput = document.getElementById("imp-week");
   if (weekInput) weekInput.value = `${nextWeekNum}. Hafta`;
+  renderRosterAdminList();
   if (typeof defaultTabId === "string" && defaultTabId) {
     switchModalTab(defaultTabId);
   }
@@ -1158,6 +1463,8 @@ function closePptxModal() {
 
 document.getElementById("btn-open-pptx-modal").addEventListener("click", () => openPptxModal("tab-add-manual"));
 document.getElementById("btn-hero-pptx-modal").addEventListener("click", () => openPptxModal("tab-add-manual"));
+document.getElementById("btn-open-student-roster").addEventListener("click", () => openPptxModal("tab-student-roster"));
+document.getElementById("btn-section-student-roster").addEventListener("click", () => openPptxModal("tab-student-roster"));
 document.getElementById("btn-close-pptx-modal").addEventListener("click", closePptxModal);
 document.getElementById("btn-clear-all-ratings").addEventListener("click", clearAllStudentVotes);
 document.getElementById("btn-section-clear-all-ratings").addEventListener("click", clearAllStudentVotes);
