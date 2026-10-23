@@ -1,5 +1,5 @@
 # =============================================================================
-# ME 101 - OTOMATIK PPTX ENTEGRASYON VE GITHUB YAYIN ARACI (3 YONTEM BIR ARADA)
+# MEE 101 - OTOMATIK PPTX ENTEGRASYON VE GITHUB YAYIN ARACI (3 YONTEM BIR ARADA)
 # =============================================================================
 $ErrorActionPreference = "Continue"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -10,7 +10,7 @@ New-Item -ItemType Directory -Force -Path $pptxDir | Out-Null
 New-Item -ItemType Directory -Force -Path $slidesImgDir | Out-Null
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "  ME 101 - PPTX Entegrasyon Araci (Yontem 1 + 2 + 3)      " -ForegroundColor Cyan
+Write-Host "  MEE 101 - PPTX Entegrasyon Araci (Yontem 1 + 2 + 3)     " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 $pptxFiles = Get-ChildItem -Path $pptxDir -Filter "*.pptx"

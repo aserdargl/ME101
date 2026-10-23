@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ME 101 — Makine Mühendisliğine Giriş | Ders Portalı</title>
+  <title>MEE 101 — Makine Mühendisliğine Giriş | Ders Portalı</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=7" />
+  <link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
   <header id="top-navbar" class="navbar">
     <div class="nav-container">
       <div class="brand" id="btn-home" title="Ders Kataloğuna Dön">
-        <div class="brand-mark">ME<br><span>101</span></div>
+        <div class="brand-mark">MEE<br><span>101</span></div>
         <div class="brand-text">
           <span class="department-label">MAKİNE MÜHENDİSLİĞİ BÖLÜMÜ</span>
           <h1 class="course-title">Makine Mühendisliğine Giriş</h1>
@@ -72,7 +72,7 @@
     <!-- Üst Bilgi ve Eşit Genişlikte Şık 3 Yöntem Butonu -->
     <section class="compact-top-bar">
       <div class="compact-top-left">
-        <span class="hero-kicker">ME 101 • LİSANS DERS NOTLARI VE SUNUM PORTALI</span>
+        <span class="hero-kicker">MEE 101 • LİSANS DERS NOTLARI VE SUNUM PORTALI</span>
         <p>Haftalık ders notlarını inceleyebilir, <strong>Sunum</strong> moduyla tam ekran takip edebilir veya sunum dosyalarını kullanabilirsiniz.</p>
       </div>
 
@@ -213,7 +213,7 @@
     <div class="modal-card" style="max-width: 440px;">
       <div class="modal-header">
         <div>
-          <span class="department-label">ME 101 DERS KAYIT DOĞRULAMASI</span>
+          <span class="department-label">MEE 101 DERS KAYIT DOĞRULAMASI</span>
           <h3>Öğrenci Numarası ile Giriş</h3>
         </div>
         <button id="btn-close-student-login" class="modal-close-btn">&times;</button>
@@ -227,7 +227,7 @@
           <input type="text" id="inp-student-no" placeholder="Örn: 20261001" autocomplete="off" />
         </div>
         <p id="student-login-error" class="hidden" style="color:#9b2226; font-size:0.78rem; margin-top:0.45rem; font-weight:600;">
-          Girilen öğrenci numarası ME 101 ders listesinde bulunamadı. Lütfen öğretim üyesinin tanımladığı öğrenci numaranızı giriniz.
+          Girilen öğrenci numarası MEE 101 ders listesinde bulunamadı. Lütfen öğretim üyesinin tanımladığı öğrenci numaranızı giriniz.
         </p>
         <div class="modal-footer-actions">
           <button id="btn-submit-student-login" class="btn btn-primary" style="width:100%; justify-content:center;">
@@ -378,12 +378,23 @@
               <code>pptx-entegre-et.bat</code> dosyasını çalıştırınız. Yalnızca sizin GitHub yetkinizle ana sunucuya yüklenir.
             </p>
           </div>
-          <div class="info-card">
+          <div class="info-card" style="margin-bottom:0.85rem;">
             <h4>2. Yapılandırılmış Ders Verisini (JSON) Kopyalama</h4>
             <p style="margin-bottom:0.65rem;">
               Burada oluşturduğunuz derslerin veri yapısını kopyalayıp <code>app.js</code> içine kaydedebilirsiniz:
             </p>
             <button id="btn-export-json" class="btn btn-secondary">Ders Verisini (JSON) Kopyala</button>
+          </div>
+          <div class="info-card">
+            <h4>3. Öğretim Üyesi Parolasını Değiştir</h4>
+            <p style="margin-bottom:0.55rem;">
+              Yönetici giriş parolanızı buradan değiştirebilirsiniz (parola kaynak kodda açık metin olarak tutulmaz, şifreli özet olarak saklanır):
+            </p>
+            <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+              <input type="password" id="inp-new-admin-pass" placeholder="Yeni parolanızı yazınız..." style="max-width:240px; padding:0.4rem 0.65rem; border:1px solid #bfaf9c; border-radius:4px;" />
+              <button type="button" id="btn-save-new-admin-pass" class="btn btn-primary">Parolayı Güncelle</button>
+              <span id="admin-pass-save-msg" style="font-size:0.76rem; color:#2d6a4f; font-weight:600;"></span>
+            </div>
           </div>
         </div>
 
@@ -459,7 +470,7 @@
             </div>
             <div class="form-field">
               <label>PPTX İndirme Yolu / Dosyası</label>
-              <input type="text" id="edit-lec-pptx-url" placeholder="Örn: pptx/ME101-Hafta1.pptx" />
+              <input type="text" id="edit-lec-pptx-url" placeholder="Örn: pptx/MEE101-Hafta1.pptx" />
             </div>
           </div>
 
@@ -614,6 +625,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

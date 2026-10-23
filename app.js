@@ -1,5 +1,5 @@
 // ============================================================================
-// ME 101 — MAKİNE MÜHENDİSLİĞİNE GİRİŞ | AKADEMİK DERS VE SUNUM MOTORU
+// MEE 101 — MAKİNE MÜHENDİSLİĞİNE GİRİŞ | AKADEMİK DERS VE SUNUM MOTORU
 // ============================================================================
 
 function getSimulationSlideObject(simType, weekLabel) {
@@ -236,7 +236,7 @@ const LECTURES = [
     title: "Makine Mühendisliğine Giriş, Tarihsel Gelişim ve Temel Disiplinler",
     description:
       "Makine mühendisliğinin tanımı, Sanayi Devrimleri, beş temel anabilim dalı ve dişli çark mekanizmaları üzerinde güç/moment iletimi analizi.",
-    pptxUrl: "pptx/ME101-Hafta1.pptx",
+    pptxUrl: "pptx/MEE101-Hafta1.pptx",
     features: ["Dişli Çark Simülasyonu", "Hibrit Slayt Modu", "PPTX Arşivi"],
     slides: [
       {
@@ -359,7 +359,7 @@ const LECTURES = [
     title: "Kuvvet, Moment ve Mukavemet: Kiriş Eğilme Analizi",
     description:
       "Statik denge denklemleri, iç kuvvetler, eğilme momenti kavramı ve ankastre kirişlerin yük altında sehim/gerilme analizi.",
-    pptxUrl: "pptx/ME101-Hafta2.pptx",
+    pptxUrl: "pptx/MEE101-Hafta2.pptx",
     features: ["Ankastre Kiriş Analizi", "Hibrit Slayt Modu", "PPTX Arşivi"],
     slides: [
       {
@@ -411,7 +411,7 @@ const LECTURES = [
     title: "Malzeme Bilimi: Çekme Deneyi ve Gerilme – Şekil Değiştirme (σ - ε)",
     description:
       "Mühendislik malzemelerinin mekanik davranışları, Hooke Yasası, elastik/plastik şekil değiştirme ve tek eksenli çekme deneyi.",
-    pptxUrl: "pptx/ME101-Hafta3.pptx",
+    pptxUrl: "pptx/MEE101-Hafta3.pptx",
     features: ["Çekme Deneyi Simülasyonu", "Hibrit Slayt Modu", "PPTX Arşivi"],
     slides: [
       {
@@ -460,7 +460,7 @@ const LECTURES = [
     title: "Mekanizma Tekniği: Krank-Biyel Mekanizması Kinematiği",
     description:
       "Dönme hareketini doğrusal harekete dönüştüren krank-biyel mekanizmasının konum, hız ve strok analizi.",
-    pptxUrl: "pptx/ME101-Hafta4.pptx",
+    pptxUrl: "pptx/MEE101-Hafta4.pptx",
     features: ["Krank-Biyel Simülasyonu", "Hibrit Slayt Modu", "PPTX Arşivi"],
     slides: [getSimulationSlideObject("crank", "4. HAFTA")]
   }
@@ -523,7 +523,7 @@ function buildPptExactVisualHtml(slide, slideIdx, totalSlides, lectureWeek) {
   }
 
   const bullets = slide.pptSummaryBullets || [
-    "ME 101 — Makine Mühendisliğine Giriş Ders Notu",
+    "MEE 101 — Makine Mühendisliğine Giriş Ders Notu",
     "Üstteki butondan Web Görünümü ile PPT Levha Görünümü arasında geçiş yapabilirsiniz."
   ];
 
@@ -548,7 +548,7 @@ function buildPptExactVisualHtml(slide, slideIdx, totalSlides, lectureWeek) {
         <g transform="translate(940, 320)">
           <rect x="0" y="0" width="220" height="180" fill="#f5f2eb" stroke="#bfaf9c" stroke-width="2" />
           <line x1="0" y1="45" x2="220" y2="45" stroke="#d8cfc2" />
-          <text x="110" y="30" text-anchor="middle" fill="#5c3d28" font-family="JetBrains Mono, monospace" font-size="16" font-weight="700">ME 101</text>
+          <text x="110" y="30" text-anchor="middle" fill="#5c3d28" font-family="JetBrains Mono, monospace" font-size="16" font-weight="700">MEE 101</text>
           <text x="110" y="105" text-anchor="middle" fill="#3b2818" font-family="Source Serif 4, Georgia, serif" font-size="22" font-weight="700">Teknik Şema</text>
           <text x="110" y="135" text-anchor="middle" fill="#6e6256" font-family="Inter, sans-serif" font-size="14">Slayt ${slideIdx + 1}</text>
         </g>
@@ -572,7 +572,7 @@ function buildPptExactVisualHtml(slide, slideIdx, totalSlides, lectureWeek) {
 
         <!-- Alt Bilgi Çubuğu -->
         <line x1="60" y1="650" x2="1220" y2="650" stroke="#d8cfc2" stroke-width="2" />
-        <text x="60" y="685" fill="#6e6256" font-family="Inter, sans-serif" font-size="17">ME 101 — Makine Mühendisliğine Giriş | PowerPoint Slayt Levhası</text>
+        <text x="60" y="685" fill="#6e6256" font-family="Inter, sans-serif" font-size="17">MEE 101 — Makine Mühendisliğine Giriş | PowerPoint Slayt Levhası</text>
         <text x="1220" y="685" text-anchor="end" fill="#3b2818" font-family="JetBrains Mono, monospace" font-size="17" font-weight="700">${slideIdx + 1} / ${totalSlides}</text>
       </svg>
       <span class="ppt-frame-badge">PPT Levha Görünümü (Yöntem II)</span>
@@ -601,8 +601,30 @@ const STUDENT_SESSION_KEY = "me101_active_student_no";
 
 const INITIAL_DEFAULT_LECTURES = JSON.parse(JSON.stringify(LECTURES));
 
-// Varsayılan öğretim üyesi parolası: me101
-const INSTRUCTOR_PASS_HASH = "me101";
+const CUSTOM_ADMIN_PASS_HASH_KEY = "mee101_custom_admin_hash_v1";
+const DEFAULT_INSTRUCTOR_HASH = "a7dc91fb2b6975cf";
+
+function hashAdminPass(str) {
+  const s = "mee101_salt_" + String(str || "").trim();
+  let h1 = 0xdeadbeef ^ s.length;
+  let h2 = 0x41c6ce57 ^ s.length;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0).toString(16).padStart(8, "0") + (h1 >>> 0).toString(16).padStart(8, "0");
+}
+
+function getActiveAdminPassHash() {
+  try {
+    return localStorage.getItem(CUSTOM_ADMIN_PASS_HASH_KEY) || DEFAULT_INSTRUCTOR_HASH;
+  } catch {
+    return DEFAULT_INSTRUCTOR_HASH;
+  }
+}
 
 // Varsayılan Örnek Öğrenci Listesi (Öğretim üyesi panelinden güncellenebilir veya buraya yapıştırılabilir)
 const DEFAULT_STUDENT_ROSTER = [
@@ -870,8 +892,8 @@ function renderCatalog() {
   LECTURES.forEach((lec) => {
     const card = document.createElement("article");
     card.className = "lecture-card";
-    const pptxHref = lec.pptxUrl || "pptx/ME101-Hafta1.pptx";
-    const downloadFileName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-ME101.pptx`;
+    const pptxHref = lec.pptxUrl || "pptx/MEE101-Hafta1.pptx";
+    const downloadFileName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
 
     const stats = getLectureVoteStats(lec.id);
 
@@ -1027,8 +1049,8 @@ function openLecture(lectureId, startInPresentation = false) {
   navCurrentLectureTitle.textContent = `${lec.week}: ${lec.title.split(":")[0]}`;
   presLectureName.textContent = `${lec.week}`;
 
-  const pptxHref = lec.pptxUrl || "pptx/ME101-Hafta1.pptx";
-  const downloadName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-ME101.pptx`;
+  const pptxHref = lec.pptxUrl || "pptx/MEE101-Hafta1.pptx";
+  const downloadName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
   const navDl = document.getElementById("btn-nav-download-pptx");
   const bannerDl = document.getElementById("btn-banner-download-pptx");
   navDl.href = pptxHref;
@@ -1453,7 +1475,7 @@ function closeAdminLoginModal() {
 
 function handleAdminLoginSubmit() {
   const val = inpAdminPass.value.trim();
-  if (val === INSTRUCTOR_PASS_HASH) {
+  if (hashAdminPass(val) === getActiveAdminPassHash()) {
     isAdminAuthenticated = true;
     sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
     closeAdminLoginModal();
@@ -1718,7 +1740,7 @@ btnProcessPptx.addEventListener("click", async () => {
       week: weekLabel,
       title: finalTitle,
       description: finalDesc,
-      pptxUrl: "pptx/ME101-Hafta1.pptx",
+      pptxUrl: "pptx/MEE101-Hafta1.pptx",
       features: ["Ders Notu", "Sunum Modu"],
       slides: slidesArr
     };
@@ -1815,7 +1837,7 @@ btnProcessImages.addEventListener("click", () => {
     week: weekLabel,
     title: titleLabel,
     description: `${selectedSlideImages.length} adet slayt görseli ile oluşturulmuş sunum.`,
-    pptxUrl: "pptx/ME101-Hafta1.pptx",
+    pptxUrl: "pptx/MEE101-Hafta1.pptx",
     features: ["Birebir Görsel Koruma", "Lazer ve Kalem Destekli"],
     slides: imageSlides
   };
@@ -1836,6 +1858,28 @@ document.getElementById("btn-export-json").addEventListener("click", () => {
       btn.textContent = "Ders Verisini (JSON) Kopyala";
     }, 2500);
   });
+});
+
+document.getElementById("btn-save-new-admin-pass").addEventListener("click", () => {
+  if (!isAdminAuthenticated) return;
+  const inp = document.getElementById("inp-new-admin-pass");
+  const msg = document.getElementById("admin-pass-save-msg");
+  const newPass = (inp.value || "").trim();
+  if (newPass.length < 4) {
+    alert("Lütfen en az 4 karakterli bir parola giriniz.");
+    return;
+  }
+  const newHash = hashAdminPass(newPass);
+  try {
+    localStorage.setItem(CUSTOM_ADMIN_PASS_HASH_KEY, newHash);
+  } catch {
+    // ignore
+  }
+  inp.value = "";
+  msg.textContent = "Yeni parola kaydedildi!";
+  setTimeout(() => {
+    msg.textContent = "";
+  }, 3000);
 });
 
 // ============================================================================
