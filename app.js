@@ -581,8 +581,46 @@ function buildPptExactVisualHtml(slide, slideIdx, totalSlides, lectureWeek) {
 }
 
 // ============================================================================
-// 1. KATALOG OLUŞTURMA
+// 1. ÖĞRENCİ YILDIZ PUANLAMA SİSTEMİ VE DİKEY DERS LİSTESİ
 // ============================================================================
+const RATING_STORAGE_KEY = "me101_lecture_ratings_v1";
+
+const DEFAULT_RATINGS = {
+  "week-1": { baseSum: 58, baseCount: 12 },
+  "week-2": { baseSum: 47, baseCount: 10 },
+  "week-3": { baseSum: 44, baseCount: 9 },
+  "week-4": { baseSum: 39, baseCount: 8 }
+};
+
+function getSavedUserRatings() {
+  try {
+    const raw = localStorage.getItem(RATING_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveUserRating(lectureId, starValue) {
+  try {
+    const current = getSavedUserRatings();
+    current[lectureId] = starValue;
+    localStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(current));
+  } catch {
+    // localStorage kapalıysa sessizce devam et
+  }
+}
+
+function getLectureRatingStats(lectureId) {
+  const userRatings = getSavedUserRatings();
+  const userVote = userRatings[lectureId] || 0;
+  const base = DEFAULT_RATINGS[lectureId] || { baseSum: 23, baseCount: 5 };
+  const totalSum = base.baseSum + (userVote > 0 ? userVote : 0);
+  const totalCount = base.baseCount + (userVote > 0 ? 1 : 0);
+  const avg = (totalSum / totalCount).toFixed(1);
+  return { avg, totalCount, userVote };
+}
+
 function renderCatalog() {
   lectureGrid.innerHTML = "";
   LECTURES.forEach((lec) => {
@@ -591,31 +629,78 @@ function renderCatalog() {
     const pptxHref = lec.pptxUrl || "pptx/ME101-Hafta1.pptx";
     const downloadFileName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-ME101.pptx`;
 
+    const stats = getLectureRatingStats(lec.id);
+    const activeStarThreshold = stats.userVote > 0 ? stats.userVote : Math.round(parseFloat(stats.avg));
+
+    let starsHtml = "";
+    for (let s = 1; s <= 5; s++) {
+      const filledClass = s <= activeStarThreshold ? "filled" : "";
+      starsHtml += `<button type="button" class="star-btn ${filledClass}" data-lec="${lec.id}" data-val="${s}" title="${s} Yıldız Ver">&#9733;</button>`;
+    }
+
     card.innerHTML = `
-      <div>
-        <div class="card-top-meta">
-          <span class="week-tag">${lec.week}</span>
-          <span class="slide-count-tag">${lec.slides.length} Bölüm / Slayt</span>
-        </div>
+      <div class="lecture-week-col">
+        <span class="week-tag">${lec.week}</span>
+        <span class="slide-count-tag">${lec.slides.length} Bölüm / Slayt</span>
+      </div>
+
+      <div class="lecture-info-col">
         <h4>${lec.title}</h4>
         <p>${lec.description}</p>
         <div class="card-features">
           ${lec.features.map((f) => `<span class="feature-chip">${f}</span>`).join("")}
         </div>
       </div>
-      <div class="card-actions-3">
-        <button class="btn btn-secondary btn-read" data-id="${lec.id}">
-          Ders Notu
-        </button>
-        <button class="btn btn-primary btn-present" data-id="${lec.id}">
-          Sunumu Başlat
-        </button>
-        <a href="${pptxHref}" download="${downloadFileName}" class="btn btn-outline" title="Orijinal PowerPoint (.pptx) dosyasını indir">
-          PPTX İndir
-        </a>
+
+      <div class="lecture-right-col">
+        <div class="rating-box" data-rating-box="${lec.id}">
+          <div class="star-group" data-star-group="${lec.id}">
+            ${starsHtml}
+          </div>
+          <span class="rating-meta">
+            <strong>${stats.avg}</strong> / 5.0 (${stats.totalCount} oy)
+          </span>
+          ${stats.userVote > 0 ? `<span class="rating-user-note">Puanınız: ${stats.userVote}&#9733;</span>` : ""}
+        </div>
+
+        <div class="card-actions-3">
+          <button class="btn btn-secondary btn-read" data-id="${lec.id}">
+            Ders Notu
+          </button>
+          <button class="btn btn-primary btn-present" data-id="${lec.id}">
+            Sunumu Başlat
+          </button>
+          <a href="${pptxHref}" download="${downloadFileName}" class="btn btn-outline" title="Orijinal PowerPoint (.pptx) dosyasını indir">
+            PPTX İndir
+          </a>
+        </div>
       </div>
     `;
     lectureGrid.appendChild(card);
+  });
+
+  // Yıldız hover ve tıklama etkileşimleri
+  document.querySelectorAll(".star-group").forEach((groupEl) => {
+    const buttons = Array.from(groupEl.querySelectorAll(".star-btn"));
+    buttons.forEach((btn) => {
+      btn.addEventListener("mouseenter", () => {
+        const hoverVal = parseInt(btn.dataset.val, 10);
+        buttons.forEach((b) => {
+          const v = parseInt(b.dataset.val, 10);
+          b.classList.toggle("hover-preview", v <= hoverVal);
+        });
+      });
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const lecId = btn.dataset.lec;
+        const val = parseInt(btn.dataset.val, 10);
+        saveUserRating(lecId, val);
+        renderCatalog();
+      });
+    });
+    groupEl.addEventListener("mouseleave", () => {
+      buttons.forEach((b) => b.classList.remove("hover-preview"));
+    });
   });
 
   document.querySelectorAll(".btn-read").forEach((btn) => {
