@@ -581,10 +581,37 @@ function buildPptExactVisualHtml(slide, slideIdx, totalSlides, lectureWeek) {
 }
 
 // ============================================================================
-// 1. ÖĞRENCİ YILDIZ PUANLAMA SİSTEMİ (SAHTE OYLAR YOK + SİLME DESTEKLİ)
+// 1. ÖĞRETİM ÜYESİ (YÖNETİCİ) YETKİLENDİRME VE PUANLAMA SİSTEMİ
 // ============================================================================
 const RATING_STORAGE_KEY = "me101_lecture_ratings_v2";
 const CUSTOM_LECTURES_KEY = "me101_custom_lectures_v1";
+const ADMIN_SESSION_KEY = "me101_instructor_unlocked";
+// Varsayılan öğretim üyesi parolası: me101
+const INSTRUCTOR_PASS_HASH = "me101";
+
+let isAdminAuthenticated = sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
+
+function updateAdminUI() {
+  const adminToolbar = document.getElementById("admin-toolbar");
+  const adminCompactMethods = document.getElementById("admin-compact-methods");
+  const heroAddBtn = document.getElementById("btn-hero-pptx-modal");
+  const adminToggleBtn = document.getElementById("btn-admin-toggle");
+  const adminLockLabel = document.getElementById("admin-lock-label");
+
+  if (isAdminAuthenticated) {
+    adminToolbar.classList.remove("hidden");
+    adminCompactMethods.classList.remove("hidden");
+    heroAddBtn.classList.remove("hidden");
+    adminToggleBtn.classList.add("unlocked");
+    adminLockLabel.textContent = "Yönetici (Çıkış)";
+  } else {
+    adminToolbar.classList.add("hidden");
+    adminCompactMethods.classList.add("hidden");
+    heroAddBtn.classList.add("hidden");
+    adminToggleBtn.classList.remove("unlocked");
+    adminLockLabel.textContent = "Öğretim Üyesi";
+  }
+}
 
 function loadCustomLectures() {
   try {
@@ -615,6 +642,7 @@ function saveCustomLectureToStorage(newLec) {
 }
 
 function deleteCustomLectureFromStorage(lecId) {
+  if (!isAdminAuthenticated) return;
   try {
     const raw = localStorage.getItem(CUSTOM_LECTURES_KEY);
     const arr = raw ? JSON.parse(raw) : [];
@@ -651,6 +679,7 @@ function saveUserRating(lectureId, starValue) {
 }
 
 function renderCatalog() {
+  updateAdminUI();
   lectureGrid.innerHTML = "";
   const ratings = getSavedUserRatings();
 
@@ -678,7 +707,7 @@ function renderCatalog() {
         </div>
         <div class="lecture-meta-right">
           <span class="slide-count-tag">${lec.slides.length} Slayt</span>
-          ${isCustom ? `<button type="button" class="btn-delete-lecture" data-del-lec="${lec.id}" title="Bu dersi sil">Dersi Sil</button>` : ""}
+          ${isAdminAuthenticated && isCustom ? `<button type="button" class="btn-delete-lecture" data-del-lec="${lec.id}" title="Bu dersi sil">Dersi Sil</button>` : ""}
         </div>
       </div>
 
@@ -695,7 +724,7 @@ function renderCatalog() {
             <span class="rating-meta">
               ${userVote > 0 ? `<strong>${userVote}.0</strong> / 5` : `Puanlanmadı`}
             </span>
-            ${userVote > 0 ? `<button type="button" class="btn-clear-rating" data-clear-rating="${lec.id}" title="Verilen yıldızları sil / sıfırla">&times; Sil</button>` : ""}
+            ${isAdminAuthenticated && userVote > 0 ? `<button type="button" class="btn-clear-rating" data-clear-rating="${lec.id}" title="Yönetici: Verilen yıldızları sil / sıfırla">&times; Sil</button>` : ""}
           </div>
 
           <div class="card-actions-3">
@@ -715,7 +744,7 @@ function renderCatalog() {
     lectureGrid.appendChild(card);
   });
 
-  // Yıldız hover ve tıklama etkileşimleri (Aynı yıldıza tekrar tıklanırsa da sıfırlar)
+  // Yıldız hover ve tıklama etkileşimleri
   document.querySelectorAll(".star-group").forEach((groupEl) => {
     const buttons = Array.from(groupEl.querySelectorAll(".star-btn"));
     buttons.forEach((btn) => {
@@ -731,13 +760,13 @@ function renderCatalog() {
         const lecId = btn.dataset.lec;
         const val = parseInt(btn.dataset.val, 10);
         const currentRatings = getSavedUserRatings();
-        if (currentRatings[lecId] === val) {
+        // Yıldızı silme (0 yapma) yalnızca öğretim üyesi modunda mümkündür
+        if (isAdminAuthenticated && currentRatings[lecId] === val) {
           saveUserRating(lecId, 0);
         } else {
           saveUserRating(lecId, val);
         }
-        loadCustomLectures();
-renderCatalog();
+        renderCatalog();
       });
     });
     groupEl.addEventListener("mouseleave", () => {
@@ -745,23 +774,23 @@ renderCatalog();
     });
   });
 
-  // Yıldızları Sil / Sıfırla butonu
+  // Yıldızları Sil / Sıfırla butonu (Yalnızca Öğretim Üyesi)
   document.querySelectorAll(".btn-clear-rating").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
+      if (!isAdminAuthenticated) return;
       saveUserRating(btn.dataset.clearRating, 0);
-      loadCustomLectures();
-renderCatalog();
+      renderCatalog();
     });
   });
 
-  // Eklenen özel dersi silme butonu
+  // Eklenen özel dersi silme butonu (Yalnızca Öğretim Üyesi)
   document.querySelectorAll(".btn-delete-lecture").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
+      if (!isAdminAuthenticated) return;
       deleteCustomLectureFromStorage(btn.dataset.delLec);
-      loadCustomLectures();
-renderCatalog();
+      renderCatalog();
     });
   });
 
@@ -1002,14 +1031,57 @@ function prevStepOrSlide() {
 }
 
 // ============================================================================
-// 4. DERS EKLEME VE PPTX ENTEGRASYON MERKEZİ
+// 4. DERS EKLEME VE PPTX ENTEGRASYON MERKEZİ (ÖĞRETİM ÜYESİ KORUMALI)
 // ============================================================================
 const pptxModalBackdrop = document.getElementById("pptx-modal-backdrop");
+const adminLoginBackdrop = document.getElementById("admin-login-backdrop");
+const inpAdminPass = document.getElementById("inp-admin-pass");
+const adminLoginError = document.getElementById("admin-login-error");
 const inpPptxFile = document.getElementById("inp-pptx-file");
 const btnProcessPptx = document.getElementById("btn-process-pptx");
 const pptxFileStatus = document.getElementById("pptx-file-status");
 let selectedPptxFile = null;
 let selectedSlideImages = [];
+
+function openAdminLoginModal() {
+  inpAdminPass.value = "";
+  adminLoginError.classList.add("hidden");
+  adminLoginBackdrop.classList.remove("hidden");
+  setTimeout(() => inpAdminPass.focus(), 50);
+}
+
+function closeAdminLoginModal() {
+  adminLoginBackdrop.classList.add("hidden");
+}
+
+function handleAdminLoginSubmit() {
+  const val = inpAdminPass.value.trim();
+  if (val === INSTRUCTOR_PASS_HASH) {
+    isAdminAuthenticated = true;
+    sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
+    closeAdminLoginModal();
+    renderCatalog();
+  } else {
+    adminLoginError.classList.remove("hidden");
+  }
+}
+
+document.getElementById("btn-admin-toggle").addEventListener("click", () => {
+  if (isAdminAuthenticated) {
+    isAdminAuthenticated = false;
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    closePptxModal();
+    renderCatalog();
+  } else {
+    openAdminLoginModal();
+  }
+});
+
+document.getElementById("btn-close-admin-login").addEventListener("click", closeAdminLoginModal);
+document.getElementById("btn-submit-admin-login").addEventListener("click", handleAdminLoginSubmit);
+inpAdminPass.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") handleAdminLoginSubmit();
+});
 
 function switchModalTab(tabId) {
   document.querySelectorAll(".modal-tab").forEach((b) => {
@@ -1021,6 +1093,10 @@ function switchModalTab(tabId) {
 }
 
 function openPptxModal(defaultTabId) {
+  if (!isAdminAuthenticated) {
+    openAdminLoginModal();
+    return;
+  }
   const nextWeekNum = LECTURES.length + 1;
   const weekInput = document.getElementById("imp-week");
   if (weekInput) weekInput.value = `${nextWeekNum}. Hafta`;
