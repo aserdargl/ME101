@@ -23,23 +23,8 @@
       </div>
 
       <div class="nav-right-group">
-        <!-- SADECE YÖNETİCİ (ÖĞRETİM ÜYESİ) GİRİŞİ YAPILDIĞINDA GÖRÜNEN ARAÇLAR -->
+        <!-- SADECE YÖNETİCİ (ÖĞRETİM ÜYESİ) GİRİŞİ YAPILDIĞINDA GÖRÜNEN DERS EKLE BUTONU -->
         <div id="admin-toolbar" class="admin-toolbar hidden">
-          <div class="method-icon-bar" title="PPTX ve Ders Yöntemleri (Yalnızca Öğretim Üyesi)">
-            <button type="button" class="icon-method-btn" data-open-tab="tab-add-manual" title="Yöntem I: Web Slayt Dönüşümü / PPTX Aktar">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg>
-              <span>I. Web Slayt</span>
-            </button>
-            <button type="button" class="icon-method-btn" data-open-tab="tab-method-2" title="Yöntem II: Birebir PPT Görsel Sunumu">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              <span>II. PPT Görsel</span>
-            </button>
-            <button type="button" class="icon-method-btn" data-open-tab="tab-permanent" title="Yöntem III: PPTX Arşivi ve Kalıcı Kayıt">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              <span>III. PPTX Arşiv</span>
-            </button>
-          </div>
-
           <button id="btn-open-pptx-modal" class="btn btn-primary">
             + Ders Ekle
           </button>
@@ -69,25 +54,42 @@
 
   <!-- ANA SAYFA: DERS KATALOĞU -->
   <main id="catalog-view" class="catalog-container">
-    <!-- Kompakt Üst Bilgi Barı -->
+    <!-- Üst Bilgi ve Eşit Genişlikte Şık 3 Yöntem Butonu -->
     <section class="compact-top-bar">
       <div class="compact-top-left">
-        <span class="hero-kicker">ME 101 • LİSANS DERS NOTLARI VE ETKİLEŞİMLİ SUNUM PORTALI</span>
-        <p>Haftalık ders notlarını inceleyebilir, <strong>Sunum</strong> moduyla tam ekran takip edebilir veya ders sunumlarını indirebilirsiniz.</p>
+        <span class="hero-kicker">ME 101 • LİSANS DERS NOTLARI VE SUNUM PORTALI</span>
+        <p>Haftalık ders notlarını inceleyebilir, <strong>Sunum</strong> moduyla tam ekran takip edebilir veya sunum dosyalarını kullanabilirsiniz.</p>
       </div>
-      <!-- Bu ikonik yöntem butonları da yalnızca Öğretim Üyesi modunda görünür -->
-      <div id="admin-compact-methods" class="compact-top-right hidden">
-        <button type="button" class="icon-pill-btn" data-open-tab="tab-add-manual" title="Yöntem I: PPTX'ten Web Slaytlarına Dönüştür">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          I. Web Slayt
+
+      <div id="admin-compact-methods" class="methods-equal-group">
+        <button type="button" class="method-suite-btn" data-open-tab="tab-add-manual" title="Yöntem I: PPTX'ten Web Slaytlarına Dönüştür">
+          <span class="method-suite-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </span>
+          <span class="method-suite-text">
+            <small>I. YÖNTEM</small>
+            <strong>Web Slayt</strong>
+          </span>
         </button>
-        <button type="button" class="icon-pill-btn" data-open-tab="tab-method-2" title="Yöntem II: Birebir Slayt Görselleri (Hibrit)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          II. Görsel Mod
+
+        <button type="button" class="method-suite-btn" data-open-tab="tab-method-2" title="Yöntem II: Birebir Slayt Görselleri (Hibrit)">
+          <span class="method-suite-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </span>
+          <span class="method-suite-text">
+            <small>II. YÖNTEM</small>
+            <strong>PPT Görsel</strong>
+          </span>
         </button>
-        <button type="button" class="icon-pill-btn" data-open-tab="tab-permanent" title="Yöntem III: Doğrudan PPTX İndirme ve Klasör Aracı">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          III. PPTX Arşivi
+
+        <button type="button" class="method-suite-btn" data-open-tab="tab-permanent" title="Yöntem III: Doğrudan PPTX İndirme ve Klasör Aracı">
+          <span class="method-suite-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </span>
+          <span class="method-suite-text">
+            <small>III. YÖNTEM</small>
+            <strong>PPTX Arşivi</strong>
+          </span>
         </button>
       </div>
     </section>
@@ -97,7 +99,6 @@
         <div>
           <h3>Haftalık Ders Programı</h3>
         </div>
-        <!-- Sadece Öğretim Üyesi girişi açıkken görünür -->
         <button id="btn-hero-pptx-modal" class="btn btn-primary hidden">
           + Ders Ekle
         </button>
@@ -213,7 +214,7 @@
     </div>
   </div>
 
-  <!-- DERS EKLE & PPTX ENTEGRASYON MODALI (Yalnızca Öğretim Üyesi Modunda Açılır) -->
+  <!-- DERS EKLE & PPTX ENTEGRASYON MODALI -->
   <div id="pptx-modal-backdrop" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
@@ -310,7 +311,7 @@
           </div>
         </div>
 
-        <!-- TAB 3: KALICI GITHUB ARACI VE PAROLA DEĞİŞTİRME -->
+        <!-- TAB 3: KALICI GITHUB ARACI -->
         <div id="tab-permanent" class="tab-pane hidden">
           <p class="modal-desc">
             GitHub Pages statik bir sistem olduğu için, tüm öğrencilerin görebileceği kalıcı ders ekleme işlemi doğrudan sizin bilgisayarınızdan veya GitHub hesabınızdan yapılır:

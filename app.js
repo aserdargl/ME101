@@ -593,20 +593,17 @@ let isAdminAuthenticated = sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
 
 function updateAdminUI() {
   const adminToolbar = document.getElementById("admin-toolbar");
-  const adminCompactMethods = document.getElementById("admin-compact-methods");
   const heroAddBtn = document.getElementById("btn-hero-pptx-modal");
   const adminToggleBtn = document.getElementById("btn-admin-toggle");
   const adminLockLabel = document.getElementById("admin-lock-label");
 
   if (isAdminAuthenticated) {
     adminToolbar.classList.remove("hidden");
-    adminCompactMethods.classList.remove("hidden");
     heroAddBtn.classList.remove("hidden");
     adminToggleBtn.classList.add("unlocked");
     adminLockLabel.textContent = "Yönetici (Çıkış)";
   } else {
     adminToolbar.classList.add("hidden");
-    adminCompactMethods.classList.add("hidden");
     heroAddBtn.classList.add("hidden");
     adminToggleBtn.classList.remove("unlocked");
     adminLockLabel.textContent = "Öğretim Üyesi";
@@ -1042,8 +1039,10 @@ const btnProcessPptx = document.getElementById("btn-process-pptx");
 const pptxFileStatus = document.getElementById("pptx-file-status");
 let selectedPptxFile = null;
 let selectedSlideImages = [];
+let pendingAdminTab = null;
 
-function openAdminLoginModal() {
+function openAdminLoginModal(targetTab) {
+  pendingAdminTab = typeof targetTab === "string" ? targetTab : null;
   inpAdminPass.value = "";
   adminLoginError.classList.add("hidden");
   adminLoginBackdrop.classList.remove("hidden");
@@ -1061,6 +1060,11 @@ function handleAdminLoginSubmit() {
     sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
     closeAdminLoginModal();
     renderCatalog();
+    if (pendingAdminTab) {
+      const tabToOpen = pendingAdminTab;
+      pendingAdminTab = null;
+      openPptxModal(tabToOpen);
+    }
   } else {
     adminLoginError.classList.remove("hidden");
   }
@@ -1094,7 +1098,7 @@ function switchModalTab(tabId) {
 
 function openPptxModal(defaultTabId) {
   if (!isAdminAuthenticated) {
-    openAdminLoginModal();
+    openAdminLoginModal(defaultTabId);
     return;
   }
   const nextWeekNum = LECTURES.length + 1;

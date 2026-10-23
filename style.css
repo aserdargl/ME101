@@ -258,14 +258,19 @@ body {
   border: 1px solid var(--border-color);
   border-left: 4px solid var(--brown-primary);
   border-radius: var(--radius-lg);
-  padding: 0.85rem 1.25rem;
+  padding: 0.9rem 1.25rem;
   margin-bottom: 1.4rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
   box-shadow: var(--shadow-sm);
+}
+
+.compact-top-left {
+  flex: 1;
+  min-width: 280px;
 }
 
 .hero-kicker {
@@ -275,7 +280,7 @@ body {
   font-weight: 600;
   color: var(--brown-accent);
   letter-spacing: 0.08em;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.2rem;
 }
 
 .compact-top-left p {
@@ -283,33 +288,90 @@ body {
   font-size: 0.86rem;
 }
 
-.compact-top-right {
+/* EŞİT GENİŞLİKTE ŞIK 3 YÖNTEM BUTON GRUBU */
+.methods-equal-group {
+  display: grid;
+  grid-template-columns: repeat(3, 174px);
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.method-suite-btn {
+  width: 174px;
+  height: 52px;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.icon-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: var(--bg-main);
+  gap: 0.65rem;
+  padding: 0 0.75rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f2ea 100%);
   border: 1px solid var(--border-strong);
-  color: var(--brown-dark);
-  padding: 0.35rem 0.68rem;
-  border-radius: var(--radius-md);
-  font-family: inherit;
-  font-size: 0.76rem;
-  font-weight: 600;
+  border-bottom: 2px solid var(--brown-accent);
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  text-align: left;
+  font-family: inherit;
+  box-shadow: 0 2px 5px rgba(59, 40, 24, 0.06);
+  transition: all 0.18s ease;
 }
 
-.icon-pill-btn:hover {
-  background: var(--brown-primary);
-  color: #ffffff;
+.method-suite-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--brown-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+
+.method-suite-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.15;
+  overflow: hidden;
+}
+
+.method-suite-text small {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--brown-accent);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.12rem;
+}
+
+.method-suite-text strong {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--brown-dark);
+  white-space: nowrap;
+}
+
+.method-suite-btn:hover {
+  background: var(--brown-dark);
   border-color: var(--brown-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(59, 40, 24, 0.16);
+}
+
+.method-suite-btn:hover .method-suite-icon {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #f5f2eb;
+}
+
+.method-suite-btn:hover .method-suite-text small {
+  color: #d8c3a5;
+}
+
+.method-suite-btn:hover .method-suite-text strong {
+  color: #ffffff;
 }
 
 .section-header {
