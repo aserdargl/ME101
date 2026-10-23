@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=7" />
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -53,6 +53,9 @@
             &larr; Ders Listesi
           </button>
           <div class="lecture-active-badge" id="nav-current-lecture-title">1. Hafta</div>
+          <button id="btn-nav-edit-lecture" class="btn btn-outline hidden" title="Bu dersi ve slaytlarını düzenle">
+            &#9998; Dersi Düzenle
+          </button>
           <a id="btn-nav-download-pptx" href="#" download class="btn btn-secondary" title="PowerPoint (.pptx) dosyasını indir">
             PPTX İndir
           </a>
@@ -141,6 +144,7 @@
         <p>Tam ekran projeksiyon anlatımı ve adım adım ilerleme için <strong>Sunum Moduna Geç</strong> butonunu kullanınız.</p>
       </div>
       <div class="reading-banner-actions">
+        <button id="btn-banner-edit-lecture" class="btn btn-outline hidden" title="Bu dersi ve slaytlarını düzenle">&#9998; Dersi Düzenle</button>
         <button id="btn-toggle-all-slide-modes" class="btn btn-secondary">
           Tümünü PPT Levha Görünümüne Al
         </button>
@@ -424,6 +428,192 @@
     </div>
   </div>
 
-  <script src="app.js?v=6"></script>
+  <!-- MEVCUT DERSİ DÜZENLEME MODALI (ÖĞRETİM ÜYESİ) -->
+  <div id="edit-lecture-backdrop" class="modal-backdrop hidden">
+    <div class="modal-card modal-card-wide">
+      <div class="modal-header">
+        <div>
+          <span class="department-label">ÖĞRETİM ÜYESİ PANELİ • DERS VE SLAYT DÜZENLEME</span>
+          <h3 id="edit-modal-heading">Dersi Düzenle</h3>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <button type="button" id="btn-reset-default-lectures" class="btn btn-outline" style="font-size:0.74rem; padding:0.28rem 0.6rem;" title="Tüm dersleri fabrika ayarlarındaki ilk haline döndür">
+            Varsayılanlara Sıfırla
+          </button>
+          <button id="btn-close-edit-modal" class="modal-close-btn">&times;</button>
+        </div>
+      </div>
+
+      <div class="modal-body edit-modal-body">
+        <!-- 1. BÖLÜM: DERSİN GENEL BİLGİLERİ -->
+        <div class="edit-section-box">
+          <div class="edit-section-title">1. Dersin Genel Bilgileri ve PPTX Kaynağı</div>
+          <div class="form-grid" style="grid-template-columns: 140px 1fr 220px;">
+            <div class="form-field">
+              <label>Hafta Bilgisi</label>
+              <input type="text" id="edit-lec-week" placeholder="Örn: 1. Hafta" />
+            </div>
+            <div class="form-field">
+              <label>Ders Başlığı</label>
+              <input type="text" id="edit-lec-title" placeholder="Ders başlığını giriniz..." />
+            </div>
+            <div class="form-field">
+              <label>PPTX İndirme Yolu / Dosyası</label>
+              <input type="text" id="edit-lec-pptx-url" placeholder="Örn: pptx/ME101-Hafta1.pptx" />
+            </div>
+          </div>
+
+          <div class="form-grid" style="grid-template-columns: 1.3fr 1fr; margin-top:0.6rem; align-items: end;">
+            <div class="form-field">
+              <label>Kısa Ders Açıklaması (Katalog Kartında Görünür)</label>
+              <input type="text" id="edit-lec-desc" placeholder="Dersin kısa özeti..." />
+            </div>
+            <div class="form-field">
+              <label>Yeni .PPTX Dosyası ile Güncelle (İsteğe Bağlı)</label>
+              <div style="display:flex; gap:0.4rem; align-items:center;">
+                <label class="btn btn-secondary" style="cursor:pointer; margin:0; white-space:nowrap; font-size:0.76rem; padding:0.4rem 0.65rem;">
+                  .PPTX Seç ve Aktar
+                  <input type="file" id="inp-edit-pptx-file" accept=".pptx" class="hidden" />
+                </label>
+                <select id="sel-edit-pptx-mode" style="font-size:0.76rem; padding:0.38rem 0.45rem;">
+                  <option value="replace">Slaytları PPTX ile Değiştir</option>
+                  <option value="append">Slaytları Sona Ekle</option>
+                  <option value="file-only">Sadece İndirme Dosyasını Güncelle</option>
+                </select>
+              </div>
+              <small id="edit-pptx-status" style="display:block; font-size:0.7rem; color:#6e6256; margin-top:0.2rem;"></small>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. BÖLÜM: SLAYT SEÇİMİ VE SLAYT İÇERİĞİ DÜZENLEME -->
+        <div class="edit-section-box" style="margin-top:0.85rem;">
+          <div class="edit-slides-header">
+            <div class="edit-section-title" style="margin-bottom:0;">2. Slayt İçeriklerini Düzenle</div>
+            <div class="edit-slide-global-actions">
+              <button type="button" id="btn-edit-add-slide" class="btn btn-secondary" style="font-size:0.74rem; padding:0.28rem 0.6rem;">
+                + Yeni Slayt Ekle
+              </button>
+              <button type="button" id="btn-edit-add-sim-slide" class="btn btn-secondary" style="font-size:0.74rem; padding:0.28rem 0.6rem;">
+                + Simülasyon Slaytı Ekle
+              </button>
+              <label class="btn btn-secondary" style="cursor:pointer; margin:0; font-size:0.74rem; padding:0.28rem 0.6rem;">
+                + Görsel Slayt Ekle (PNG/JPG)
+                <input type="file" id="inp-edit-add-images" accept="image/*" multiple class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Slayt Sekmeleri -->
+          <div id="edit-slide-tabs" class="edit-slide-tabs">
+            <!-- JS ile doldurulacak -->
+          </div>
+
+          <!-- Seçili Slayt Düzenleme Formu -->
+          <div id="edit-slide-form-area" class="edit-slide-form-area">
+            <div class="edit-slide-toolbar">
+              <span id="edit-current-slide-badge" class="slide-count-tag">Slayt 1 / 4</span>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button type="button" id="btn-move-slide-up" class="btn btn-secondary" style="font-size:0.72rem; padding:0.22rem 0.5rem;" title="Slaytı bir önceki sıraya taşı">
+                  &larr; Öncekine Taşı
+                </button>
+                <button type="button" id="btn-move-slide-down" class="btn btn-secondary" style="font-size:0.72rem; padding:0.22rem 0.5rem;" title="Slaytı bir sonraki sıraya taşı">
+                  Sonrakine Taşı &rarr;
+                </button>
+                <button type="button" id="btn-delete-current-slide" class="btn-delete-lecture" style="font-size:0.72rem; padding:0.22rem 0.55rem;" title="Bu slaytı dersten sil">
+                  Slaytı Sil
+                </button>
+              </div>
+            </div>
+
+            <div class="form-grid" style="grid-template-columns: 1fr 1.6fr 0.9fr 1.1fr; margin-top:0.55rem;">
+              <div class="form-field">
+                <label>Üst Etiket (Bölüm)</label>
+                <input type="text" id="edit-slide-kicker" placeholder="Örn: 1. HAFTA • BÖLÜM I" />
+              </div>
+              <div class="form-field">
+                <label>Slayt Başlığı</label>
+                <input type="text" id="edit-slide-title" placeholder="Slayt başlığı..." />
+              </div>
+              <div class="form-field">
+                <label>Varsayılan Görünüm</label>
+                <select id="edit-slide-viewmode">
+                  <option value="web">Web Ders Notu</option>
+                  <option value="ppt">PPT Levhası</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Slayt Türü / Simülasyon</label>
+                <select id="edit-slide-simtype">
+                  <option value="none">Standart Konu Slaytı</option>
+                  <option value="gear">Dişli Çark Simülasyonu</option>
+                  <option value="beam">Ankastre Kiriş Simülasyonu</option>
+                  <option value="tensile">Çekme Deneyi Simülasyonu</option>
+                  <option value="crank">Krank-Biyel Simülasyonu</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="edit-slide-standard-fields">
+              <div class="form-field" style="margin-top:0.55rem;">
+                <label>Slayt Giriş / Açıklama Paragrafı (Üst Özet Cümlesi)</label>
+                <input type="text" id="edit-slide-lead" placeholder="Slaydın üst kısmında yer alan açıklama cümlesi..." />
+              </div>
+
+              <div class="form-grid" style="grid-template-columns: 1.35fr 0.65fr; margin-top:0.55rem; align-items: start;">
+                <div class="form-field">
+                  <label>Slayt Maddeleri (Her satır bir madde olur — hem Web hem PPT Levha görünümünü günceller)</label>
+                  <textarea id="edit-slide-bullets" rows="4" placeholder="Her satıra bir slayt maddesi yazınız..."></textarea>
+                </div>
+
+                <div>
+                  <div class="form-field">
+                    <label>Formül Kutusu (İsteğe Bağlı)</label>
+                    <input type="text" id="edit-slide-formula" placeholder="Örn: P = T · ω" />
+                  </div>
+                  <div class="form-field" style="margin-top:0.4rem;">
+                    <label>Formül Alt Açıklaması</label>
+                    <input type="text" id="edit-slide-formula-sub" placeholder="Örn: P: Güç [W] | T: Moment [N·m]" />
+                  </div>
+                  <div class="form-field" style="margin-top:0.45rem;">
+                    <label>Slayt Görseli (PNG/JPG)</label>
+                    <div style="display:flex; gap:0.35rem; align-items:center; flex-wrap:wrap;">
+                      <label class="btn btn-secondary" style="cursor:pointer; margin:0; font-size:0.72rem; padding:0.25rem 0.55rem;">
+                        Görsel Seç
+                        <input type="file" id="inp-edit-slide-img" accept="image/*" class="hidden" />
+                      </label>
+                      <button type="button" id="btn-edit-remove-slide-img" class="btn-clear-rating hidden">Görseli Kaldır</button>
+                      <span id="edit-slide-img-status" style="font-size:0.7rem; color:#6e6256;">Görsel yok</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <details class="advanced-html-details" style="margin-top:0.55rem;">
+                <summary>Gelişmiş: Slayt Web HTML Kodunu Doğrudan Düzenle</summary>
+                <div class="form-field" style="margin-top:0.4rem;">
+                  <textarea id="edit-slide-raw-html" rows="5" style="font-family: 'JetBrains Mono', monospace; font-size:0.76rem;"></textarea>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer-actions" style="justify-content: space-between; margin-top: 0.9rem;">
+          <span id="edit-save-feedback" style="font-size:0.8rem; color:#2d6a4f; font-weight:600;"></span>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" id="btn-cancel-edit-lecture" class="btn btn-secondary">
+              Vazgeç
+            </button>
+            <button type="button" id="btn-save-edit-lecture" class="btn btn-primary">
+              Değişiklikleri Kaydet
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=7"></script>
 </body>
 </html>
