@@ -48,6 +48,10 @@ Birleşik giriş testi: demo emülatörlerini başlatıp `node tests/instructor-
 
 ## PPTX görsellerini onarma
 
+PPTX seçildiğinde slaytlar tarayıcıdaki görüntüleyiciyle doğrudan açılır. Tema, yazı biçimleri, özgün nesne konumları ve sayfa oranı kaynak dosyadan okunur; PNG/ZIP hazırlama veya ek dönüştürme işlemi gerekmez. Görüntüleyici dosyaları GitHub’da `vendor/pptx-renderer/` altında barındırılır.
+
+Mevcut derslerde özgün PPTX varsa slaytlar kaynak slayt yolu veya benzersiz başlıkla eşleştirilir. Görüntüleme kayıtlı HTML notlarını, ders sırasını, özel görselleri veya kullanıcı ayarlarını değiştirmez. Tarayıcıda bulunmayan ve dosyaya gömülmemiş yazı tipleri için sistem yazı tipi kullanılır. Özgün PowerPoint dosyası indirmeye açık kalır.
+
 Dersi düzenlerken özgün PPTX'i seçip **Görselleri Onar · Notları Koru** seçeneğini kullanın. Slaytlar kaynak dosya yolu veya benzersiz başlıkla eşleştirilir; güvenle eşleşmeyen slaytlar değiştirilmez. Desteklenen tüm gömülü resimler alınır. Yeni dosyalar kalıcı veri adresleriyle saklanır; geçici `blob:` adresleri kaydedilmez.
 
 Tarayıcının doğrudan gösteremediği EMF/WMF/TIFF görselleri ve PowerPoint grafik/SmartArt nesneleri için uyarı gösterilir. Bu tür slaytların birebir PowerPoint görünümü için PNG/JPG olarak dışa aktarılmış slayt görselleri kullanılabilir. Özgün içerik ve notlar otomatik silinmez.

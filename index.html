@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="style.css?v=10" />
   <link rel="stylesheet" href="modern.css?v=2" />
   <link rel="stylesheet" href="editor.css?v=1" />
-  <link rel="stylesheet" href="content.css?v=1" />
+  <link rel="stylesheet" href="content.css?v=3" />
   <link rel="stylesheet" href="portal-ui.css?v=6" />
 </head>
 <body>
@@ -562,8 +562,8 @@
                   <input type="file" id="inp-edit-pptx-file" accept=".pptx" class="hidden" />
                 </label>
                 <select id="sel-edit-pptx-mode" style="font-size:0.76rem; padding:0.38rem 0.45rem;">
-                  <option value="restore-media">Görselleri Onar · Notları Koru</option>
-                  <option value="replace" selected>Slaytları PPTX ile Değiştir</option>
+                  <option value="restore-media" selected>Görselleri Onar · Notları Koru</option>
+                  <option value="replace">Slaytları PPTX ile Değiştir</option>
                   <option value="append">Slaytları Sona Ekle</option>
                   <option value="file-only">Sadece İndirme Dosyasını Güncelle</option>
                 </select>
@@ -728,8 +728,9 @@
   <script src="portal-language.js?v=4"></script>
   <script src="catalog-order.js?v=1"></script>
   <script src="catalog-ui.js?v=2"></script>
-  <script src="pptx-import.js?v=3"></script>
-  <script src="slide-visual.js?v=1"></script>
+  <script src="pptx-display.js?v=1"></script>
+  <script src="pptx-import.js?v=4"></script>
+  <script src="slide-visual.js?v=2"></script>
   <script src="pptx-preview.js?v=1"></script>
   <script src="lecture-storage.js?v=1"></script>
   <script src="github-repository.js?v=2"></script>
@@ -744,6 +745,6 @@
   <script src="firebase-students.js?v=4"></script>
   <script src="approval-ui.js?v=1"></script>
   <script src="instructor-login.js?v=1"></script>
-  <script src="app.js?v=21"></script>
+  <script src="app.js?v=pptx-display-1"></script>
 </body>
 </html>

@@ -758,6 +758,13 @@ function openLecture(lectureId, startInPresentation = false) {
   });
 
   slidesContainer.innerHTML = "";
+  PptxDisplay.prepareLecture(lec).then(prepared => {
+    if (!prepared || currentLecture !== lec) return;
+    slidesContainer.querySelectorAll('.slide-body-ppt[data-rendered="true"]').forEach(body => {
+      const index = Number(body.closest(".slide").dataset.index);
+      body.innerHTML = buildPptExactVisualHtml(lec.slides[index], index, lec.slides.length, lec.week);
+    });
+  });
   lec.slides.forEach((s, idx) => {
     const slideEl = document.createElement("section");
     slideEl.className = "slide";
@@ -1699,6 +1706,8 @@ function updateEditLivePreview() {
       extractedImages: slide._imageChanged ? (activeImg ? [activeImg] : []) : (slide.extractedImages || []),
       pptSummaryBullets: bulletLines
     };
+    const native = PptxDisplay.visualFor(slide);
+    if (native) previewSlideObj = slide;
     if (typeLabel) {
       typeLabel.textContent = activeImg
         ? "Görselli Slayt Önizlemesi"
@@ -2054,6 +2063,12 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
   document.getElementById("inp-edit-pptx-file").value = "";
 
   loadSlideIntoEditForm(initialSlideIdx);
+  const displayDraft = editingLectureDraft;
+  PptxDisplay.prepareLecture(displayDraft).then(prepared => {
+    if (!prepared || editingLectureDraft !== displayDraft) return;
+    renderEditSlideTabs();
+    updateEditLivePreview();
+  });
   editLectureBackdrop.classList.remove("hidden");
 }
 
@@ -2275,6 +2290,11 @@ document.getElementById("inp-edit-pptx-file").addEventListener("change", async (
       }
     } else {
       statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> indirme dosyası olarak tanımlandı.`;
+    }
+    const displayDraft = editingLectureDraft;
+    if (await PptxDisplay.prepareLecture(displayDraft) && editingLectureDraft === displayDraft) {
+      renderEditSlideTabs();
+      updateEditLivePreview();
     }
     document.querySelector(".edit-live-preview-wrap").scrollIntoView({ block: "nearest" });
   } catch (err) {

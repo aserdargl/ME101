@@ -259,6 +259,7 @@
         originalMedia: images.filter(image => !image.supported),
         html: `<div class="ppt-import-content">${bullets.length ? `<ul class="bullet-list">${bullets.map((line, i) => `<li class="fragment"><span class="bullet-marker">${String(i + 1).padStart(2, "0")}</span><div>${escape(line)}</div></li>`).join("")}</ul>` : ""}${media}${pkg.warnings.length ? `<p class="ppt-import-warning">${[...new Set(pkg.warnings)].map(escape).join("<br/>")}</p>` : ""}</div>` });
     }
+    if (root.PptxDisplay) await root.PptxDisplay.prepareUpload(file, slides);
     return slides;
   }
 
