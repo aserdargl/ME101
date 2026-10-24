@@ -13,54 +13,73 @@
 .approval-fields label { font-size: 11px; }
 .approval-fields input { display: block; width: 100%; min-width: 0; padding: 6px; border: 1px solid #cbd1d8; border-radius: 5px; }
 @media (max-width: 600px) { .approval-fields { grid-template-columns: 1fr; } }
-.btn, .tool-btn, .btn-insert-here, .btn-edit-lecture,
-.btn-delete-lecture, .btn-clear-rating, .btn-slide-mode-switch {
+/* One action palette for every portal button, including dynamically created controls.
+   Color-only !important rules protect the palette from legacy ID/inline colors.
+   Layout, visibility, course branding and rating values remain independent. */
+:root {
+  --button-bg: #e0eaf2;
+  --button-text: #204e70;
+  --button-border: #8aabc4;
+  --button-hover-bg: #cbdfea;
+  --button-hover-text: #173e59;
+  --button-hover-border: #739ab7;
+  --button-selected-bg: #225c83;
+  --button-selected-text: #ffffff;
+  --button-selected-border: #225c83;
+  --button-disabled-bg: #e8edf1;
+  --button-disabled-text: #526271;
+  --button-disabled-border: #bac7d2;
+  --button-focus: #225c83;
+}
+
+body :is(button, .btn, [role="button"]):not(.brand):not(.star-btn):not(.edit-thumb-card) {
+  background: var(--button-bg) !important;
+  color: var(--button-text) !important;
+  border: 1px solid var(--button-border) !important;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   box-shadow: 0 2px 3px #17334d14;
   transition: background-color .15s, box-shadow .15s, transform .15s;
 }
-.btn-primary, .tool-btn-primary { background: #75513b; border-color: #75513b; color: #fff; }
-.tool-btn-primary:hover { background: #5e402e; color: #fff; }
-.tool-btn:not(.tool-btn-primary):not(.tool-btn-danger):not(.active) { background: #e0eaf2; border-color: #a7bfd3; color: #204e70; }
-.tool-btn-danger:hover { background: #94352e; color: #fff; }
-.btn-secondary, .btn-student-login { background: #225c83; border-color: #225c83; color: #fff; }
-.btn-secondary:hover:not(:disabled), .btn-student-login:hover:not(:disabled) { background: #174461; border-color: #174461; color: #fff; }
-.btn-outline, .btn-admin-lock, .btn-edit-lecture, .btn-slide-mode-switch {
-  background: #e0eaf2; border: 1px solid #a7bfd3; color: #204e70;
+body :is(button, .btn, [role="button"]):not(.brand):not(.star-btn):not(.edit-thumb-card):hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--button-hover-bg) !important;
+  color: var(--button-hover-text) !important;
+  border-color: var(--button-hover-border) !important;
 }
-.btn-outline:hover { background: #cbdfea; color: #173e59; }
-.btn-primary:focus-visible, .btn-secondary:focus-visible { outline-color: #225c83; }
-.btn-outline:hover:not(:disabled), .btn-admin-lock:hover:not(:disabled),
-.btn-edit-lecture:hover, .btn-slide-mode-switch:hover { background: #cbdfea; border-color: #739ab7; color: #173e59; }
-.approval-reject-button, .btn-delete-lecture, .btn-clear-rating, #btn-delete-edit-slide,
-.course-editor #btn-reset-default-lectures, #btn-clear-all-ratings,
-#btn-section-clear-all-ratings, .tool-btn-danger {
-  background: #f8e1df; border: 1px solid #dfaaa5; color: #94352e;
+body :is(button, .btn, [role="button"]):not(.brand):not(.star-btn):not(.edit-thumb-card):is(.active, .ppt-visual-active, [aria-pressed="true"], [aria-selected="true"]) {
+  background: var(--button-selected-bg) !important;
+  color: var(--button-selected-text) !important;
+  border-color: var(--button-selected-border) !important;
 }
-.approval-reject-button:hover, .btn-delete-lecture:hover, .btn-clear-rating:hover,
-.course-editor #btn-reset-default-lectures:hover { background: #efc5c1; color: #7e2923; }
-.course-editor .btn-insert-here {
-  background: #225c83; border: 1px solid #225c83; border-radius: 5px; color: #fff; padding: 5px 7px;
+body :is(button, .btn, [role="button"]):not(.brand):not(.star-btn):not(.edit-thumb-card):is(:disabled, [aria-disabled="true"]) {
+  background: var(--button-disabled-bg) !important;
+  color: var(--button-disabled-text) !important;
+  border-color: var(--button-disabled-border) !important;
+  opacity: 1;
+  cursor: not-allowed;
+  box-shadow: none;
 }
-.course-editor .btn-insert-here:hover { background: #174461; color: #fff; }
-.course-editor .modal-tab { background: #e6edf4; color: #325574; border: 1px solid #c5d5e3; }
-.course-editor .modal-tab.active { background: #225c83; border-color: #225c83; color: #fff; }
-.method-suite-btn { background: #e1eaf2; border-color: #a7bfd3; cursor: pointer; box-shadow: 0 2px 3px #17334d0c; }
-.method-suite-btn:hover { background: #d1e2ed; border-color: #739ab7; }
-.method-suite-text strong, .method-suite-btn:hover .method-suite-text strong { color: #204e70; }
-.method-suite-icon { background: #cbdfea; color: #204e70; }
-.btn:active:not(:disabled), .language-button:active { transform: translateY(1px); }
-.btn:disabled { cursor: not-allowed; opacity: .55; }
+body :is(button, .btn, [role="button"]):focus-visible {
+  outline: 3px solid var(--button-focus);
+  outline-offset: 3px;
+}
+body :is(button, .btn, [role="button"]):not(:disabled):active { transform: translateY(1px); }
+.course-editor .btn-insert-here { padding: 5px 7px; }
+.method-suite-text :is(small, strong),
+.method-suite-btn:hover .method-suite-text :is(small, strong),
+.method-suite-btn::after { color: inherit; }
+.method-suite-icon, .method-suite-btn:hover .method-suite-icon { background: transparent; color: inherit; }
+/* Rating stars keep their value colors and remain visible before hover. */
+.star-btn { color: #68717c; }
 .language-picker { display: flex; align-items: center; gap: 4px; margin-left: auto; order: 20; flex-shrink: 0; }
 .language-button {
   display: inline-flex; align-items: center; gap: 5px; min-height: 36px;
   padding: 5px 7px; border: 1px solid transparent; border-radius: 7px;
-  background: #e0eaf2; border-color: #8aabc4; color: #204e70; font-size: 10px; font-weight: 700; cursor: pointer;
+  font-size: 10px; font-weight: 700; cursor: pointer;
 }
 .language-button svg { width: 27px; height: 18px; border-radius: 2px; box-shadow: 0 0 0 1px #00000012; }
 .language-button svg[hidden] { display: none; }
-.language-button:hover { background: #edf2f6; }
 @media (max-width: 700px) {
   .navbar { position: relative; }
   .brand { padding-right: 125px; }
@@ -69,7 +88,7 @@
   .language-button svg { width: 23px; height: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .btn, .tool-btn, .language-button { transition: none; }
+  body :is(button, .btn, [role="button"]) { transition: none; }
 }
 
 .import-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
