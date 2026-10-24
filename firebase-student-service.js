@@ -55,10 +55,10 @@
           }, () => this.invalidate(generation));
           this.unsubscribe = () => { stopRoster(); stopApplications(); };
         } else {
-          this.unsubscribe = this.adapter.watchStudent(normalizeEmail(user.email), student => {
+          this.unsubscribe = this.adapter.watchStudent(normalizeEmail(user.email), (student, { pending = false } = {}) => {
             if (generation !== this.generation) return;
             this.profile = student?.enabled === true ? student : null;
-            this.accessResolved = true;
+            this.accessResolved = !pending;
             this.onChange(this);
           }, () => this.invalidate(generation));
         }

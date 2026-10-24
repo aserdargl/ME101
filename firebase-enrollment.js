@@ -54,10 +54,10 @@ window.createNumberEnrollment = ({ db, sdk }) => {
     let closed = false;
     const stopEnrollment = sdk.onSnapshot(ref("enrollments", user.uid), { includeMetadataChanges: true }, snapshot => {
       stopNumber();
-      if (snapshot.metadata.fromCache) { onData(null); return; }
+      if (snapshot.metadata.fromCache) { onData(null, { pending: true }); return; }
       if (!snapshot.exists()) {
         stopNumber = sdk.onSnapshot(ref("students", emailOf(user)), { includeMetadataChanges: true }, legacy => {
-          if (!closed) onData(!legacy.metadata.fromCache && legacy.exists() ? legacy.data() : null);
+          if (!closed) onData(!legacy.metadata.fromCache && legacy.exists() ? legacy.data() : null, { pending: legacy.metadata.fromCache });
         }, onError);
         return;
       }
@@ -65,7 +65,7 @@ window.createNumberEnrollment = ({ db, sdk }) => {
       stopNumber = sdk.onSnapshot(ref("studentNumbers", enrollment.no), { includeMetadataChanges: true }, roster => {
         if (closed) return;
         const student = !roster.metadata.fromCache && roster.exists() ? roster.data() : null;
-        onData(student ? { ...student, email: emailOf(user) } : null);
+        onData(student ? { ...student, email: emailOf(user) } : null, { pending: roster.metadata.fromCache });
       }, onError);
     }, onError);
     return () => { closed = true; stopNumber(); stopEnrollment(); };
@@ -75,7 +75,7 @@ window.createNumberEnrollment = ({ db, sdk }) => {
     let stopExisting = () => {};
     const stopApplication = sdk.onSnapshot(ref("applications", user.uid), { includeMetadataChanges: true }, snapshot => {
       stopExisting();
-      if (snapshot.metadata.fromCache) { onData(null); return; }
+      if (snapshot.metadata.fromCache) { onData(null, { pending: true }); return; }
       if (!snapshot.exists()) { stopExisting = watchExisting(user, onData, onError); return; }
       const application = snapshot.data();
       if (application.status === "rejected") { onData(null); return; }
@@ -84,7 +84,7 @@ window.createNumberEnrollment = ({ db, sdk }) => {
       if (application.status === "pending") { onData(profile); return; }
       if (application.status !== "approved") { onData(null); return; }
       stopExisting = sdk.onSnapshot(ref("studentNumbers", profile.no), { includeMetadataChanges: true }, roster => {
-        onData(!roster.metadata.fromCache && roster.exists() && roster.data().enabled === true ? profile : null);
+        onData(!roster.metadata.fromCache && roster.exists() && roster.data().enabled === true ? profile : null, { pending: roster.metadata.fromCache });
       }, onError);
     }, onError);
     return () => { stopApplication(); stopExisting(); };
