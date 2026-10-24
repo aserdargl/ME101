@@ -11,6 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="style.css?v=10" />
   <link rel="stylesheet" href="modern.css?v=2" />
+  <link rel="stylesheet" href="editor.css?v=1" />
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -301,22 +302,22 @@
   </div>
 
   <!-- DERS EKLE & PPTX ENTEGRASYON MODALI -->
-  <div id="pptx-modal-backdrop" class="modal-backdrop hidden">
+  <div id="pptx-modal-backdrop" class="modal-backdrop course-editor hidden">
     <div class="modal-card">
       <div class="modal-header">
         <div>
           <span class="department-label">ÖĞRETİM ÜYESİ PANELİ • DERS VE ÖĞRENCİ YÖNETİMİ</span>
-          <h3>Yeni Ders Ekle / Öğrenci Listesi Tanımla</h3>
+          <h3>Ders ve İçerik Yönetimi</h3>
         </div>
-        <button id="btn-close-pptx-modal" class="modal-close-btn">&times;</button>
+        <button id="btn-close-pptx-modal" class="modal-close-btn" aria-label="Ders ekleme ekranını kapat">&times;</button>
       </div>
 
       <div class="modal-body">
         <div class="modal-tabs">
-          <button class="modal-tab active" data-tab="tab-add-manual">+ Hızlı Ders / PPTX Ekle (Yöntem I)</button>
-          <button class="modal-tab" data-tab="tab-method-2">II. Slayt Görselleri (PNG/JPG)</button>
-          <button class="modal-tab" data-tab="tab-permanent">III. Kalıcı Klasör &amp; GitHub Aracı</button>
-          <button class="modal-tab" data-tab="tab-student-roster">IV. Öğrenci Listesi (OBS)</button>
+          <button class="modal-tab active" data-tab="tab-add-manual">Ders Ekle</button>
+          <button class="modal-tab" data-tab="tab-method-2">Slayt Görselleri</button>
+          <button class="modal-tab" data-tab="tab-permanent">Dosyalar ve Aktarım</button>
+          <button class="modal-tab" data-tab="tab-student-roster">Öğrenci Listesi</button>
         </div>
 
         <!-- TAB 1: YENİ DERS EKLE -->
@@ -327,23 +328,23 @@
 
           <div class="form-grid">
             <div class="form-field">
-              <label>Hafta Bilgisi</label>
+              <label for="imp-week">Hafta Bilgisi</label>
               <input type="text" id="imp-week" placeholder="Örn: 5. Hafta" value="5. Hafta" />
             </div>
             <div class="form-field">
-              <label>Ders Başlığı</label>
+              <label for="imp-title">Ders Başlığı</label>
               <input type="text" id="imp-title" placeholder="Örn: Termodinamik ve Enerji Dönüşüm Sistemleri" />
             </div>
           </div>
 
           <div class="form-field" style="margin-top:0.65rem;">
-            <label>Kısa Ders Açıklaması</label>
+            <label for="imp-desc">Kısa Ders Açıklaması</label>
             <input type="text" id="imp-desc" placeholder="Örn: Termodinamiğin birinci ve ikinci yasaları, ısı makineleri ve verim." />
           </div>
 
           <div class="form-grid" style="margin-top:0.65rem; grid-template-columns: 1fr 1fr;">
             <div class="form-field">
-              <label>Eklenecek Teknik Simülasyon Modülü</label>
+              <label for="imp-sim-type">Eklenecek Teknik Simülasyon Modülü</label>
               <select id="imp-sim-type">
                 <option value="none">Simülasyon Eklenmesin</option>
                 <option value="gear">Dişli Çark Çifti ve Tork Analizi</option>
@@ -353,7 +354,7 @@
               </select>
             </div>
             <div class="form-field">
-              <label>Manuel Slayt Maddeleri (Her satır bir madde olur)</label>
+              <label for="imp-manual-bullets">Manuel Slayt Maddeleri (Her satır bir madde olur)</label>
               <textarea id="imp-manual-bullets" rows="2" placeholder="PPTX seçmezseniz buraya yazdığınız satırlar slayt maddesi olur..."></textarea>
             </div>
           </div>
@@ -378,11 +379,11 @@
           </p>
           <div class="form-grid">
             <div class="form-field">
-              <label>Hafta Bilgisi</label>
+              <label for="img-imp-week">Hafta Bilgisi</label>
               <input type="text" id="img-imp-week" value="5. Hafta" />
             </div>
             <div class="form-field">
-              <label>Ders Başlığı</label>
+              <label for="img-imp-title">Ders Başlığı</label>
               <input type="text" id="img-imp-title" placeholder="Görsel Tabanlı Sunum" />
             </div>
           </div>
@@ -472,48 +473,43 @@
   </div>
 
   <!-- MEVCUT DERSİ DÜZENLEME MODALI (ÖĞRETİM ÜYESİ) -->
-  <div id="edit-lecture-backdrop" class="modal-backdrop hidden">
+  <div id="edit-lecture-backdrop" class="modal-backdrop course-editor hidden">
     <div class="modal-card modal-card-wide">
       <div class="modal-header">
         <div>
           <span class="department-label">ÖĞRETİM ÜYESİ PANELİ • DERS VE SLAYT DÜZENLEME</span>
           <h3 id="edit-modal-heading">Dersi Düzenle</h3>
         </div>
-        <div style="display:flex; align-items:center; gap:0.5rem;">
-          <button type="button" id="btn-reset-default-lectures" class="btn btn-outline" style="font-size:0.74rem; padding:0.28rem 0.6rem;" title="Tüm dersleri fabrika ayarlarındaki ilk haline döndür">
-            Varsayılanlara Sıfırla
-          </button>
-          <button id="btn-close-edit-modal" class="modal-close-btn">&times;</button>
-        </div>
+        <button id="btn-close-edit-modal" class="modal-close-btn" aria-label="Ders düzenleme ekranını kapat">&times;</button>
       </div>
 
       <div class="modal-body edit-modal-body">
         <!-- 1. BÖLÜM: DERSİN GENEL BİLGİLERİ -->
         <div class="edit-section-box">
-          <div class="edit-section-title">1. Dersin Genel Bilgileri ve PPTX Kaynağı</div>
+          <div class="edit-section-title"><span class="editor-section-number">01</span> Ders Bilgileri</div>
           <div class="form-grid" style="grid-template-columns: 140px 1fr 220px;">
             <div class="form-field">
-              <label>Hafta Bilgisi</label>
+              <label for="edit-lec-week">Hafta Bilgisi</label>
               <input type="text" id="edit-lec-week" placeholder="Örn: 1. Hafta" />
             </div>
             <div class="form-field">
-              <label>Ders Başlığı</label>
+              <label for="edit-lec-title">Ders Başlığı</label>
               <input type="text" id="edit-lec-title" placeholder="Ders başlığını giriniz..." />
             </div>
             <div class="form-field">
-              <label>PPTX İndirme Yolu / Dosyası</label>
+              <label for="edit-lec-pptx-url">PPTX İndirme Yolu / Dosyası</label>
               <input type="text" id="edit-lec-pptx-url" placeholder="Örn: pptx/MEE101-Hafta1.pptx" />
             </div>
           </div>
 
           <div class="form-grid" style="grid-template-columns: 1.3fr 1fr; margin-top:0.6rem; align-items: end;">
             <div class="form-field">
-              <label>Kısa Ders Açıklaması (Katalog Kartında Görünür)</label>
+              <label for="edit-lec-desc">Kısa Ders Açıklaması</label>
               <input type="text" id="edit-lec-desc" placeholder="Dersin kısa özeti..." />
             </div>
             <div class="form-field">
               <label>Yeni .PPTX Dosyası ile Güncelle (İsteğe Bağlı)</label>
-              <div style="display:flex; gap:0.4rem; align-items:center;">
+              <div class="editor-file-controls">
                 <label class="btn btn-secondary" style="cursor:pointer; margin:0; white-space:nowrap; font-size:0.76rem; padding:0.4rem 0.65rem;">
                   .PPTX Seç ve Aktar
                   <input type="file" id="inp-edit-pptx-file" accept=".pptx" class="hidden" />
@@ -533,18 +529,18 @@
         <div class="edit-section-box" style="margin-top:0.85rem;">
           <div class="edit-slides-header">
             <div>
-              <div class="edit-section-title" style="margin-bottom:0.1rem;">2. Slayt Önizlemeleri ve Araya Slayt Ekleme</div>
+              <div class="edit-section-title" style="margin-bottom:0.1rem;"><span class="editor-section-number">02</span> Slayt Düzenleyici</div>
               <small style="font-size:0.74rem; color:#6e6256;">Sol kenardaki slayt önizlemelerinden istediğiniz iki slaydın arasındaki <strong>+ Buraya Ekle</strong> butonuna tıklayarak tam o noktaya yeni slayt veya simülasyon ekleyebilirsiniz.</small>
             </div>
             <div class="edit-slide-global-actions">
               <button type="button" id="btn-edit-add-slide" class="btn btn-secondary" style="font-size:0.74rem; padding:0.28rem 0.6rem;" title="Seçili slayttan hemen sonraya yeni konu slaytı ekle">
-                + Seçili Slayttan Sonra Konu Ekle
+                + Konu
               </button>
               <button type="button" id="btn-edit-add-sim-slide" class="btn btn-secondary" style="font-size:0.74rem; padding:0.28rem 0.6rem;" title="Seçili slayttan hemen sonraya simülasyon slaytı ekle">
-                + Seçili Slayttan Sonra Simülasyon Ekle
+                + Simülasyon
               </button>
               <label class="btn btn-secondary" style="cursor:pointer; margin:0; font-size:0.74rem; padding:0.28rem 0.6rem;" title="Seçili slayttan hemen sonraya görsel slayt(lar) ekle">
-                + Seçili Slayttan Sonra Görsel Ekle
+                + Görsel
                 <input type="file" id="inp-edit-add-images" accept="image/*" multiple class="hidden" />
               </label>
             </div>
@@ -592,22 +588,22 @@
 
               <div class="form-grid" style="grid-template-columns: 1fr 1.6fr 0.9fr 1.1fr; margin-top:0.65rem;">
                 <div class="form-field">
-                  <label>Üst Etiket (Bölüm)</label>
+                  <label for="edit-slide-kicker">Üst Etiket (Bölüm)</label>
                   <input type="text" id="edit-slide-kicker" placeholder="Örn: 1. HAFTA • BÖLÜM I" />
                 </div>
                 <div class="form-field">
-                  <label>Slayt Başlığı</label>
+                  <label for="edit-slide-title">Slayt Başlığı</label>
                   <input type="text" id="edit-slide-title" placeholder="Slayt başlığı..." />
                 </div>
                 <div class="form-field">
-                  <label>Varsayılan Görünüm</label>
+                  <label for="edit-slide-viewmode">Varsayılan Görünüm</label>
                   <select id="edit-slide-viewmode">
                     <option value="web">Web Ders Notu</option>
                     <option value="ppt">PPT Levhası</option>
                   </select>
                 </div>
                 <div class="form-field">
-                  <label>Slayt Türü / Simülasyon</label>
+                  <label for="edit-slide-simtype">Slayt Türü / Simülasyon</label>
                   <select id="edit-slide-simtype">
                     <option value="none">Standart Konu Slaytı</option>
                     <option value="gear">Dişli Çark Simülasyonu</option>
@@ -620,23 +616,23 @@
 
               <div id="edit-slide-standard-fields">
                 <div class="form-field" style="margin-top:0.55rem;">
-                  <label>Slayt Giriş / Açıklama Paragrafı (Üst Özet Cümlesi)</label>
+                  <label for="edit-slide-lead">Slayt Giriş / Açıklama Paragrafı (Üst Özet Cümlesi)</label>
                   <input type="text" id="edit-slide-lead" placeholder="Slaydın üst kısmında yer alan açıklama cümlesi..." />
                 </div>
 
                 <div class="form-grid" style="grid-template-columns: 1.35fr 0.65fr; margin-top:0.55rem; align-items: start;">
                   <div class="form-field">
-                    <label>Slayt Maddeleri (Her satır bir madde olur — hem Web hem PPT Levha görünümünü günceller)</label>
+                    <label for="edit-slide-bullets">Slayt Maddeleri (Her satır bir madde olur — hem Web hem PPT Levha görünümünü günceller)</label>
                     <textarea id="edit-slide-bullets" rows="4" placeholder="Her satıra bir slayt maddesi yazınız..."></textarea>
                   </div>
 
                   <div>
                     <div class="form-field">
-                      <label>Formül Kutusu (İsteğe Bağlı)</label>
+                      <label for="edit-slide-formula">Formül Kutusu (İsteğe Bağlı)</label>
                       <input type="text" id="edit-slide-formula" placeholder="Örn: P = T · ω" />
                     </div>
                     <div class="form-field" style="margin-top:0.4rem;">
-                      <label>Formül Alt Açıklaması</label>
+                      <label for="edit-slide-formula-sub">Formül Alt Açıklaması</label>
                       <input type="text" id="edit-slide-formula-sub" placeholder="Örn: P: Güç [W] | T: Moment [N·m]" />
                     </div>
                     <div class="form-field" style="margin-top:0.45rem;">
@@ -664,7 +660,16 @@
           </div>
         </div>
 
-        <div class="modal-footer-actions" style="justify-content: space-between; margin-top: 0.9rem;">
+        <details class="editor-maintenance">
+          <summary>Gelişmiş işlemler</summary>
+          <p>Varsayılanlara sıfırlama, eklediğiniz dersleri ve notları kaldırır.</p>
+          <button type="button" id="btn-reset-default-lectures" class="btn btn-outline" title="Tüm dersleri varsayılan içeriklere döndür">
+            Varsayılanlara Sıfırla
+          </button>
+        </details>
+      </div>
+
+        <div class="modal-footer-actions editor-save-bar">
           <span id="edit-save-feedback" style="font-size:0.8rem; color:#2d6a4f; font-weight:600;"></span>
           <div style="display:flex; gap:0.5rem;">
             <button type="button" id="btn-cancel-edit-lecture" class="btn btn-secondary">
@@ -675,7 +680,6 @@
             </button>
           </div>
         </div>
-      </div>
     </div>
   </div>
 
