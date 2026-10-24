@@ -16,7 +16,7 @@
       if (target.protocol !== "https:" && !local) return Promise.reject(new Error("Güvenli GitHub giriş adresi gerekli."));
       const requestId = Array.from(this.crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, "0")).join("");
       target.searchParams.set("request_id", requestId);
-      const popup = this.window.open(target.href, "lecturenotes-github", "popup,width=720,height=760");
+      const popup = this.window.open(target.href, "lecturenotes-github");
       if (!popup) return Promise.reject(new Error("GitHub giriş penceresi engellendi. Bu site için açılır pencereye izin veriniz."));
       this.pending = true;
       return new Promise((resolve, reject) => {
