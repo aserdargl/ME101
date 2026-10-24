@@ -11,7 +11,17 @@
   const status = document.getElementById("cloud-status-text");
   const button = document.getElementById("btn-cloud-publish");
 
+  function showProgress(value = null) {
+    const bar = document.getElementById("cloud-transfer-progress");
+    if (!bar?.setAttribute) return;
+    document.getElementById("cloud-transfer-meter").hidden = false;
+    if (value === null) bar.removeAttribute("value");
+    else bar.value = value;
+    document.getElementById("cloud-transfer-percent").textContent = value === null ? "…" : `${value}%`;
+  }
+
   function progress({ stage, completed, total }) {
+    showProgress(stage === "upload" ? Math.floor(completed / total * 100) : null);
     if (stage === "prepare") message(`Aktarım hazırlanıyor · ${completed} parça hazır`);
     else if (stage === "upload") message(`GitHub’a aktarılıyor · ${completed}/${total} parça · %${Math.floor(completed / total * 100)}`);
     else message("Aktarım tamamlandı · GitHub kaydı kesinleştiriliyor…");
@@ -76,12 +86,13 @@
     if (publishing) { pendingSave = true; return; }
     if (!explicit && !synchronized) return;
     publishing = true;
+    showProgress();
     message("Dersler GitHub’a kaydediliyor…");
     try {
       let lectures = await portableDocument(getLectures());
       await LectureStorage.save(lectures);
       message("GitHub’daki mevcut kayıt kontrol ediliyor…");
-      const current = await repository.readCurrent();
+      const current = await repository.readCurrent({ skipLecturesForVersion: synchronized ? version : null });
       if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
       if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = await mergePreservingNotes(current.lectures, lectures);
       const manifest = await repository.publish(lectures, current, progress);
@@ -93,8 +104,11 @@
         rememberDigest(manifest.digest);
       }
       message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
+      showProgress(100);
     } catch (error) {
       synchronized = false;
+      const bar = document.getElementById("cloud-transfer-progress");
+      showProgress(bar?.value || 0);
       const reason = error.name === "TimeoutError" ? "GitHub yanıtı zaman aşımına uğradı." : error.name === "TypeError" ? "GitHub bağlantısı kesildi." : error.message;
       message(`${reason} · Yerel notlar korunuyor. Yeniden aktarırken tamamlanan parçalar kullanılacak.`, true);
     }

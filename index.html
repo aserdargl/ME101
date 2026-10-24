@@ -12,10 +12,10 @@
   <link rel="stylesheet" href="style.css?v=10" />
   <link rel="stylesheet" href="modern.css?v=2" />
   <link rel="stylesheet" href="editor.css?v=registered-roster-5" />
-  <link rel="stylesheet" href="content.css?v=3" />
+  <link rel="stylesheet" href="content.css?v=4" />
   <link rel="stylesheet" href="portal-ui.css?v=7" />
   <script defer src="firebase-config.js?v=2"></script>
-  <script defer src="portal-startup.js?v=ff350ffcfc2f"></script>
+  <script defer src="portal-startup.js?v=dd645e21faaf"></script>
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -79,7 +79,13 @@
 
   <!-- ANA SAYFA: DERS KATALOĞU -->
     <div id="cloud-status" class="cloud-status cloud-status-global" role="status">
-      <span id="cloud-status-text">Ders kaydı yükleniyor…</span>
+      <div class="cloud-transfer-state">
+        <span id="cloud-status-text">Ders kaydı yükleniyor…</span>
+        <div id="cloud-transfer-meter" class="cloud-transfer-meter" hidden>
+          <progress id="cloud-transfer-progress" max="100" aria-labelledby="cloud-status-text"></progress>
+          <span id="cloud-transfer-percent" aria-hidden="true"></span>
+        </div>
+      </div>
       <button type="button" id="btn-cloud-publish" class="btn btn-secondary hidden">Yerel Notları GitHub’a Aktar</button>
     </div>
   <main id="catalog-view" class="catalog-container">

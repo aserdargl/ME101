@@ -1,6 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { parts, decoder, partLength } = require("../lecture-document.js");
+const { parts, decoder, partLength, pack, unpack } = require("../lecture-document.js");
 
 function roundTrip(document) {
   const reader = decoder();
@@ -40,4 +40,21 @@ test("ordinary own properties cannot alter object prototypes during decoding", (
   const reader = decoder();
   assert.throws(() => reader.add('{"path":[],"value":{}}\n{"path":["__proto__","keep"],"value":"no"}'), /Invalid lecture document reference/);
   assert.equal({}.keep, undefined);
+});
+
+test("lossless packing reduces transfer size and preserves Unicode, notes and images exactly", async () => {
+  const text = JSON.stringify({ note: "Özgün notlar 😀".repeat(2000), image: "data:image/png;base64," + "A".repeat(1024 * 1024) });
+  const packed = await pack(text);
+  assert.equal(packed.encoding, "gzip");
+  assert.ok(packed.content.length < text.length / 10);
+  assert.equal(await unpack(packed.content, packed.encoding), text);
+  assert.equal(await unpack(text), text, "previously published uncompressed files still open");
+});
+
+test("photo-like data bypasses unhelpful whole-part compression", async () => {
+  const photo = require("node:crypto").randomBytes(256 * 1024).toString("base64");
+  const text = JSON.stringify({ image: `data:image/png;base64,${photo}` });
+  const packed = await pack(text);
+  assert.equal(packed.encoding, "plain");
+  assert.equal(packed.content, text);
 });

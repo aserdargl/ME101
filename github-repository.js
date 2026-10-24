@@ -67,7 +67,7 @@
         const saved = JSON.parse(this.storage?.getItem(this.checkpointKey) || "null");
         if (saved?.digest === digest && /^[a-f0-9-]{36}$/i.test(saved.id) && saved.uploaded && typeof saved.uploaded === "object") return saved;
       } catch { /* A missing checkpoint never changes the local document. */ }
-      return { digest, id: this.crypto.randomUUID(), uploaded: {} };
+      return { digest, id: this.crypto.randomUUID(), uploaded: {}, encodings: {} };
     }
 
     rememberCheckpoint(checkpoint) {
@@ -76,10 +76,14 @@
     }
 
     /** Sends a bounded number of parts together and reuses acknowledged parts after reload. */
-    async uploadParts(lectures, hashes, checkpoint, onProgress) {
+    async uploadParts(lectures, hashes, checkpoint, onProgress, currentManifest) {
       const iterator = documentCodec.parts(lectures);
       const entries = new Array(hashes.length);
       let next = 0, completed = 0, failure;
+      checkpoint.encodings ||= {};
+      const reusable = new Map((currentManifest?.hashes || []).map((hash, index) => [hash, {
+        sha: currentManifest.blobs?.[index], encoding: currentManifest.encodings?.[index] || "plain"
+      }]));
       const worker = async () => {
         while (!failure) {
           const item = iterator.next();
@@ -87,10 +91,19 @@
           const index = next++;
           try {
             let sha = checkpoint.uploaded[index];
+            const existing = reusable.get(hashes[index]);
+            if (!sha && existing?.sha) {
+              sha = existing.sha;
+              checkpoint.uploaded[index] = sha;
+              checkpoint.encodings[index] = existing.encoding;
+              this.rememberCheckpoint(checkpoint);
+            }
             if (!sha) {
-              const blob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: item.value, encoding: "utf-8" } });
+              const packed = await documentCodec.pack(item.value);
+              const blob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: packed.content, encoding: "utf-8" } });
               sha = blob.sha;
               checkpoint.uploaded[index] = sha;
+              checkpoint.encodings[index] = packed.encoding;
               this.rememberCheckpoint(checkpoint);
             }
             entries[index] = { path: `data/snapshots/${checkpoint.id}/${index}.txt`, mode: "100644", type: "blob", sha };
@@ -133,7 +146,10 @@
       if (!Array.isArray(manifest.hashes) || manifest.hashes.length !== manifest.parts || await this.digest(JSON.stringify(manifest.hashes)) !== manifest.digest) throw new Error("GitHub kaydının bütünlüğü doğrulanamadı; yerel notlar korunuyor.");
       const decoder = documentCodec.decoder();
       for (let part = 0; part < manifest.parts; part += 1) {
-        const text = await readPart(`data/snapshots/${manifest.id}/${part}.txt`);
+        const stored = await readPart(`data/snapshots/${manifest.id}/${part}.txt`);
+        let text;
+        try { text = await documentCodec.unpack(stored, manifest.encodings?.[part] || "plain"); }
+        catch { throw new Error("GitHub kaydının bütünlüğü doğrulanamadı; yerel notlar korunuyor."); }
         if (await this.digest(text) !== manifest.hashes[part]) throw new Error("GitHub kaydının bütünlüğü doğrulanamadı; yerel notlar korunuyor.");
         decoder.add(text);
       }
@@ -155,13 +171,15 @@
     }
 
     /** Reads a consistent Git commit, including changes not yet served by Pages. */
-    async readCurrent() {
+    async readCurrent({ skipLecturesForVersion = null } = {}) {
       const reference = await this.api(`${this.prefix}/git/ref/heads/${encodeURIComponent(this.branch)}`);
       const head = reference.object.sha;
       const commit = await this.api(`${this.prefix}/git/commits/${head}`);
       const read = path => this.api(`${this.prefix}/contents/${path}?ref=${head}`, { raw: true, optional: path === MANIFEST });
       const manifestText = await read(MANIFEST);
-      const result = await this.decode(manifestText ? JSON.parse(manifestText) : null, read);
+      const manifest = manifestText ? JSON.parse(manifestText) : null;
+      const result = manifest && manifest.id === skipLecturesForVersion
+        ? { manifest, lectures: null } : await this.decode(manifest, read);
       return { ...result, head, tree: commit.tree.sha };
     }
 
@@ -181,11 +199,17 @@
       if (!this.token) throw new Error("Yayımlamak için GitHub girişi gerekli.");
       const hashes = await this.documentHashes(lectures, onProgress);
       const digest = await this.digest(JSON.stringify(hashes));
+      if (current.manifest?.format === 2 && current.manifest.digest === digest) {
+        onProgress({ stage: "commit", completed: hashes.length, total: hashes.length });
+        return current.manifest;
+      }
       const checkpoint = this.checkpoint(digest);
       this.rememberCheckpoint(checkpoint);
-      const entries = await this.uploadParts(lectures, hashes, checkpoint, onProgress);
+      const entries = await this.uploadParts(lectures, hashes, checkpoint, onProgress, current.manifest);
       onProgress({ stage: "commit", completed: hashes.length, total: hashes.length });
-      const manifest = { format: 2, partLength: documentCodec.partLength, id: checkpoint.id, parts: hashes.length, hashes, digest, savedAt: new Date().toISOString(), lectureCount: lectures.length };
+      const manifest = { format: 2, partLength: documentCodec.partLength, id: checkpoint.id, parts: hashes.length, hashes, digest,
+        blobs: entries.map(entry => entry.sha), encodings: entries.map((_, index) => checkpoint.encodings[index] || "plain"),
+        savedAt: new Date().toISOString(), lectureCount: lectures.length };
       const manifestBlob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: JSON.stringify(manifest), encoding: "utf-8" } });
       entries.push({ path: MANIFEST, mode: "100644", type: "blob", sha: manifestBlob.sha });
       const tree = await this.api(`${this.prefix}/git/trees`, { method: "POST", body: { base_tree: current.tree, tree: entries } });

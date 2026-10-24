@@ -103,3 +103,34 @@ test("uploads run with bounded concurrency and a recreated repository resumes ac
   assert.deepEqual((await resumed.readPublished()).lectures, lectures);
   assert.ok([...values.values()].every(value => !value.includes("synthetic")), "checkpoints contain no access token");
 });
+
+test("another tab reuses published unchanged parts while preserving prior snapshots", async () => {
+  const server = fakeGitHub(), first = create(server);
+  await first.login("synthetic");
+  const lectures = [{ id: "reuse", slides: [{ image: "A".repeat(5 * 1024 * 1024), html: "Özgün notlar" }] }];
+  const previous = await first.publish(lectures, await first.readCurrent());
+  const second = create(server);
+  await second.login("synthetic");
+  lectures[0].slides[0].html += " · Yeni not";
+  const count = server.state.requests.filter(request => request.path === "/git/blobs").length;
+  const manifest = await second.publish(lectures, await second.readCurrent());
+  assert.equal(server.state.requests.filter(request => request.path === "/git/blobs").length - count, 2, "only the changed part and new manifest need uploading");
+  assert.equal(manifest.blobs[0], previous.blobs[0]);
+  assert.deepEqual((await second.readPublished()).lectures, lectures);
+});
+
+test("a verified unchanged version skips content downloads and creates no new commit", async () => {
+  const server = fakeGitHub(), repository = create(server);
+  await repository.login("synthetic");
+  const lectures = [{ id: "same", slides: [{ html: "Özgün not" }] }];
+  const first = await repository.publish(lectures, await repository.readCurrent());
+  const requestCount = server.state.requests.length;
+  const current = await repository.readCurrent({ skipLecturesForVersion: first.id });
+  assert.equal(current.lectures, null);
+  assert.equal(server.state.requests.slice(requestCount).filter(request => request.path.startsWith("/contents/")).length, 1);
+  const before = server.state.requests.length, head = server.state.head;
+  const result = await repository.publish(lectures, current);
+  assert.equal(result.id, first.id);
+  assert.equal(server.state.requests.length, before);
+  assert.equal(server.state.head, head);
+});

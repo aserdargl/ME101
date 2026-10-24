@@ -130,12 +130,14 @@ async function main() {
     assert.equal(await page.evaluate(() => sessionStorage.getItem("mee101_instructor_tab_session_v1")), null);
     assert.deepEqual(errors, []);
     const full = await browser.newPage();
+    const fullGithub = fakeGitHub();
     await full.route("**/*", async route => {
       const url = new URL(route.request().url());
       if (url.pathname.endsWith("firebase-config.js")) return route.fulfill({ contentType: "text/javascript", body: "window.MEE101_FIREBASE_CONFIG={synthetic:true};" });
       if (url.pathname.startsWith("/data/")) return route.fulfill({ status: 404, body: "" });
       if (url.hostname === "api.github.com") {
-        const response = await github.fetch(url.href, { method: route.request().method(), body: route.request().postData(), headers: route.request().headers() });
+        if (url.pathname.endsWith("/git/blobs")) await new Promise(resolve => setTimeout(resolve, 150));
+        const response = await fullGithub.fetch(url.href, { method: route.request().method(), body: route.request().postData(), headers: route.request().headers() });
         return route.fulfill({ status: response.status, body: await response.text(), headers: { "Access-Control-Allow-Origin": origin, "Content-Type": "application/json" } });
       }
       return url.origin === origin ? route.continue() : route.abort();
@@ -161,6 +163,29 @@ async function main() {
     });
     await full.goto(`${origin}/full`);
     await full.waitForFunction(() => LecturePublishing.isAuthenticated() && isAdminAuthenticated);
+    await full.evaluate(() => {
+      window.qaProgress = [];
+      const meter = document.getElementById("cloud-transfer-progress");
+      new MutationObserver(() => qaProgress.push({ determinate: meter.hasAttribute("value"), value: meter.value })).observe(meter, { attributes: true });
+      LECTURES.push({ id: "qa-progress", week: "1. Hafta", title: "İlerleme testi", description: "Sentetik ders", slides: [{ title: "Özgün slayt", html: "Korunacak not", image: "A".repeat(1024 * 1024) }] });
+    });
+    await full.click("#btn-cloud-publish");
+    await full.waitForFunction(() => !document.getElementById("btn-cloud-publish").disabled);
+    assert.equal(await full.locator("#cloud-status").evaluate(element => element.classList.contains("cloud-error")), false, await full.locator("#cloud-status-text").textContent());
+    assert.equal(await full.locator("#cloud-transfer-progress").evaluate(element => element.value), 100);
+    assert.equal(await full.locator("#cloud-transfer-meter").isVisible(), true);
+    const meter = await full.evaluate(() => ({
+      indeterminateSeen: qaProgress.some(state => !state.determinate),
+      finished: document.getElementById("cloud-transfer-percent").textContent,
+      height: document.getElementById("cloud-transfer-progress").getBoundingClientRect().height
+    }));
+    assert.deepEqual(meter, { indeterminateSeen: true, finished: "100%", height: 6 });
+    fs.mkdirSync(path.join(root, ".jtmp"), { recursive: true });
+    await full.waitForTimeout(250);
+    await full.screenshot({ path: path.join(root, ".jtmp", "transfer-progress-desktop.png") });
+    await full.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await full.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await full.screenshot({ path: path.join(root, ".jtmp", "transfer-progress-mobile.png") });
     await full.reload();
     await full.waitForFunction(() => LecturePublishing.isAuthenticated() && isAdminAuthenticated);
     await full.click("#btn-admin-toggle");

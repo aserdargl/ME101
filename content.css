@@ -28,6 +28,19 @@
 .cloud-status { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; padding: 12px 14px; background: #edf4f0; color: #3b6650; border: 1px solid #d6e4db; border-radius: 9px; font-size: 11px; line-height: 1.7; }
 .cloud-status.cloud-error { background: #fcf4e9; color: #856039; border-color: #e9d7be; }
 .cloud-status .btn { flex-shrink: 0; font-size: 10px; }
+.cloud-transfer-state { flex: 1; min-width: 0; }
+.cloud-transfer-meter { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.cloud-transfer-meter[hidden] { display: none; }
+.cloud-transfer-meter progress { appearance: none; display: block; width: 100%; height: 6px; border: 0; border-radius: 4px; overflow: hidden; background: #d6e4db; accent-color: #3b6650; }
+.cloud-transfer-meter progress::-webkit-progress-bar { background: #d6e4db; border-radius: 4px; }
+.cloud-transfer-meter progress::-webkit-progress-value { background: #3b6650; border-radius: 4px; transition: width .2s ease; }
+.cloud-transfer-meter progress::-moz-progress-bar { background: #3b6650; border-radius: 4px; }
+.cloud-transfer-meter progress:indeterminate { background: linear-gradient(90deg, #d6e4db 25%, #3b6650 50%, #d6e4db 75%); background-size: 200% 100%; animation: cloud-transfer-pulse 1.4s linear infinite; }
+.cloud-transfer-meter span { min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+.cloud-error .cloud-transfer-meter progress { accent-color: #856039; animation: none; }
+.cloud-error .cloud-transfer-meter progress::-webkit-progress-value { background: #856039; }
+@keyframes cloud-transfer-pulse { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .cloud-transfer-meter progress:indeterminate { animation: none; } }
 .cloud-status-global { max-width: 1180px; margin: 18px auto 0; width: calc(100% - 64px); }
 #github-login-backdrop { z-index: 600; }
 body.presentation-mode .cloud-status { display: none; }

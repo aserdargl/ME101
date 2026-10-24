@@ -2,6 +2,8 @@
   const STRING_LENGTH = 32 * 1024;
   const PART_LENGTH = 4 * 1024 * 1024;
   const REFERENCE_LENGTH = 4096;
+  const COMPRESSION_SAMPLE_LENGTH = 16 * 1024;
+  const MIN_COMPRESSION_RATIO = 0.9;
 
   /** Encodes bounded records, sharing repeated media without changing the document. */
   function* records(value, path = [], strings = new Map()) {
@@ -62,6 +64,35 @@
     };
   }
 
-  root.LectureDocument = { parts, decoder, partLength: PART_LENGTH };
+  /** Losslessly reduces upload bytes; older browsers retain the plain part format. */
+  async function pack(text) {
+    if (!root.CompressionStream || !root.DecompressionStream) return { content: text, encoding: "plain" };
+    if (text.length > COMPRESSION_SAMPLE_LENGTH * 4) {
+      const middle = Math.floor(text.length / 2);
+      const sample = text.slice(0, COMPRESSION_SAMPLE_LENGTH) + text.slice(middle, middle + COMPRESSION_SAMPLE_LENGTH) + text.slice(-COMPRESSION_SAMPLE_LENGTH);
+      const compressed = await gzip(sample);
+      if (Math.ceil(compressed.length / 3) * 4 >= sample.length * MIN_COMPRESSION_RATIO) return { content: text, encoding: "plain" };
+    }
+    const bytes = await gzip(text);
+    const segments = [];
+    for (let start = 0; start < bytes.length; start += STRING_LENGTH) segments.push(String.fromCharCode(...bytes.subarray(start, start + STRING_LENGTH)));
+    const content = root.btoa(segments.join(""));
+    return content.length < text.length ? { content, encoding: "gzip" } : { content: text, encoding: "plain" };
+  }
+
+  async function gzip(text) {
+    const stream = new Blob([text]).stream().pipeThrough(new root.CompressionStream("gzip"));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+
+  async function unpack(text, encoding = "plain") {
+    if (encoding === "plain") return text;
+    if (encoding !== "gzip" || !root.DecompressionStream) throw new Error("Bu ders kaydı için güncel bir tarayıcı gerekiyor.");
+    const bytes = Uint8Array.from(root.atob(text), character => character.charCodeAt(0));
+    const stream = new Blob([bytes]).stream().pipeThrough(new root.DecompressionStream("gzip"));
+    return new Response(stream).text();
+  }
+
+  root.LectureDocument = { parts, decoder, pack, unpack, partLength: PART_LENGTH };
   if (typeof module !== "undefined") module.exports = root.LectureDocument;
 })(typeof window !== "undefined" ? window : globalThis);
