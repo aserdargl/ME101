@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Isolated course translation checks</title></head>
+<body>
+  <button data-language="en">English</button><button data-language="tr">Türkçe</button>
+  <button data-language-toggle><span>EN</span></button>
+  <div id="lecture-grid"></div>
+  <input id="lecture-search"><p id="catalog-empty"></p><p id="catalog-search-status"></p>
+  <div id="nav-current-lecture-title"></div><div id="pres-lecture-name"></div>
+  <input id="original-title"><textarea id="original-notes"></textarea>
+  <div class="slide-body-web">Malzeme Bilimi<p>Bu özgün not silinmemeli.</p></div>
+  <button id="run">Run translation checks</button><output id="result">Ready</output>
+  <script src="../portal-translations.js"></script>
+  <script src="../portal-language.js"></script>
+  <script src="../catalog-ui.js"></script>
+  <script>
+    const tick = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const assert = (value, message) => { if (!value) throw new Error(message); };
+    document.getElementById("run").onclick = async () => {
+      const output = document.getElementById("result");
+      try {
+        const lessons = await (await fetch("legacy-defaults.fixture.json")).json();
+        const original = JSON.stringify(lessons);
+        const notes = document.querySelector(".slide-body-web").innerHTML;
+        document.getElementById("original-title").value = lessons[0].title;
+        document.getElementById("original-notes").value = notes;
+        const render = () => {
+          document.getElementById("lecture-grid").replaceChildren(...lessons.map(lesson => {
+            const card = document.createElement("article");
+            card.className = "lecture-card";
+            card.innerHTML = '<div class="lecture-title-wrap"><span class="week-tag"></span><h4></h4></div><div class="lecture-desc-wrap"><p></p></div>';
+            card.querySelector(".week-tag").textContent = lesson.week;
+            card.querySelector("h4").textContent = lesson.title;
+            const description = card.querySelector("p");
+            description.textContent = lesson.description;
+            description.title = lesson.description;
+            return card;
+          }));
+          document.getElementById("nav-current-lecture-title").textContent = `${lessons[1].week}: ${lessons[1].title.split(":")[0]}`;
+          document.getElementById("pres-lecture-name").textContent = lessons[1].week;
+        };
+        render();
+        for (let cycle = 0; cycle < 3; cycle++) {
+          PortalLanguage.setLanguage("en");
+          await tick();
+          [...document.querySelectorAll(".lecture-card")].forEach((card, index) => {
+            assert(card.querySelector("h4").textContent === PORTAL_ENGLISH[lessons[index].title], "English title missing");
+            assert(card.querySelector("p").textContent === PORTAL_ENGLISH[lessons[index].description], "English description missing");
+            assert(card.querySelector("p").title === PORTAL_ENGLISH[lessons[index].description], "Tooltip not translated");
+            assert(card.querySelector(".week-tag").textContent === `Week ${index + 1}`, "Week label not translated");
+          });
+          assert(document.getElementById("nav-current-lecture-title").textContent === "Week 2: Force, Moment and Strength of Materials", "Navigation not translated");
+          PortalLanguage.setLanguage("tr");
+          await tick();
+          [...document.querySelectorAll(".lecture-card")].forEach((card, index) => {
+            assert(card.querySelector("h4").textContent === lessons[index].title, "Original title did not return");
+            assert(card.querySelector("p").textContent === lessons[index].description, "Original description did not return");
+          });
+          render();
+        }
+        assert(JSON.stringify(lessons) === original, "Course data changed");
+        assert(document.querySelector(".slide-body-web").innerHTML === notes, "Slide notes changed");
+        assert(document.getElementById("original-title").value === lessons[0].title, "Editor title changed");
+        assert(document.getElementById("original-notes").value === notes, "Editor notes changed");
+        document.getElementById("lecture-search").value = "tensile";
+        filterCatalog();
+        assert(document.querySelectorAll(".lecture-card:not(.hidden)").length === 1, "English search in Turkish view failed");
+        PortalLanguage.setLanguage("en");
+        await tick();
+        document.getElementById("lecture-search").value = "Çekme";
+        filterCatalog();
+        assert(document.querySelectorAll(".lecture-card:not(.hidden)").length === 1, "Turkish search in English view failed");
+        document.getElementById("lecture-search").value = "";
+        filterCatalog();
+        output.textContent = "PASS: 4 titles, 4 descriptions, tooltips, weeks, navigation, bilingual search, 3 language cycles and rerender; original data, notes and editor values preserved.";
+      } catch (error) { output.textContent = `FAIL: ${error.message}`; }
+    };
+  </script>
+</body>
+</html>

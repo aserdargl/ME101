@@ -11,18 +11,26 @@ function updateCatalogOverview() {
 
 /** Filters visible lessons without changing stored course or student data. */
 function filterCatalog() {
-  const query = document.getElementById("lecture-search").value.trim().toLocaleLowerCase("tr");
+  const query = normalizeCatalogSearch(document.getElementById("lecture-search").value.trim());
   const cards = Array.from(document.querySelectorAll(".lecture-card"));
   let visibleCount = 0;
   cards.forEach((card) => {
     const text = [".week-tag", ".lecture-title-wrap h4", ".lecture-desc-wrap p"]
-      .map((selector) => card.querySelector(selector).textContent).join(" ");
-    const matches = text.toLocaleLowerCase("tr").includes(query);
+      .map((selector) => {
+        const element = card.querySelector(selector);
+        return window.PortalLanguage?.searchText(element) || element.textContent;
+      }).join(" ");
+    const matches = normalizeCatalogSearch(text).includes(query);
     card.classList.toggle("hidden", !matches);
     if (matches) visibleCount += 1;
   });
   document.getElementById("catalog-empty").classList.toggle("hidden", visibleCount > 0);
   document.getElementById("catalog-search-status").textContent = `${visibleCount} ders gösteriliyor.`;
+}
+
+/** Accepts English and Turkish queries regardless of the active display language. */
+function normalizeCatalogSearch(text) {
+  return text.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().replace(/ı/g, "i");
 }
 
 document.getElementById("lecture-search").addEventListener("input", filterCatalog);

@@ -5,9 +5,9 @@
   const attributes = ["title", "placeholder", "aria-label"];
   const protectedContent = [
     "script", "style", "[contenteditable]", "[data-language]",
-    ".lecture-title-wrap", ".lecture-desc-wrap", ".slide-kicker", ".slide > h2",
+    ".slide-kicker", ".slide > h2",
     ".slide-body-web", ".slide-body-ppt", ".edit-thumb-preview", ".edit-thumb-title",
-    ".edit-live-preview-stage", "#nav-current-lecture-title", "#pres-lecture-name",
+    ".edit-live-preview-stage",
     ".roster-item"
   ].join(",");
   let language = "en";
@@ -15,6 +15,8 @@
   function english(text) {
     if (Object.hasOwn(translations, text)) return translations[text];
     const patterns = [
+      [/^(\d+)\.\s*Hafta$/i, "Week $1"],
+      [/^(\d+)\.\s*Hafta:\s*(.+)$/i, (_, week, title) => `Week ${week}: ${english(title)}`],
       [/^1 Slayt$/, "1 Slide"], [/^(\d+) Slayt$/, "$1 Slides"], [/^(\d+)\. Slayt$/, "Slide $1"],
       [/^Slayt (\d+) \/ (\d+)$/, "Slide $1 / $2"],
       [/^Adım (\d+)\/(\d+)$/, "Step $1/$2"],
@@ -61,11 +63,21 @@
     for (const child of node.childNodes) translateNode(child);
   }
 
+  /** Searches both displayed and original text without changing the stored lesson. */
+  function searchText(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const source = originals.get(node)?.text?.source || node.textContent;
+      return `${source} ${english(source.trim())}`;
+    }
+    return Array.from(node.childNodes, searchText).join(" ");
+  }
+
   /** Changes the display language; no persistence or lecture-writing APIs are used. */
   function setLanguage(next) {
     language = next === "tr" ? "tr" : "en";
     document.documentElement.lang = language;
     translateNode(document.body);
+    if (typeof window.filterCatalog === "function") window.filterCatalog();
     // The title is interface metadata, separate from all stored lesson titles.
     const title = "MEE 101 — Makine Mühendisliğine Giriş | Ders Portalı";
     document.title = language === "en" ? english(title) : title;
@@ -87,5 +99,5 @@
   });
   setLanguage("en");
   observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: attributes });
-  window.PortalLanguage = { setLanguage, text: text => language === "en" ? english(text) : text };
+  window.PortalLanguage = { setLanguage, searchText, text: text => language === "en" ? english(text) : text };
 })();
