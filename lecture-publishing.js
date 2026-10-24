@@ -73,38 +73,14 @@
         rememberDigest(manifest.digest);
       }
       message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
-    } catch (error) {
-      synchronized = false;
-      if (error.status === 401) { authenticated = false; repository.logout(); }
-      message(error.message, true);
-    }
+    } catch (error) { synchronized = false; message(error.message, true); }
     finally { publishing = false; pendingSave = false; button.disabled = false; }
   }
 
   async function initialize(options) {
     getLectures = options.getLectures;
     applyLectures = options.applyLectures;
-    const loginModal = document.getElementById("github-login-backdrop");
-    const openLogin = () => { loginModal.classList.remove("hidden"); document.getElementById("btn-connect-github").focus(); };
-    button.addEventListener("click", () => authenticated ? publish(true) : openLogin());
-    document.getElementById("btn-open-github-login").addEventListener("click", openLogin);
-    document.getElementById("btn-close-github-login").addEventListener("click", () => { loginModal.classList.add("hidden"); });
-    document.getElementById("btn-connect-github").addEventListener("click", async () => {
-      const feedback = document.getElementById("github-login-feedback");
-      const connect = document.getElementById("btn-connect-github");
-      const client = new GitHubOAuthClient({ serverUrl: root.MEE101_APPROVAL_URL });
-      connect.disabled = true;
-      feedback.textContent = "GitHub hesabınızla giriş penceresi açılıyor…";
-      try {
-        await repository.login(await client.login());
-        authenticated = true;
-        loginModal.classList.add("hidden");
-        document.getElementById("admin-login-backdrop").classList.add("hidden");
-        options.onAuthenticated();
-        message("GitHub bağlantısı hazır · Notlarınızı ‘Aktar’ düğmesiyle yayımlayabilirsiniz.");
-      } catch (error) { feedback.textContent = error.message; }
-      finally { connect.disabled = false; }
-    });
+    button.addEventListener("click", () => authenticated ? publish(true) : options.onLoginRequired());
     root.addEventListener("lecture-storage-status", event => message(event.detail, true));
     if (root.MEE101_GITHUB_ENABLED === false) { message("Ayrı test ortamı · GitHub kayıtlarına bağlantı yok."); return; }
     try {

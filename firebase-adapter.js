@@ -16,6 +16,14 @@ window.createFirebaseStudentAdapter = async config => {
   const enrollment = createNumberEnrollment({ db, sdk: dbSdk });
   return {
     getUser: () => auth.currentUser,
+    async signInInstructor(token) {
+      const { user } = await authSdk.signInWithCustomToken(auth, token);
+      const registered = (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", user.uid))).exists();
+      if (!user.emailVerified || !registered) {
+        await authSdk.signOut(auth);
+        throw { code: "permission-denied" };
+      }
+    },
     async start(onUser) {
       authSdk.onAuthStateChanged(auth, onUser);
       await auth.authStateReady();

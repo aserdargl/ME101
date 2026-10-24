@@ -312,21 +312,16 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          Ders ekleme, PPTX yükleme, öğrenci listesi tanımlama ve yıldız sıfırlama işlemleri yalnızca dersi veren öğretim üyesine açıktır.
+          GitHub hesabınızla bir kez giriş yaparak dersleri düzenleyip yayımlayabilir, öğrenci listesini ve başvuruları yönetebilirsiniz.
         </p>
-        <div class="form-field">
-          <label for="inp-admin-pass">Yönetici Parolası</label>
-          <input type="password" id="inp-admin-pass" placeholder="Parolanızı giriniz..." />
-        </div>
         <p id="admin-login-error" class="hidden" style="color:#9b2226; font-size:0.78rem; margin-top:0.4rem; font-weight:600;">
           Hatalı parola. Lütfen tekrar deneyiniz.
         </p>
         <div class="modal-footer-actions">
           <button id="btn-submit-admin-login" class="btn btn-primary" style="width:100%; justify-content:center;">
-            Yönetici Modunu Aç
+            GitHub ile Giriş Yap
           </button>
         </div>
-        <button type="button" id="btn-open-github-login" class="btn btn-secondary" style="width:100%; justify-content:center; margin-top:8px;">GitHub ile Giriş</button>
       </div>
     </div>
   </div>
@@ -461,7 +456,7 @@
             <button id="btn-export-json" class="btn btn-secondary">Ders Verisini (JSON) Kopyala</button>
             <button type="button" id="btn-download-backup" class="btn btn-secondary">Yedeği Dosya Olarak İndir</button>
           </div>
-          <div class="info-card">
+          <div class="info-card hidden" aria-hidden="true">
             <h4>3. Bu Tarayıcıdaki Yönetici Parolası</h4>
             <p style="margin-bottom:0.55rem;">
               Bu parola yerel düzenleme ekranını açar. GitHub’a yayımlama yetkisi, GitHub hesabınızla ayrıca doğrulanır.
@@ -478,7 +473,7 @@
         <div id="tab-student-roster" class="tab-pane hidden">
           <div class="roster-sync-bar">
             <span id="roster-sync-status" role="status">Firebase bağlantısı hazırlanıyor…</span>
-            <button type="button" id="btn-roster-firebase-login" class="btn btn-secondary">Firebase Yönetici Girişi</button>
+            <button type="button" id="btn-roster-firebase-login" class="btn btn-secondary">Öğretim Üyesi Girişi</button>
           </div>
           <p class="modal-desc">
             Her satıra <strong>öğrenci numarası;ad soyad</strong> giriniz veya Excel'den bu iki sütunu yapıştırınız. Öğrenciler eşleşen bilgilerle istedikleri e-postayı kullanarak kayıt olur. Her numara tek hesaba bağlanır. Liste gizli tutulur; mevcut eski e-posta kayıtları korunur.
@@ -729,17 +724,7 @@
     </div>
   </div>
 
-  <div id="github-login-backdrop" class="modal-backdrop course-editor hidden">
-    <div class="modal-card" style="max-width:500px;">
-      <div class="modal-header"><div><span class="department-label">GITHUB ORTAK DERS KAYDI</span><h3>GitHub’a Bağlan</h3></div><button type="button" id="btn-close-github-login" class="modal-close-btn" aria-label="GitHub girişini kapat">&times;</button></div>
-      <div class="modal-body">
-        <p class="modal-desc">GitHub hesabınızla giriş yapın. LectureNotes uygulaması yalnızca <strong>ME101</strong> deposunda dersleri yayımlayabilir. Girişten sonra mevcut notlarınızı <strong>GitHub’a Yayımla / Aktar</strong> düğmesiyle gönderin.</p>
-        <p id="github-login-feedback" role="alert" style="color:#9b4343; font-size:12px; margin:12px 0;"></p>
-        <button type="button" id="btn-connect-github" class="btn btn-primary">GitHub Hesabımla Giriş Yap</button>
-      </div>
-    </div>
-  </div>
-  <script src="portal-translations.js?v=5"></script>
+  <script src="portal-translations.js?v=7"></script>
   <script src="portal-language.js?v=4"></script>
   <script src="catalog-order.js?v=1"></script>
   <script src="catalog-ui.js?v=2"></script>
@@ -748,17 +733,17 @@
   <script src="pptx-preview.js?v=1"></script>
   <script src="lecture-storage.js?v=1"></script>
   <script src="github-repository.js?v=2"></script>
-  <script src="github-oauth-client.js?v=2"></script>
-  <script src="lecture-publishing.js?v=3"></script>
+  <script src="lecture-publishing.js?v=4"></script>
   <script src="legacy-content.js?v=1"></script>
   <script src="firebase-config.js?v=2"></script>
   <script src="student-numbers.js?v=1"></script>
-  <script src="firebase-student-service.js?v=3"></script>
+  <script src="firebase-student-service.js?v=4"></script>
   <script src="firebase-enrollment.js?v=2"></script>
   <script src="approval-client.js?v=1"></script>
-  <script src="firebase-adapter.js?v=3"></script>
-  <script src="firebase-students.js?v=3"></script>
+  <script src="firebase-adapter.js?v=4"></script>
+  <script src="firebase-students.js?v=4"></script>
   <script src="approval-ui.js?v=1"></script>
-  <script src="app.js?v=18"></script>
+  <script src="instructor-login.js?v=1"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>

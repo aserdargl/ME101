@@ -13,7 +13,7 @@ window.FirebaseStudents = (() => {
       try {
         const adapter = await createFirebaseStudentAdapter(window.MEE101_FIREBASE_CONFIG);
         service = new FirebaseStudentService(adapter, state => {
-          report(state.isAdmin ? "Gizli ortak liste · Firebase bağlantısı etkin." : "Ortak listeyi yönetmek için yetkili Firebase hesabıyla giriş yapınız.");
+          report(state.isAdmin ? "Öğretim üyesi oturumu · Gizli öğrenci listesi bağlantısı etkin." : "Öğrencileri yönetmek için öğretim üyesi girişi yapınız.");
           onChange(state);
         });
         await service.start();
@@ -43,6 +43,7 @@ window.FirebaseStudents = (() => {
 
   return {
     initialize, signIn, saveText,
+    signInInstructor: async token => { await ready; return service ? service.signInInstructor(token) : unavailable(); },
     get profile() { return service?.profile || null; },
     get isAdmin() { return service?.isAdmin === true; },
     get roster() { return service?.isAdmin ? service.roster : []; },

@@ -36,7 +36,7 @@
       this.applications = [];
       this.accessResolved = false;
       this.onChange(this);
-      if (!user?.emailVerified) { this.accessResolved = true; return; }
+      if (!user?.emailVerified) { this.accessResolved = true; this.onChange(this); return; }
       try {
         const isAdmin = await this.adapter.isAdmin(user.uid);
         if (generation !== this.generation) return;
@@ -89,13 +89,23 @@
       return this.perform(() => this.adapter.register(normalizeEmail(email), password, number, name));
     }
 
+    /** Never creates enrollment or roster entries when signing in an instructor. */
+    async signInInstructor(token) {
+      const result = await this.perform(() => this.adapter.signInInstructor(token));
+      if (!result.ok) return result;
+      await this.applyUser(this.adapter.getUser());
+      if (this.isAdmin) return { ok: true };
+      await this.signOut();
+      return failure("Öğretim üyesi yetkisi doğrulanamadı.");
+    }
+
     async resetPassword(email) {
       if (!emailPattern.test(normalizeEmail(email))) return failure("E-posta adresinizi giriniz.");
       return this.perform(() => this.adapter.resetPassword(normalizeEmail(email)));
     }
 
     async saveRoster(students, replaceAll = false) {
-      if (!this.isAdmin) return failure("Ortak listeyi değiştirmek için yetkili Firebase hesabıyla giriş yapınız.");
+      if (!this.isAdmin) return failure("Ortak listeyi değiştirmek için öğretim üyesi girişi yapınız.");
       const key = student => student.email || student.no;
       const incoming = new Map(students.map(student => [key(student), student]));
       const removals = replaceAll ? this.roster.filter(student => !student.email && !incoming.has(key(student))) : [];
@@ -104,17 +114,17 @@
     }
 
     async removeStudent(key) {
-      if (!this.isAdmin) return failure("Firebase yönetici girişi gerekli.");
+      if (!this.isAdmin) return failure("Öğretim üyesi girişi gerekli.");
       return this.perform(() => this.adapter.writeRoster([], [key.includes("@") ? { email: key } : { no: key }]));
     }
 
     async resetNumber(no) {
-      if (!this.isAdmin) return failure("Firebase yönetici girişi gerekli.");
+      if (!this.isAdmin) return failure("Öğretim üyesi girişi gerekli.");
       return this.perform(() => this.adapter.resetNumber(no));
     }
 
     async reviewApplication(uid, action, no, name) {
-      if (!this.isAdmin) return failure("Firebase yönetici girişi gerekli.");
+      if (!this.isAdmin) return failure("Öğretim üyesi girişi gerekli.");
       try { return { ...await this.adapter.reviewApplication(uid, action, no, name), ok: true }; }
       catch (error) { return failure(this.adapter.errorMessage(error)); }
     }

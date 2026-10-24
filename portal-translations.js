@@ -1,5 +1,10 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "GitHub ile Giriş Yap": "Sign In with GitHub",
+  "GitHub hesabınızla bir kez giriş yaparak dersleri düzenleyip yayımlayabilir, öğrenci listesini ve başvuruları yönetebilirsiniz.": "Sign in once with GitHub to edit and publish lessons and manage students and applications.",
+  "Öğrencileri yönetmek için öğretim üyesi girişi yapınız.": "Sign in as an instructor to manage students.",
+  "Öğretim üyesi oturumu · Gizli öğrenci listesi bağlantısı etkin.": "Instructor session · Private student roster connected.",
+  "Öğretim üyesi girişi gerekli.": "Instructor sign-in is required.",
   "İlk Kayıt · Öğrenci Bilgileri": "First Registration · Student Details",
   "Ad Soyad": "Full Name",
   "Öğrenci Listesi · numara;ad soyad": "Student Roster · number;full name",
