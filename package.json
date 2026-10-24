@@ -2,9 +2,12 @@
   "name": "mee101-lecture-portal",
   "private": true,
   "scripts": {
+    "pretest": "npm run build:check",
     "test": "node --test tests/*.test.*",
     "test:approval": "node --test tests/approval-worker.cjs",
-    "test:firebase": "firebase emulators:exec --project demo-lecturenotes --only firestore,auth \"node --test tests/firestore-rules.cjs\""
+    "test:firebase": "firebase emulators:exec --project demo-lecturenotes --only firestore,auth \"node --test tests/firestore-rules.cjs\"",
+    "build": "node scripts/build-startup.cjs",
+    "build:check": "node scripts/build-startup.cjs --check"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^6.0.0",

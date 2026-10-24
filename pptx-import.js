@@ -1,6 +1,22 @@
 /* OOXML package reader. Resolves actual parts, rather than slide-number guesses. */
 (function (root) {
   const DRAWING_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
+  let zipLibrary;
+
+  /** Loads the local ZIP reader only when an upload actually needs it. */
+  function loadZipLibrary() {
+    if (root.JSZip) return Promise.resolve(root.JSZip);
+    if (!zipLibrary) {
+      zipLibrary = new Promise((resolve, reject) => {
+        const script = root.document.createElement("script");
+        script.src = "vendor/jszip/jszip-3.10.1.min.js";
+        script.onload = () => root.JSZip ? resolve(root.JSZip) : reject(new Error("ZIP okuyucu yüklenemedi."));
+        script.onerror = () => { script.remove(); reject(new Error("ZIP okuyucu yüklenemedi; yeniden deneyin.")); };
+        root.document.head.append(script);
+      }).catch(error => { zipLibrary = null; throw error; });
+    }
+    return zipLibrary;
+  }
   const REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
   const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", svg: "image/svg+xml", webp: "image/webp", bmp: "image/bmp", tif: "image/tiff", tiff: "image/tiff", emf: "image/emf", wmf: "image/wmf" };
   const SUPPORTED = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"]);
@@ -219,7 +235,8 @@
 
   /** Reads all embedded images and preserves source slide order and geometry. */
   async function parse(file, weekLabel, customTitle, dependencies = {}) {
-    const zip = await (dependencies.JSZip || root.JSZip).loadAsync(file);
+    const library = dependencies.JSZip || await loadZipLibrary();
+    const zip = await library.loadAsync(file);
     const pkg = new PptxPackage(zip, dependencies.parser || new root.DOMParser());
     const presentation = await pkg.xml("ppt/presentation.xml");
     const relations = await pkg.relations("ppt/presentation.xml");

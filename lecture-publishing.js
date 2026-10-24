@@ -86,7 +86,7 @@
     try {
       const remote = await repository.readPublished();
       version = remote.manifest?.id || null;
-      const localHash = await repository.digest(JSON.stringify(getLectures()));
+      const localHash = remote.manifest ? await repository.digest(JSON.stringify(getLectures())) : null;
       synchronized = Boolean(remote.manifest && (remote.manifest.digest === localHash || localStorage.getItem(SYNC_KEY) === localHash));
       if (remote.lectures && (!options.hasLocalData || synchronized)) {
         await applyLectures(remote.lectures);
