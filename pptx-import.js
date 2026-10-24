@@ -248,7 +248,7 @@
       const unplacedText = elements(part.doc, "sp").some(shape => first(shape, "txBody") && first(shape, "t") && !shapeBox(shape, placeholder(shape, layout)).w);
       const visual = unplacedText || !/<(?:text|image|ellipse)\b/.test(svg) ? "" : `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
       slides.push({ kicker: `${weekLabel.toLocaleUpperCase("tr")} • BÖLÜM ${index + 1}`, title, pptSummaryBullets: bullets,
-        extractedImages: usable.map(image => image.data), sourceSlidePath: path, sourceSlideVisual: visual,
+        defaultViewMode: "ppt", extractedImages: usable.map(image => image.data), sourceSlidePath: path, sourceSlideVisual: visual,
         sourceSlideRatio: `${width}/${height}`, sourceWarnings: [...new Set(pkg.warnings)],
         originalMedia: images.filter(image => !image.supported),
         html: `<div class="ppt-import-content">${bullets.length ? `<ul class="bullet-list">${bullets.map((line, i) => `<li class="fragment"><span class="bullet-marker">${String(i + 1).padStart(2, "0")}</span><div>${escape(line)}</div></li>`).join("")}</ul>` : ""}${media}${pkg.warnings.length ? `<p class="ppt-import-warning">${[...new Set(pkg.warnings)].map(escape).join("<br/>")}</p>` : ""}</div>` });

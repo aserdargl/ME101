@@ -526,8 +526,8 @@
                   <input type="file" id="inp-edit-pptx-file" accept=".pptx" class="hidden" />
                 </label>
                 <select id="sel-edit-pptx-mode" style="font-size:0.76rem; padding:0.38rem 0.45rem;">
-                  <option value="restore-media" selected>Görselleri Onar · Notları Koru</option>
-                  <option value="replace">Slaytları PPTX ile Değiştir</option>
+                  <option value="restore-media">Görselleri Onar · Notları Koru</option>
+                  <option value="replace" selected>Slaytları PPTX ile Değiştir</option>
                   <option value="append">Slaytları Sona Ekle</option>
                   <option value="file-only">Sadece İndirme Dosyasını Güncelle</option>
                 </select>
@@ -672,13 +672,6 @@
           </div>
         </div>
 
-        <details class="editor-maintenance">
-          <summary>Gelişmiş işlemler</summary>
-          <p>Varsayılanlara sıfırlama, eklediğiniz dersleri ve notları kaldırır.</p>
-          <button type="button" id="btn-reset-default-lectures" class="btn btn-outline" title="Tüm dersleri varsayılan içeriklere döndür">
-            Varsayılanlara Sıfırla
-          </button>
-        </details>
       </div>
 
         <div class="modal-footer-actions editor-save-bar">
@@ -710,11 +703,12 @@
   <script src="portal-translations.js?v=1"></script>
   <script src="portal-language.js?v=1"></script>
   <script src="catalog-ui.js?v=1"></script>
-  <script src="pptx-import.js?v=1"></script>
+  <script src="pptx-import.js?v=2"></script>
   <script src="slide-visual.js?v=1"></script>
   <script src="lecture-storage.js?v=1"></script>
   <script src="github-repository.js?v=1"></script>
-  <script src="lecture-publishing.js?v=1"></script>
-  <script src="app.js?v=12"></script>
+  <script src="lecture-publishing.js?v=2"></script>
+  <script src="legacy-content.js?v=1"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>

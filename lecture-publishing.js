@@ -68,7 +68,7 @@
       version = manifest.id;
       synchronized = !pendingSave;
       if (!pendingSave) {
-        applyLectures(lectures);
+        await applyLectures(lectures);
         await LectureStorage.save(lectures);
         rememberDigest(manifest.digest);
       }
@@ -106,7 +106,7 @@
       const localHash = await repository.digest(JSON.stringify(getLectures()));
       synchronized = Boolean(remote.manifest && (remote.manifest.digest === localHash || localStorage.getItem(SYNC_KEY) === localHash));
       if (remote.lectures && (!options.hasLocalData || synchronized)) {
-        applyLectures(remote.lectures);
+        await applyLectures(remote.lectures);
         synchronized = true;
         if (await LectureStorage.save(remote.lectures)) rememberDigest(remote.manifest.digest);
         message("GitHub ortak ders kaydı · Tüm cihazlardan erişilebilir.");

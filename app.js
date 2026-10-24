@@ -229,243 +229,7 @@ function getSimulationSlideObject(simType, weekLabel) {
   };
 }
 
-const LECTURES = [
-  {
-    id: "week-1",
-    week: "1. Hafta",
-    title: "Makine Mühendisliğine Giriş, Tarihsel Gelişim ve Temel Disiplinler",
-    description:
-      "Makine mühendisliğinin tanımı, Sanayi Devrimleri, beş temel anabilim dalı ve dişli çark mekanizmaları üzerinde güç/moment iletimi analizi.",
-    pptxUrl: "pptx/MEE101-Hafta1.pptx",
-    features: ["Dişli Çark Simülasyonu", "Hibrit Slayt Modu", "PPTX Arşivi"],
-    slides: [
-      {
-        kicker: "1. HAFTA • BÖLÜM I",
-        title: "Makine Mühendisliğinin Tanımı ve Kapsamı",
-        pptSummaryBullets: [
-          "Fizik, matematik ve malzeme bilimi ilkeleriyle mekanik ve ısıl sistemlerin tasarımı.",
-          "Enerji dönüşümü: Isı, akışkan ve elektrik enerjisinin mekanik işe dönüştürülmesi.",
-          "Yapısal bütünlük: Sistemlerin emniyetli, verimli ve uzun ömürlü çalışmasının sağlanması.",
-          "Temel İlişki: Güç (P) = Döndürme Momenti (T) × Açısal Hız (ω)"
-        ],
-        html: `
-          <p class="lead">
-            Makine mühendisliği; temel fizik, matematik ve malzeme bilimi yasalarını kullanarak <strong>enerji dönüşümü</strong> ve 
-            <strong>hareket üreten sistemleri</strong> tasarlayan, analiz eden ve imal eden mühendislik disiplinidir.
-          </p>
-          <div class="slide-grid-2">
-            <ul class="bullet-list">
-              <li class="fragment">
-                <span class="bullet-marker">I.</span>
-                <div><strong>Enerji ve Güç Dönüşümü:</strong> Doğadaki ısıl, hidrolik ve elektrik kaynaklarını faydalı mekanik işe dönüştüren sistemleri kurgular.</div>
-              </li>
-              <li class="fragment">
-                <span class="bullet-marker">II.</span>
-                <div><strong>Mukavemet ve Güvenilirlik:</strong> Makine elemanlarının statik ve dinamik yükler altında kırılmadan, aşınmadan ve yorulmadan çalışmasını güvence altına alır.</div>
-              </li>
-              <li class="fragment">
-                <span class="bullet-marker">III.</span>
-                <div><strong>İleri Uygulama Alanları:</strong> Savunma, havacılık, otomotiv, robotik, biyomekanik ve enerji santrallerinin temel yapı taşıdır.</div>
-              </li>
-            </ul>
-            <div class="info-card fragment">
-              <h4>Dersin Temel Amacı</h4>
-              <p style="margin-bottom:0.8rem;">
-                Mühendislik problemlerinin formüle edilmesi, kuvvet-gerilme-malzeme ilişkisinin kurulması ve temel makine elemanlarının çalışma prensiplerinin incelenmesidir.
-              </p>
-              <div class="formula-box">
-                P = T · ω = (2 · π · n · T) / 60
-                <span class="formula-sub">P: Güç [W] &nbsp;|&nbsp; T: Döndürme Momenti [N·m] &nbsp;|&nbsp; ω: Açısal Hız [rad/s]</span>
-              </div>
-            </div>
-          </div>
-        `
-      },
-      {
-        kicker: "1. HAFTA • BÖLÜM II",
-        title: "Endüstriyel Gelişim Süreci",
-        pptSummaryBullets: [
-          "I. Sanayi Devrimi (1780): Buhar gücü ve mekanik tezgâhların doğuşu.",
-          "II. Sanayi Devrimi (1870): Seri üretim hatları, elektrik ve içten yanmalı motorlar.",
-          "III. ve IV. Sanayi Devrimi: CNC, CAD/CAE, robotik otomasyon ve dijital ikiz.",
-          "Mühendislik Tasarımı = Teorik Analiz + Deneysel Doğrulama + Ekonomik İmalat"
-        ],
-        html: `
-          <p class="lead">
-            Üretim teknolojilerindeki tarihsel dönüm noktaları, makine mühendisliğinin geliştirdiği güç ve imalat yöntemleriyle şekillenmiştir:
-          </p>
-          <div class="slide-grid-3">
-            <div class="info-card fragment">
-              <h4>I. Sanayi Devrimi (1780)</h4>
-              <p><strong>Buhar Makinesi ve Mekanizasyon:</strong> James Watt'ın kondenserli buhar makinesi ile kas ve su gücünden termodinamik güç üretimine geçiş.</p>
-            </div>
-            <div class="info-card fragment">
-              <h4>II. Sanayi Devrimi (1870)</h4>
-              <p><strong>Seri İmalat ve İçten Yanmalı Motorlar:</strong> Otto ve Diesel çevrimlerinin geliştirilmesi, standart yedek parça üretimi ve montaj hatları.</p>
-            </div>
-            <div class="info-card fragment">
-              <h4>III. &amp; IV. Sanayi Devrimi</h4>
-              <p><strong>Sayısal Kontrol ve Siber-Fiziksel Sistemler:</strong> CNC tezgâhlar, Sonlu Elemanlar Analizi (FEA), Hesaplamalı Akışkanlar Dinamiği (CFD) ve eklemeli imalat.</p>
-            </div>
-          </div>
-          <div class="formula-box fragment" style="margin-top:1.4rem;">
-            Mühendislik Çözümü = Bilimsel Doğruluk + Yapısal Emniyet + Optimum Maliyet
-            <span class="formula-sub">Mühendislik, kısıtlar altında en uygun (optimum) sistemi tasarlama sanatıdır.</span>
-          </div>
-        `
-      },
-      {
-        kicker: "1. HAFTA • BÖLÜM III",
-        title: "Makine Mühendisliğinin Beş Ana Anabilim Dalı",
-        pptSummaryBullets: [
-          "01. Konstrüksiyon ve İmalat (Makine elemanları, CAD, talaşlı/talaşsız üretim)",
-          "02. Mekanik (Statik, mukavemet, elastisite, sonlu elemanlar analizi)",
-          "03. Termodinamik ve Isı Tekniği (Isı transferi, akışkanlar mekaniği, enerji)",
-          "04. Makine Teorisi, Sistem Dinamiği ve Kontrol (Mekanizmalar, titreşim, mekatronik)",
-          "05. Otomotiv ve Güç Aktarma Sistemleri (Taşıt mekaniği, motorlar, aerodinamik)"
-        ],
-        html: `
-          <p class="lead">Makine mühendisliği lisans eğitimi ve akademik araştırmalar beş temel anabilim dalı üzerine inşa edilmiştir:</p>
-          <ul class="bullet-list">
-            <li class="fragment">
-              <span class="bullet-marker">01</span>
-              <div><strong>Konstrüksiyon ve İmalat:</strong> Makine elemanları (dişliler, yataklar, bağlantılar), bilgisayar destekli tasarım (CAD) ve modern üretim yöntemleri.</div>
-            </li>
-            <li class="fragment">
-              <span class="bullet-marker">02</span>
-              <div><strong>Mekanik (Katı Cisimler Mekaniği):</strong> Statik, mukavemet, gerilme analizi, kırılma mekaniği ve kompozit malzemeler.</div>
-            </li>
-            <li class="fragment">
-              <span class="bullet-marker">03</span>
-              <div><strong>Termodinamik ve Isı Tekniği:</strong> Termodinamik yasaları, akışkanlar mekaniği, ısı geçişi, güç santralleri ve iklimlendirme (HVAC).</div>
-            </li>
-            <li class="fragment">
-              <span class="bullet-marker">04</span>
-              <div><strong>Makine Teorisi, Sistem Dinamiği ve Kontrol:</strong> Mekanizma tekniği, mekanik titreşimler, otomatik kontrol sistemleri ve robotik.</div>
-            </li>
-            <li class="fragment">
-              <span class="bullet-marker">05</span>
-              <div><strong>Otomotiv ve Enerji Sistemleri:</strong> Taşıt dinamiği, içten yanmalı ve elektrikli tahrik sistemleri, alternatif enerji dönüşümleri.</div>
-            </li>
-          </ul>
-        `
-      },
-      getSimulationSlideObject("gear", "1. HAFTA")
-    ]
-  },
-  {
-    id: "week-2",
-    week: "2. Hafta",
-    title: "Kuvvet, Moment ve Mukavemet: Kiriş Eğilme Analizi",
-    description:
-      "Statik denge denklemleri, iç kuvvetler, eğilme momenti kavramı ve ankastre kirişlerin yük altında sehim/gerilme analizi.",
-    pptxUrl: "pptx/MEE101-Hafta2.pptx",
-    features: ["Ankastre Kiriş Analizi", "Hibrit Slayt Modu", "PPTX Arşivi"],
-    slides: [
-      {
-        kicker: "2. HAFTA • STATİK VE MUKAVEMET",
-        title: "Kuvvet, Moment ve Statik Denge İlkeleri",
-        pptSummaryBullets: [
-          "Düzlemde Statik Denge Denklemleri: ∑Fx = 0 , ∑Fy = 0 , ∑M_A = 0",
-          "Kuvvet (F [N]): Cisimlerin hareket veya şekil değiştirme durumunu değiştiren etki.",
-          "Moment (M = F · d [N·m]): Kuvvetin bir eksene göre döndürme/eğme etkisi.",
-          "Mukavemet Analizi: Dış yükler altında oluşan iç gerilmelerin (σ, τ) hesabı."
-        ],
-        html: `
-          <p class="lead">
-            Bir taşıyıcı sistemin veya makine parçasının statik dengede kalabilmesi için üzerine etkiyen 
-            tüm dış kuvvetlerin ve momentlerin bileşkesi sıfır olmalıdır.
-          </p>
-          <div class="slide-grid-2">
-            <div>
-              <div class="formula-box fragment">
-                ∑ Fₓ = 0 , &nbsp; ∑ Fᵧ = 0 , &nbsp; ∑ M_A = 0
-                <span class="formula-sub">İki Boyutlu Rijit Cisim Denge Denklemleri</span>
-              </div>
-              <ul class="bullet-list">
-                <li class="fragment">
-                  <span class="bullet-marker">I.</span>
-                  <div><strong>Kuvvet (F [Newton]):</strong> Doğrultusu, yönü ve şiddeti olan vektörel büyüklüktür.</div>
-                </li>
-                <li class="fragment">
-                  <span class="bullet-marker">II.</span>
-                  <div><strong>Moment (M = F · d [N·m]):</strong> Kuvvetin uygulama hattının referans noktasına olan dik uzaklığı ile çarpımıdır.</div>
-                </li>
-              </ul>
-            </div>
-            <div class="info-card fragment">
-              <h4>Rijit Cisimden Şekil Değiştiren Cisme Geçiş</h4>
-              <p>
-                Statik analizde cisimler <em>rijit</em> kabul edilirken, mukavemet dersinde gerçek malzemelerin yük altında esnediği ve kesit içinde <strong>Gerilme (σ)</strong> oluştuğu dikkate alınır.
-              </p>
-            </div>
-          </div>
-        `
-      },
-      getSimulationSlideObject("beam", "2. HAFTA")
-    ]
-  },
-  {
-    id: "week-3",
-    week: "3. Hafta",
-    title: "Malzeme Bilimi: Çekme Deneyi ve Gerilme – Şekil Değiştirme (σ - ε)",
-    description:
-      "Mühendislik malzemelerinin mekanik davranışları, Hooke Yasası, elastik/plastik şekil değiştirme ve tek eksenli çekme deneyi.",
-    pptxUrl: "pptx/MEE101-Hafta3.pptx",
-    features: ["Çekme Deneyi Simülasyonu", "Hibrit Slayt Modu", "PPTX Arşivi"],
-    slides: [
-      {
-        kicker: "3. HAFTA • MALZEME BİLİMİ",
-        title: "Normal Gerilme (σ) ve Birim Şekil Değiştirme (ε)",
-        pptSummaryBullets: [
-          "Normal Gerilme: σ = F / A₀ [MPa = N/mm²]",
-          "Birim Şekil Değiştirme: ε = ΔL / L₀ [Boyutsuz uzama oranı]",
-          "Hooke Yasası (Lineer Elastik Bölge): σ = E · ε",
-          "Elastisite Modülü (E): Malzemenin elastik şekil değiştirmeye karşı direnci."
-        ],
-        html: `
-          <p class="lead">
-            Malzemelerin mekanik dayanımını geometri ve boyuttan bağımsız olarak tanımlamak için iki temel büyüklük kullanılır:
-          </p>
-          <div class="slide-grid-2">
-            <div class="info-card fragment">
-              <h4>I. Mühendislik Gerilmesi (σ)</h4>
-              <p>Birim başlangıç kesit alanına etkiyen dik iç kuvvettir. Birimi <strong>MPa (N/mm²)</strong> olarak ifade edilir.</p>
-              <div class="formula-box">
-                σ = F / A₀
-                <span class="formula-sub">F: Eksenel Kuvvet [N] &nbsp;|&nbsp; A₀: İlk Kesit Alanı [mm²]</span>
-              </div>
-            </div>
-            <div class="info-card fragment">
-              <h4>II. Birim Şekil Değiştirme (ε)</h4>
-              <p>Numunedeki boy değişiminin başlangıç ölçü boyuna oranıdır.</p>
-              <div class="formula-box">
-                ε = ΔL / L₀ = (L - L₀) / L₀
-                <span class="formula-sub">L₀: İlk Ölçü Boyu &nbsp;|&nbsp; ΔL: Uzama Miktarı</span>
-              </div>
-            </div>
-          </div>
-          <div class="formula-box fragment" style="margin-top:1.1rem;">
-            Hooke Yasası: &nbsp; σ = E · ε
-            <span class="formula-sub">E (Young / Elastisite Modülü): Doğrunun eğimi olup malzemenin rijitliğini temsil eder.</span>
-          </div>
-        `
-      },
-      getSimulationSlideObject("tensile", "3. HAFTA")
-    ]
-  },
-  {
-    id: "week-4",
-    week: "4. Hafta",
-    title: "Mekanizma Tekniği: Krank-Biyel Mekanizması Kinematiği",
-    description:
-      "Dönme hareketini doğrusal harekete dönüştüren krank-biyel mekanizmasının konum, hız ve strok analizi.",
-    pptxUrl: "pptx/MEE101-Hafta4.pptx",
-    features: ["Krank-Biyel Simülasyonu", "Hibrit Slayt Modu", "PPTX Arşivi"],
-    slides: [getSimulationSlideObject("crank", "4. HAFTA")]
-  }
-];
-
+const LECTURES = [];
 // ============================================================================
 // UYGULAMA DURUMU (STATE)
 // ============================================================================
@@ -537,7 +301,6 @@ const STUDENT_ROSTER_KEY = "me101_student_roster_v1";
 const ADMIN_SESSION_KEY = "me101_instructor_unlocked";
 const STUDENT_SESSION_KEY = "me101_active_student_no";
 
-const INITIAL_DEFAULT_LECTURES = JSON.parse(JSON.stringify(LECTURES));
 
 const CUSTOM_ADMIN_PASS_HASH_KEY = "mee101_custom_admin_hash_v1";
 const DEFAULT_INSTRUCTOR_HASH = "a7dc91fb2b6975cf";
@@ -564,14 +327,7 @@ function getActiveAdminPassHash() {
   }
 }
 
-// Varsayılan Örnek Öğrenci Listesi (Öğretim üyesi panelinden güncellenebilir veya buraya yapıştırılabilir)
-const DEFAULT_STUDENT_ROSTER = [
-  { no: "20261001", name: "Örnek Öğrenci 1" },
-  { no: "20261002", name: "Örnek Öğrenci 2" },
-  { no: "20261003", name: "Örnek Öğrenci 3" },
-  { no: "20261004", name: "Örnek Öğrenci 4" },
-  { no: "20261005", name: "Örnek Öğrenci 5" }
-];
+const DEFAULT_STUDENT_ROSTER = [];
 
 let isAdminAuthenticated = sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
 let activeStudentNo = sessionStorage.getItem(STUDENT_SESSION_KEY) || null;
@@ -724,7 +480,7 @@ function saveCustomLectureToStorage(newLec) {
   } catch {
     // ignore
   }
-  saveAllLecturesToStorage();
+  return saveAllLecturesToStorage();
 }
 
 function deleteCustomLectureFromStorage(lecId) {
@@ -839,7 +595,7 @@ function renderCatalog() {
   LECTURES.forEach((lec) => {
     const card = document.createElement("article");
     card.className = "lecture-card";
-    const pptxHref = lec.pptxUrl || "pptx/MEE101-Hafta1.pptx";
+    const pptxHref = lec.pptxUrl || "";
     const downloadFileName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
 
     const stats = getLectureVoteStats(lec.id);
@@ -889,7 +645,7 @@ function renderCatalog() {
             <button class="btn btn-primary btn-present" data-id="${lec.id}">
               Sunum
             </button>
-            <a href="${pptxHref}" download="${downloadFileName}" class="btn btn-outline btn-protected-pptx" data-pptx-href="${pptxHref}" data-pptx-name="${downloadFileName}" title="PowerPoint (.pptx) dosyasını indir (Öğrenci No gerektirir)">
+            <a ${pptxHref ? "" : "hidden"} href="${escapeXml(pptxHref)}" download="${escapeXml(downloadFileName)}" class="btn btn-outline btn-protected-pptx${pptxHref ? "" : " hidden"}" data-pptx-href="${escapeXml(pptxHref)}" data-pptx-name="${escapeXml(downloadFileName)}" title="PowerPoint (.pptx) dosyasını indir (Öğrenci No gerektirir)">
               PPTX
             </a>
           </div>
@@ -998,10 +754,12 @@ function openLecture(lectureId, startInPresentation = false) {
   navCurrentLectureTitle.textContent = `${lec.week}: ${lec.title.split(":")[0]}`;
   presLectureName.textContent = `${lec.week}`;
 
-  const pptxHref = lec.pptxUrl || "pptx/MEE101-Hafta1.pptx";
+  const pptxHref = lec.pptxUrl || "";
   const downloadName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
   const navDl = document.getElementById("btn-nav-download-pptx");
   const bannerDl = document.getElementById("btn-banner-download-pptx");
+  navDl.classList.toggle("hidden", !pptxHref);
+  bannerDl.classList.toggle("hidden", !pptxHref);
   navDl.href = pptxHref;
   navDl.setAttribute("download", downloadName);
   bannerDl.href = pptxHref;
@@ -1595,14 +1353,10 @@ btnProcessPptx.addEventListener("click", async () => {
   // Durum A: .PPTX dosyası seçilmeden manuel ders ekleme
   if (!selectedPptxFile) {
     const finalTitle = customTitleInput || `${weekLabel} Ders İçeriği`;
-    const finalDesc = customDescInput || `${weekLabel} — ${finalTitle} ders notları ve sunumu.`;
+    const finalDesc = customDescInput;
     const bulletLines = manualBulletsRaw
       ? manualBulletsRaw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
-      : [
-          `${finalTitle} temel kavramları ve mühendislik ilkeleri.`,
-          "Temel denklemler, sınır şartları ve tasarım kriterleri.",
-          "Uygulama örnekleri ve sistem analizi."
-        ];
+      : [];
 
     const bulletsHtml = bulletLines
       .map(
@@ -1633,13 +1387,13 @@ btnProcessPptx.addEventListener("click", async () => {
       week: weekLabel,
       title: finalTitle,
       description: finalDesc,
-      pptxUrl: "pptx/MEE101-Hafta1.pptx",
+      pptxUrl: "",
       features: ["Ders Notu", "Sunum Modu"],
       slides: slidesArr
     };
 
     LECTURES.push(newLecture);
-    saveCustomLectureToStorage(newLecture);
+    await saveCustomLectureToStorage(newLecture);
     renderCatalog();
     closePptxModal();
     document.getElementById("imp-title").value = "";
@@ -1674,7 +1428,7 @@ btnProcessPptx.addEventListener("click", async () => {
     };
 
     LECTURES.push(newLecture);
-    saveCustomLectureToStorage(newLecture);
+    await saveCustomLectureToStorage(newLecture);
     selectedPptxFile = null;
     pptxFileStatus.textContent = "Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.";
     renderCatalog();
@@ -1730,13 +1484,13 @@ btnProcessImages.addEventListener("click", async () => {
     week: weekLabel,
     title: titleLabel,
     description: `${selectedSlideImages.length} adet slayt görseli ile oluşturulmuş sunum.`,
-    pptxUrl: "pptx/MEE101-Hafta1.pptx",
+    pptxUrl: "",
     features: ["Birebir Görsel Koruma", "Lazer ve Kalem Destekli"],
     slides: imageSlides
   };
 
   LECTURES.push(newLec);
-  saveCustomLectureToStorage(newLec);
+  await saveCustomLectureToStorage(newLec);
   renderCatalog();
   closePptxModal();
   openLecture(newLec.id, true);
@@ -1918,7 +1672,7 @@ function updateEditLivePreview() {
       sourceSlideRatio: slide.sourceSlideRatio,
       sourceSlideEdited: slide.sourceSlideEdited || title !== slide.title || kicker !== slide.kicker || bulletsRaw.trim() !== (editingSlideInitialSnapshot?.bulletsText || "").trim(),
       extractedImages: slide._imageChanged ? (activeImg ? [activeImg] : []) : (slide.extractedImages || []),
-      pptSummaryBullets: bulletLines.length > 0 ? bulletLines : slide.pptSummaryBullets
+      pptSummaryBullets: bulletLines
     };
     if (typeLabel) {
       typeLabel.textContent = activeImg
@@ -2111,9 +1865,7 @@ function commitCurrentSlideFormToDraft() {
   const formulaSub = document.getElementById("edit-slide-formula-sub").value.trim();
   const rawHtml = document.getElementById("edit-slide-raw-html").value;
 
-  if (bulletLines.length > 0) {
-    slide.pptSummaryBullets = bulletLines;
-  }
+  slide.pptSummaryBullets = bulletLines;
 
   // Kullanıcı doğrudan Gelişmiş HTML alanını düzenlediyse onu esas al
   if (editingSlideRawHtmlTouched && rawHtml !== snap.rawHtml) {
@@ -2233,8 +1985,8 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
       {
         kicker: `${(editingLectureDraft.week || "DERS").toUpperCase()} • BÖLÜM I`,
         title: editingLectureDraft.title || "Yeni Slayt",
-        pptSummaryBullets: ["Ders içeriği maddesi."],
-        html: `<p class="lead">${escapeXml(editingLectureDraft.description || "")}</p><ul class="bullet-list"><li class="fragment"><span class="bullet-marker">01</span><div>Ders içeriği maddesi.</div></li></ul>`
+        pptSummaryBullets: [],
+        html: `<p class="lead">${escapeXml(editingLectureDraft.description || "")}</p>`
       }
     ];
   }
@@ -2335,17 +2087,8 @@ function insertContentSlideAt(insertPos) {
     kicker: `${weekLabel.toUpperCase()} • BÖLÜM ${newSlideNum}`,
     title: `Yeni Slayt Başlığı (${newSlideNum})`,
     defaultViewMode: "web",
-    pptSummaryBullets: [
-      "Birinci temel kavram ve mühendislik ilkesi.",
-      "İkinci teknik açıklama veya bağıntı."
-    ],
-    html: `
-      <p class="lead">Bu slaydın giriş açıklamasını ve maddelerini aşağıdan düzenleyebilirsiniz.</p>
-      <ul class="bullet-list">
-        <li class="fragment"><span class="bullet-marker">01</span><div>Birinci temel kavram ve mühendislik ilkesi.</div></li>
-        <li class="fragment"><span class="bullet-marker">02</span><div>İkinci teknik açıklama veya bağıntı.</div></li>
-      </ul>
-    `
+    pptSummaryBullets: [],
+    html: ""
   };
   editingLectureDraft.slides.splice(targetPos, 0, newSlide);
   loadSlideIntoEditForm(targetPos);
@@ -2458,13 +2201,13 @@ document.getElementById("inp-edit-pptx-file").addEventListener("change", async (
   statusEl.textContent = "PPTX dosyası çözümleniyor...";
 
   try {
+    const parsedSlides = mode === "file-only" ? null : await parsePptxFileToSlides(file, weekLabel, lecTitle);
     const dataUrl = await readFileAsDataURL(file);
     editingLectureDraft.pptxUrl = dataUrl;
     editingLectureDraft.pptxFileName = file.name;
     document.getElementById("edit-lec-pptx-url").value = `pptx/${file.name}`;
 
     if (mode !== "file-only") {
-      const parsedSlides = await parsePptxFileToSlides(file, weekLabel, lecTitle);
       if (parsedSlides.length > 0) {
         if (mode === "restore-media") {
           const result = PptxImport.repairMedia(editingLectureDraft.slides, parsedSlides);
@@ -2473,15 +2216,15 @@ document.getElementById("inp-edit-pptx-file").addEventListener("change", async (
         } else if (mode === "replace") {
           editingLectureDraft.slides = parsedSlides;
           loadSlideIntoEditForm(0);
-          statusEl.innerHTML = `<strong style="color:#2d6a4f;">${file.name}</strong> yüklendi (${parsedSlides.length} slayt ile yenilendi).`;
+          statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> yüklendi (${parsedSlides.length} slayt ile yenilendi).`;
         } else {
           editingLectureDraft.slides.push(...parsedSlides);
           loadSlideIntoEditForm(editingLectureDraft.slides.length - 1);
-          statusEl.innerHTML = `<strong style="color:#2d6a4f;">${file.name}</strong> yüklendi (+${parsedSlides.length} slayt sona eklendi).`;
+          statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> yüklendi (+${parsedSlides.length} slayt sona eklendi).`;
         }
       }
     } else {
-      statusEl.innerHTML = `<strong style="color:#2d6a4f;">${file.name}</strong> indirme dosyası olarak tanımlandı.`;
+      statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> indirme dosyası olarak tanımlandı.`;
     }
   } catch (err) {
     statusEl.textContent = "Hata: " + err.message;
@@ -2489,7 +2232,7 @@ document.getElementById("inp-edit-pptx-file").addEventListener("change", async (
 });
 
 // Değişiklikleri Kaydet
-document.getElementById("btn-save-edit-lecture").addEventListener("click", () => {
+document.getElementById("btn-save-edit-lecture").addEventListener("click", async () => {
   if (!isAdminAuthenticated || !editingLectureDraft) return;
   commitCurrentSlideFormToDraft();
 
@@ -2520,11 +2263,11 @@ document.getElementById("btn-save-edit-lecture").addEventListener("click", () =>
     LECTURES.push(editingLectureDraft);
   }
 
-  saveAllLecturesToStorage();
-  renderCatalog();
-
   const savedId = editingLectureDraft.id;
   const savedSlideIdx = editingSlideIndex;
+  if (!await saveAllLecturesToStorage()) return;
+  renderCatalog();
+  if (editingLectureDraft?.id !== savedId) return;
   closeEditLectureModal();
 
   if (currentLecture && currentLecture.id === savedId) {
@@ -2532,37 +2275,6 @@ document.getElementById("btn-save-edit-lecture").addEventListener("click", () =>
     currentSlideIndex = Math.min(savedSlideIdx, currentLecture.slides.length - 1);
     if (isPresentationMode) {
       updateActiveSlide();
-    }
-  }
-});
-
-// Varsayılan Derslere Sıfırla
-document.getElementById("btn-reset-default-lectures").addEventListener("click", () => {
-  if (!isAdminAuthenticated) return;
-  if (
-    !confirm(
-      "Tüm dersleri fabrika ayarlarındaki ilk haline (1–4. Hafta varsayılan içeriklerine) döndürmek istiyor musunuz?"
-    )
-  ) {
-    return;
-  }
-  try {
-    localStorage.removeItem(ALL_LECTURES_STORAGE_KEY);
-    localStorage.removeItem(CUSTOM_LECTURES_KEY);
-  } catch {
-    // ignore
-  }
-  LECTURES.length = 0;
-  JSON.parse(JSON.stringify(INITIAL_DEFAULT_LECTURES)).forEach((d) => LECTURES.push(d));
-  saveAllLecturesToStorage();
-  closeEditLectureModal();
-  renderCatalog();
-  if (currentLecture) {
-    const stillExists = LECTURES.find((l) => l.id === currentLecture.id);
-    if (stillExists) {
-      openLecture(stillExists.id, isPresentationMode);
-    } else {
-      goHome();
     }
   }
 });
@@ -3264,12 +2976,14 @@ async function initializeLectures() {
     LECTURES.length = 0;
     LECTURES.push(...stored);
   } else loadCustomLectures();
+  const visibleLectures = await LegacyContent.userLectures(LECTURES);
+  LECTURES.splice(0, LECTURES.length, ...visibleLectures);
   const hasLocalData = Array.isArray(stored) || Boolean(localStorage.getItem(ALL_LECTURES_STORAGE_KEY) || localStorage.getItem(CUSTOM_LECTURES_KEY));
   renderCatalog();
   await LecturePublishing.initialize({
     getLectures: () => LECTURES,
     hasLocalData,
-    applyLectures: lectures => { LECTURES.length = 0; LECTURES.push(...lectures); renderCatalog(); },
+    applyLectures: async lectures => { const visible = await LegacyContent.userLectures(lectures); LECTURES.splice(0, LECTURES.length, ...visible); renderCatalog(); },
     onAuthenticated: () => { isAdminAuthenticated = true; sessionStorage.setItem(ADMIN_SESSION_KEY, "true"); renderCatalog(); }
   });
   if (LectureStorage.warning) window.dispatchEvent(new CustomEvent("lecture-storage-status", { detail: LectureStorage.warning }));

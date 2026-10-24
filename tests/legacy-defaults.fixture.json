@@ -1,0 +1,154 @@
+[
+  {
+    "id": "week-1",
+    "week": "1. Hafta",
+    "title": "Makine Mühendisliğine Giriş, Tarihsel Gelişim ve Temel Disiplinler",
+    "description": "Makine mühendisliğinin tanımı, Sanayi Devrimleri, beş temel anabilim dalı ve dişli çark mekanizmaları üzerinde güç/moment iletimi analizi.",
+    "pptxUrl": "pptx/MEE101-Hafta1.pptx",
+    "features": [
+      "Dişli Çark Simülasyonu",
+      "Hibrit Slayt Modu",
+      "PPTX Arşivi"
+    ],
+    "slides": [
+      {
+        "kicker": "1. HAFTA • BÖLÜM I",
+        "title": "Makine Mühendisliğinin Tanımı ve Kapsamı",
+        "pptSummaryBullets": [
+          "Fizik, matematik ve malzeme bilimi ilkeleriyle mekanik ve ısıl sistemlerin tasarımı.",
+          "Enerji dönüşümü: Isı, akışkan ve elektrik enerjisinin mekanik işe dönüştürülmesi.",
+          "Yapısal bütünlük: Sistemlerin emniyetli, verimli ve uzun ömürlü çalışmasının sağlanması.",
+          "Temel İlişki: Güç (P) = Döndürme Momenti (T) × Açısal Hız (ω)"
+        ],
+        "html": "\n          <p class=\"lead\">\n            Makine mühendisliği; temel fizik, matematik ve malzeme bilimi yasalarını kullanarak <strong>enerji dönüşümü</strong> ve \n            <strong>hareket üreten sistemleri</strong> tasarlayan, analiz eden ve imal eden mühendislik disiplinidir.\n          </p>\n          <div class=\"slide-grid-2\">\n            <ul class=\"bullet-list\">\n              <li class=\"fragment\">\n                <span class=\"bullet-marker\">I.</span>\n                <div><strong>Enerji ve Güç Dönüşümü:</strong> Doğadaki ısıl, hidrolik ve elektrik kaynaklarını faydalı mekanik işe dönüştüren sistemleri kurgular.</div>\n              </li>\n              <li class=\"fragment\">\n                <span class=\"bullet-marker\">II.</span>\n                <div><strong>Mukavemet ve Güvenilirlik:</strong> Makine elemanlarının statik ve dinamik yükler altında kırılmadan, aşınmadan ve yorulmadan çalışmasını güvence altına alır.</div>\n              </li>\n              <li class=\"fragment\">\n                <span class=\"bullet-marker\">III.</span>\n                <div><strong>İleri Uygulama Alanları:</strong> Savunma, havacılık, otomotiv, robotik, biyomekanik ve enerji santrallerinin temel yapı taşıdır.</div>\n              </li>\n            </ul>\n            <div class=\"info-card fragment\">\n              <h4>Dersin Temel Amacı</h4>\n              <p style=\"margin-bottom:0.8rem;\">\n                Mühendislik problemlerinin formüle edilmesi, kuvvet-gerilme-malzeme ilişkisinin kurulması ve temel makine elemanlarının çalışma prensiplerinin incelenmesidir.\n              </p>\n              <div class=\"formula-box\">\n                P = T · ω = (2 · π · n · T) / 60\n                <span class=\"formula-sub\">P: Güç [W] &nbsp;|&nbsp; T: Döndürme Momenti [N·m] &nbsp;|&nbsp; ω: Açısal Hız [rad/s]</span>\n              </div>\n            </div>\n          </div>\n        "
+      },
+      {
+        "kicker": "1. HAFTA • BÖLÜM II",
+        "title": "Endüstriyel Gelişim Süreci",
+        "pptSummaryBullets": [
+          "I. Sanayi Devrimi (1780): Buhar gücü ve mekanik tezgâhların doğuşu.",
+          "II. Sanayi Devrimi (1870): Seri üretim hatları, elektrik ve içten yanmalı motorlar.",
+          "III. ve IV. Sanayi Devrimi: CNC, CAD/CAE, robotik otomasyon ve dijital ikiz.",
+          "Mühendislik Tasarımı = Teorik Analiz + Deneysel Doğrulama + Ekonomik İmalat"
+        ],
+        "html": "\n          <p class=\"lead\">\n            Üretim teknolojilerindeki tarihsel dönüm noktaları, makine mühendisliğinin geliştirdiği güç ve imalat yöntemleriyle şekillenmiştir:\n          </p>\n          <div class=\"slide-grid-3\">\n            <div class=\"info-card fragment\">\n              <h4>I. Sanayi Devrimi (1780)</h4>\n              <p><strong>Buhar Makinesi ve Mekanizasyon:</strong> James Watt'ın kondenserli buhar makinesi ile kas ve su gücünden termodinamik güç üretimine geçiş.</p>\n            </div>\n            <div class=\"info-card fragment\">\n              <h4>II. Sanayi Devrimi (1870)</h4>\n              <p><strong>Seri İmalat ve İçten Yanmalı Motorlar:</strong> Otto ve Diesel çevrimlerinin geliştirilmesi, standart yedek parça üretimi ve montaj hatları.</p>\n            </div>\n            <div class=\"info-card fragment\">\n              <h4>III. &amp; IV. Sanayi Devrimi</h4>\n              <p><strong>Sayısal Kontrol ve Siber-Fiziksel Sistemler:</strong> CNC tezgâhlar, Sonlu Elemanlar Analizi (FEA), Hesaplamalı Akışkanlar Dinamiği (CFD) ve eklemeli imalat.</p>\n            </div>\n          </div>\n          <div class=\"formula-box fragment\" style=\"margin-top:1.4rem;\">\n            Mühendislik Çözümü = Bilimsel Doğruluk + Yapısal Emniyet + Optimum Maliyet\n            <span class=\"formula-sub\">Mühendislik, kısıtlar altında en uygun (optimum) sistemi tasarlama sanatıdır.</span>\n          </div>\n        "
+      },
+      {
+        "kicker": "1. HAFTA • BÖLÜM III",
+        "title": "Makine Mühendisliğinin Beş Ana Anabilim Dalı",
+        "pptSummaryBullets": [
+          "01. Konstrüksiyon ve İmalat (Makine elemanları, CAD, talaşlı/talaşsız üretim)",
+          "02. Mekanik (Statik, mukavemet, elastisite, sonlu elemanlar analizi)",
+          "03. Termodinamik ve Isı Tekniği (Isı transferi, akışkanlar mekaniği, enerji)",
+          "04. Makine Teorisi, Sistem Dinamiği ve Kontrol (Mekanizmalar, titreşim, mekatronik)",
+          "05. Otomotiv ve Güç Aktarma Sistemleri (Taşıt mekaniği, motorlar, aerodinamik)"
+        ],
+        "html": "\n          <p class=\"lead\">Makine mühendisliği lisans eğitimi ve akademik araştırmalar beş temel anabilim dalı üzerine inşa edilmiştir:</p>\n          <ul class=\"bullet-list\">\n            <li class=\"fragment\">\n              <span class=\"bullet-marker\">01</span>\n              <div><strong>Konstrüksiyon ve İmalat:</strong> Makine elemanları (dişliler, yataklar, bağlantılar), bilgisayar destekli tasarım (CAD) ve modern üretim yöntemleri.</div>\n            </li>\n            <li class=\"fragment\">\n              <span class=\"bullet-marker\">02</span>\n              <div><strong>Mekanik (Katı Cisimler Mekaniği):</strong> Statik, mukavemet, gerilme analizi, kırılma mekaniği ve kompozit malzemeler.</div>\n            </li>\n            <li class=\"fragment\">\n              <span class=\"bullet-marker\">03</span>\n              <div><strong>Termodinamik ve Isı Tekniği:</strong> Termodinamik yasaları, akışkanlar mekaniği, ısı geçişi, güç santralleri ve iklimlendirme (HVAC).</div>\n            </li>\n            <li class=\"fragment\">\n              <span class=\"bullet-marker\">04</span>\n              <div><strong>Makine Teorisi, Sistem Dinamiği ve Kontrol:</strong> Mekanizma tekniği, mekanik titreşimler, otomatik kontrol sistemleri ve robotik.</div>\n            </li>\n            <li class=\"fragment\">\n              <span class=\"bullet-marker\">05</span>\n              <div><strong>Otomotiv ve Enerji Sistemleri:</strong> Taşıt dinamiği, içten yanmalı ve elektrikli tahrik sistemleri, alternatif enerji dönüşümleri.</div>\n            </li>\n          </ul>\n        "
+      },
+      {
+        "kicker": "1. HAFTA • UYGULAMA VE SİMÜLASYON",
+        "title": "Dişli Çarklar, Çevrim Oranı ve Tork İletimi",
+        "pptSummaryBullets": [
+          "Çevrim Oranı: i = N₂ / N₁ = ω₁ / ω₂ = T₂ / T₁",
+          "Açısal hız düşürülürken döndürme momenti (tork) aynı oranda artar.",
+          "Diş sayıları (N₁, N₂), giriş devri ve giriş torku parametrelerinin analizi."
+        ],
+        "html": "\n        <p class=\"lead\">\n          Dişli çark mekanizmaları açısal hızı düşürüp <strong>döndürme momentini (torku) artırmak</strong> veya hızı yükseltmek amacıyla kullanılır. \n          Aşağıdaki parametreleri değiştirerek mekanizmanın kinematik ve dinamik davranışını inceleyiniz:\n        </p>\n        <div class=\"sim-box interactive-zone\" data-sim=\"gear\">\n          <div class=\"sim-header\">\n            <span class=\"sim-title\">TEKNİK SİMÜLASYON I — DÜZ DİŞLİ ÇARK ÇİFTİ (i = N₂ / N₁ = ω₁ / ω₂ = T₂ / T₁)</span>\n            <span style=\"font-size:0.78rem; color:#6e6256;\">Parametreleri değiştirmek için sürgüleri kullanınız</span>\n          </div>\n          <div class=\"slide-grid-2\">\n            <div class=\"sim-canvas-wrap\">\n              <canvas id=\"gear-canvas\" width=\"460\" height=\"230\"></canvas>\n            </div>\n            <div>\n              <div class=\"sim-controls\" style=\"grid-template-columns:1fr; margin-top:0;\">\n                <div class=\"control-group\">\n                  <label>Giriş Dişlisi Diş Sayısı (N₁): <strong id=\"val-n1\">12 Diş</strong></label>\n                  <input type=\"range\" id=\"inp-n1\" min=\"8\" max=\"24\" step=\"2\" value=\"12\" />\n                </div>\n                <div class=\"control-group\">\n                  <label>Çıkış Dişlisi Diş Sayısı (N₂): <strong id=\"val-n2\">24 Diş</strong></label>\n                  <input type=\"range\" id=\"inp-n2\" min=\"10\" max=\"36\" step=\"2\" value=\"24\" />\n                </div>\n                <div class=\"control-group\">\n                  <label>Giriş Devri (n₁): <strong id=\"val-rpm1\">60 d/dk</strong></label>\n                  <input type=\"range\" id=\"inp-rpm1\" min=\"10\" max=\"120\" step=\"5\" value=\"60\" />\n                </div>\n                <div class=\"control-group\">\n                  <label>Giriş Momenti (T₁): <strong id=\"val-t1\">50 N·m</strong></label>\n                  <input type=\"range\" id=\"inp-t1\" min=\"10\" max=\"200\" step=\"10\" value=\"50\" />\n                </div>\n              </div>\n            </div>\n          </div>\n          <div class=\"sim-readout\">\n            <div class=\"readout-item\">\n              <span class=\"readout-label\">Çevrim Oranı (i = N₂ / N₁)</span>\n              <span class=\"readout-val\" id=\"out-ratio\">2.00</span>\n            </div>\n            <div class=\"readout-item\">\n              <span class=\"readout-label\">Çıkış Devri (n₂)</span>\n              <span class=\"readout-val\" id=\"out-rpm2\">30.0 d/dk</span>\n            </div>\n            <div class=\"readout-item\">\n              <span class=\"readout-label\">Çıkış Momenti (T₂ = i · T₁)</span>\n              <span class=\"readout-val\" id=\"out-t2\">100.0 N·m</span>\n            </div>\n          </div>\n        </div>\n      "
+      }
+    ]
+  },
+  {
+    "id": "week-2",
+    "week": "2. Hafta",
+    "title": "Kuvvet, Moment ve Mukavemet: Kiriş Eğilme Analizi",
+    "description": "Statik denge denklemleri, iç kuvvetler, eğilme momenti kavramı ve ankastre kirişlerin yük altında sehim/gerilme analizi.",
+    "pptxUrl": "pptx/MEE101-Hafta2.pptx",
+    "features": [
+      "Ankastre Kiriş Analizi",
+      "Hibrit Slayt Modu",
+      "PPTX Arşivi"
+    ],
+    "slides": [
+      {
+        "kicker": "2. HAFTA • STATİK VE MUKAVEMET",
+        "title": "Kuvvet, Moment ve Statik Denge İlkeleri",
+        "pptSummaryBullets": [
+          "Düzlemde Statik Denge Denklemleri: ∑Fx = 0 , ∑Fy = 0 , ∑M_A = 0",
+          "Kuvvet (F [N]): Cisimlerin hareket veya şekil değiştirme durumunu değiştiren etki.",
+          "Moment (M = F · d [N·m]): Kuvvetin bir eksene göre döndürme/eğme etkisi.",
+          "Mukavemet Analizi: Dış yükler altında oluşan iç gerilmelerin (σ, τ) hesabı."
+        ],
+        "html": "\n          <p class=\"lead\">\n            Bir taşıyıcı sistemin veya makine parçasının statik dengede kalabilmesi için üzerine etkiyen \n            tüm dış kuvvetlerin ve momentlerin bileşkesi sıfır olmalıdır.\n          </p>\n          <div class=\"slide-grid-2\">\n            <div>\n              <div class=\"formula-box fragment\">\n                ∑ Fₓ = 0 , &nbsp; ∑ Fᵧ = 0 , &nbsp; ∑ M_A = 0\n                <span class=\"formula-sub\">İki Boyutlu Rijit Cisim Denge Denklemleri</span>\n              </div>\n              <ul class=\"bullet-list\">\n                <li class=\"fragment\">\n                  <span class=\"bullet-marker\">I.</span>\n                  <div><strong>Kuvvet (F [Newton]):</strong> Doğrultusu, yönü ve şiddeti olan vektörel büyüklüktür.</div>\n                </li>\n                <li class=\"fragment\">\n                  <span class=\"bullet-marker\">II.</span>\n                  <div><strong>Moment (M = F · d [N·m]):</strong> Kuvvetin uygulama hattının referans noktasına olan dik uzaklığı ile çarpımıdır.</div>\n                </li>\n              </ul>\n            </div>\n            <div class=\"info-card fragment\">\n              <h4>Rijit Cisimden Şekil Değiştiren Cisme Geçiş</h4>\n              <p>\n                Statik analizde cisimler <em>rijit</em> kabul edilirken, mukavemet dersinde gerçek malzemelerin yük altında esnediği ve kesit içinde <strong>Gerilme (σ)</strong> oluştuğu dikkate alınır.\n              </p>\n            </div>\n          </div>\n        "
+      },
+      {
+        "kicker": "2. HAFTA • UYGULAMA VE SİMÜLASYON",
+        "title": "Ankastre Kiriş Eğilme ve Gerilme Analizi",
+        "pptSummaryBullets": [
+          "Maksimum Eğilme Momenti: M_max = F · L (Ankastre mesnet kesitinde)",
+          "Maksimum Uç Sehimi (Çökme): δ_max = (F · L³) / (3 · E · I)",
+          "Malzeme Elastisite Modülünün (E) şekil değiştirmeye etkisi"
+        ],
+        "html": "\n        <p class=\"lead\">\n          Sol ucundan ankastre mesnetlenmiş bir kirişin serbest ucuna tekil <strong>F kuvveti</strong> uygulandığında oluşan \n          elastik eğriyi (δ_max) ve normal gerilme dağılımını (σ_max) farklı mühendislik malzemeleri için karşılaştırınız:\n        </p>\n        <div class=\"sim-box interactive-zone\" data-sim=\"beam\">\n          <div class=\"sim-header\">\n            <span class=\"sim-title\">TEKNİK SİMÜLASYON II — ANKASTRE KİRİŞ GERİLME VE SEHİM ANALİZİ</span>\n            <span id=\"beam-safety-badge\" style=\"font-size:0.78rem; font-weight:700; color:#2d6a4f;\">EMNİYETLİ BÖLGE</span>\n          </div>\n          <div class=\"slide-grid-2\">\n            <div class=\"sim-canvas-wrap\">\n              <canvas id=\"beam-canvas\" width=\"460\" height=\"220\"></canvas>\n            </div>\n            <div class=\"sim-controls\" style=\"grid-template-columns:1fr; margin-top:0;\">\n              <div class=\"control-group\">\n                <label>Uygulanan Uç Kuvvet (F): <strong id=\"val-beam-f\">1500 N</strong></label>\n                <input type=\"range\" id=\"inp-beam-f\" min=\"200\" max=\"5000\" step=\"100\" value=\"1500\" />\n              </div>\n              <div class=\"control-group\">\n                <label>Kiriş Açıklığı (L): <strong id=\"val-beam-l\">1.2 m</strong></label>\n                <input type=\"range\" id=\"inp-beam-l\" min=\"0.5\" max=\"2.5\" step=\"0.1\" value=\"1.2\" />\n              </div>\n              <div class=\"control-group\">\n                <label>Kiriş Malzemesi (Elastisite Modülü E):</label>\n                <select id=\"inp-beam-mat\">\n                  <option value=\"210|250|Yapı Çeliği (S235)\">Yapı Çeliği S235 (E = 210 GPa, R_e = 250 MPa)</option>\n                  <option value=\"70|270|Alüminyum 6061-T6\">Alüminyum 6061-T6 (E = 70 GPa, R_e = 270 MPa)</option>\n                  <option value=\"114|880|Titanyum Alaşımı Ti-6Al-4V\">Titanyum Ti-6Al-4V (E = 114 GPa, R_e = 880 MPa)</option>\n                </select>\n              </div>\n            </div>\n          </div>\n          <div class=\"sim-readout\">\n            <div class=\"readout-item\">\n              <span class=\"readout-label\">Maks. Eğilme Momenti (M = F·L)</span>\n              <span class=\"readout-val\" id=\"out-beam-m\">1800 N·m</span>\n            </div>\n            <div class=\"readout-item\">\n              <span class=\"readout-label\">Maks. Uç Sehimi (δ_max)</span>\n              <span class=\"readout-val\" id=\"out-beam-def\">6.86 mm</span>\n            </div>\n            <div class=\"readout-item\">\n              <span class=\"readout-label\">Maks. Eğilme Gerilmesi (σ_max)</span>\n              <span class=\"readout-val\" id=\"out-beam-stress\">108.0 MPa</span>\n            </div>\n          </div>\n        </div>\n      "
+      }
+    ]
+  },
+  {
+    "id": "week-3",
+    "week": "3. Hafta",
+    "title": "Malzeme Bilimi: Çekme Deneyi ve Gerilme – Şekil Değiştirme (σ - ε)",
+    "description": "Mühendislik malzemelerinin mekanik davranışları, Hooke Yasası, elastik/plastik şekil değiştirme ve tek eksenli çekme deneyi.",
+    "pptxUrl": "pptx/MEE101-Hafta3.pptx",
+    "features": [
+      "Çekme Deneyi Simülasyonu",
+      "Hibrit Slayt Modu",
+      "PPTX Arşivi"
+    ],
+    "slides": [
+      {
+        "kicker": "3. HAFTA • MALZEME BİLİMİ",
+        "title": "Normal Gerilme (σ) ve Birim Şekil Değiştirme (ε)",
+        "pptSummaryBullets": [
+          "Normal Gerilme: σ = F / A₀ [MPa = N/mm²]",
+          "Birim Şekil Değiştirme: ε = ΔL / L₀ [Boyutsuz uzama oranı]",
+          "Hooke Yasası (Lineer Elastik Bölge): σ = E · ε",
+          "Elastisite Modülü (E): Malzemenin elastik şekil değiştirmeye karşı direnci."
+        ],
+        "html": "\n          <p class=\"lead\">\n            Malzemelerin mekanik dayanımını geometri ve boyuttan bağımsız olarak tanımlamak için iki temel büyüklük kullanılır:\n          </p>\n          <div class=\"slide-grid-2\">\n            <div class=\"info-card fragment\">\n              <h4>I. Mühendislik Gerilmesi (σ)</h4>\n              <p>Birim başlangıç kesit alanına etkiyen dik iç kuvvettir. Birimi <strong>MPa (N/mm²)</strong> olarak ifade edilir.</p>\n              <div class=\"formula-box\">\n                σ = F / A₀\n                <span class=\"formula-sub\">F: Eksenel Kuvvet [N] &nbsp;|&nbsp; A₀: İlk Kesit Alanı [mm²]</span>\n              </div>\n            </div>\n            <div class=\"info-card fragment\">\n              <h4>II. Birim Şekil Değiştirme (ε)</h4>\n              <p>Numunedeki boy değişiminin başlangıç ölçü boyuna oranıdır.</p>\n              <div class=\"formula-box\">\n                ε = ΔL / L₀ = (L - L₀) / L₀\n                <span class=\"formula-sub\">L₀: İlk Ölçü Boyu &nbsp;|&nbsp; ΔL: Uzama Miktarı</span>\n              </div>\n            </div>\n          </div>\n          <div class=\"formula-box fragment\" style=\"margin-top:1.1rem;\">\n            Hooke Yasası: &nbsp; σ = E · ε\n            <span class=\"formula-sub\">E (Young / Elastisite Modülü): Doğrunun eğimi olup malzemenin rijitliğini temsil eder.</span>\n          </div>\n        "
+      },
+      {
+        "kicker": "3. HAFTA • UYGULAMA VE SİMÜLASYON",
+        "title": "Çekme Deneyi ve Gerilme – Birim Şekil Değiştirme (σ - ε) Diyagramı",
+        "pptSummaryBullets": [
+          "Elastik Bölge: Hooke Yasası (σ = E · ε) geçerlidir, kalıcı şekil değişimi oluşmaz.",
+          "Akma Sınırı (Re): Kalıcı plastik deformasyonun başladığı kritik gerilme.",
+          "Pekleşme, Çekme Dayanımı (Rm), Boyun Verme (Necking) ve Kopma."
+        ],
+        "html": "\n        <p class=\"lead\">\n          Standart bir metal çekme numunesine eksenel yük uygulandığında oluşan <strong>elastik uzama, akma sahanlığı, pekleşme, boyun verme ve kopma</strong> evrelerini inceleyiniz:\n        </p>\n        <div class=\"sim-box interactive-zone\" data-sim=\"tensile\">\n          <div class=\"sim-header\">\n            <span class=\"sim-title\">TEKNİK SİMÜLASYON III — TEK EKSENLİ ÇEKME DENEYİ</span>\n            <span id=\"tensile-region-badge\" style=\"font-size:0.78rem; font-weight:700; color:#5c3d28;\">Bölge I: Elastik Bölge</span>\n          </div>\n          <div class=\"sim-canvas-wrap\">\n            <canvas id=\"tensile-canvas\" width=\"760\" height=\"240\"></canvas>\n          </div>\n          <div class=\"sim-controls\" style=\"grid-template-columns: 2fr 1fr; align-items:center;\">\n            <div class=\"control-group\">\n              <label>Uygulanan Birim Uzama (%ε): <strong id=\"val-strain\">%1.0</strong></label>\n              <input type=\"range\" id=\"inp-strain\" min=\"0\" max=\"25\" step=\"0.2\" value=\"1\" />\n            </div>\n            <div style=\"display:flex; gap:0.5rem;\">\n              <button id=\"btn-play-tensile\" class=\"btn btn-primary\" style=\"width:100%; justify-content:center;\">Deneyi Otomatik Başlat</button>\n            </div>\n          </div>\n          <div class=\"sim-readout\">\n            <div class=\"readout-item\">\n              <span class=\"readout-label\">Anlık Mühendislik Gerilmesi (σ)</span>\n              <span class=\"readout-val\" id=\"out-tensile-sigma\">210 MPa</span>\n            </div>\n            <div class=\"readout-item\">\n              <span class=\"readout-label\">Akma Dayanımı (R_e)</span>\n              <span class=\"readout-val\">250 MPa</span>\n            </div>\n            <div class=\"readout-item\">\n              <span class=\"readout-label\">Çekme Dayanımı (R_m)</span>\n              <span class=\"readout-val\">420 MPa</span>\n            </div>\n          </div>\n        </div>\n      "
+      }
+    ]
+  },
+  {
+    "id": "week-4",
+    "week": "4. Hafta",
+    "title": "Mekanizma Tekniği: Krank-Biyel Mekanizması Kinematiği",
+    "description": "Dönme hareketini doğrusal harekete dönüştüren krank-biyel mekanizmasının konum, hız ve strok analizi.",
+    "pptxUrl": "pptx/MEE101-Hafta4.pptx",
+    "features": [
+      "Krank-Biyel Simülasyonu",
+      "Hibrit Slayt Modu",
+      "PPTX Arşivi"
+    ],
+    "slides": [
+      {
+        "kicker": "4. HAFTA • MEKANİZMA TEKNİĞİ",
+        "title": "Krank-Biyel (Piston-Silindir) Mekanizması Kinematiği",
+        "pptSummaryBullets": [
+          "Tam dönme hareketini doğrusal öteleme hareketine dönüştürür.",
+          "Kurs Boyu (Strok): H = 2 · r (Üst Ölü Nokta ile Alt Ölü Nokta arası)",
+          "Anlık Piston Hızı: Vp = r · ω · (sin θ + (λ/2) · sin 2θ)"
+        ],
+        "html": "\n      <p class=\"lead\">\n        İçten yanmalı motorlar ve pistonlu kompresörlerin temelini oluşturan krank-biyel mekanizması, \n        krank milinin <strong>sürekli dönme hareketini</strong> pistonun <strong>doğrusal öteleme hareketine</strong> dönüştürür:\n      </p>\n      <div class=\"sim-box interactive-zone\" data-sim=\"crank\">\n        <div class=\"sim-header\">\n          <span class=\"sim-title\">TEKNİK SİMÜLASYON IV — KRANK-BİYEL KİNEMATİĞİ</span>\n          <span style=\"font-size:0.78rem; color:#6e6256;\">ÜÖN: Üst Ölü Nokta | AÖN: Alt Ölü Nokta</span>\n        </div>\n        <div class=\"slide-grid-2\">\n          <div class=\"sim-canvas-wrap\">\n            <canvas id=\"crank-canvas\" width=\"460\" height=\"225\"></canvas>\n          </div>\n          <div class=\"sim-controls\" style=\"grid-template-columns:1fr; margin-top:0;\">\n            <div class=\"control-group\">\n              <label>Krank Açısal Hızı (n): <strong id=\"val-crank-rpm\">60 d/dk</strong></label>\n              <input type=\"range\" id=\"inp-crank-rpm\" min=\"0\" max=\"180\" step=\"5\" value=\"60\" />\n            </div>\n            <div class=\"control-group\">\n              <label>Krank Yarıçapı (r): <strong id=\"val-crank-r\">45 mm</strong></label>\n              <input type=\"range\" id=\"inp-crank-r\" min=\"25\" max=\"65\" step=\"5\" value=\"45\" />\n            </div>\n            <div class=\"control-group\">\n              <label>Biyel Kolu Uzunluğu (l): <strong id=\"val-crank-l\">140 mm</strong></label>\n              <input type=\"range\" id=\"inp-crank-l\" min=\"110\" max=\"170\" step=\"5\" value=\"140\" />\n            </div>\n          </div>\n        </div>\n        <div class=\"sim-readout\">\n          <div class=\"readout-item\">\n            <span class=\"readout-label\">Kurs Boyu (Strok H = 2·r)</span>\n            <span class=\"readout-val\" id=\"out-crank-stroke\">90 mm</span>\n          </div>\n          <div class=\"readout-item\">\n            <span class=\"readout-label\">Krank Açısı (θ)</span>\n            <span class=\"readout-val\" id=\"out-crank-angle\">0°</span>\n          </div>\n          <div class=\"readout-item\">\n            <span class=\"readout-label\">Anlık Piston Hızı (V_p)</span>\n            <span class=\"readout-val\" id=\"out-crank-vel\">0.00 m/s</span>\n          </div>\n        </div>\n      </div>\n    "
+      }
+    ]
+  }
+]
