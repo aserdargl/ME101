@@ -1137,51 +1137,22 @@ document.getElementById("btn-student-resend-verification").addEventListener("cli
 // --- ÖĞRETİM ÜYESİ: ÖĞRENCİ NUMARASI LİSTESİ (OBS) YÖNETİMİ ---
 const rosterTable = new RosterTable(document);
 
+const registeredRoster = new RegisteredRoster({
+  document,
+  students: () => FirebaseStudents.isAdmin ? FirebaseStudents.roster : [],
+  remove: keys => FirebaseStudents.removeStudents(keys),
+  reset: no => FirebaseStudents.resetNumber(no),
+  clipboard: navigator.clipboard,
+  confirm: message => window.confirm(message),
+  notify: message => window.alert(message),
+  changed: () => renderCatalog(),
+  text: value => window.PortalLanguage?.text(value) || value
+});
+
 function renderRosterAdminList() {
   renderApprovalApplications();
   document.getElementById("btn-roster-firebase-login").classList.toggle("hidden", FirebaseStudents.isAdmin);
-  const roster = FirebaseStudents.isAdmin ? FirebaseStudents.roster : [];
-  const countBadge = document.getElementById("roster-count-badge");
-  const container = document.getElementById("roster-items-container");
-  if (!countBadge || !container) return;
-
-  countBadge.textContent = String(roster.length);
-  container.innerHTML = "";
-
-  if (roster.length === 0) {
-    container.innerHTML = `<div style="padding:0.65rem; font-size:0.78rem; color:#6e6256;">Henüz kayıtlı öğrenci bulunmuyor. Sol taraftan öğrenci numaralarını ekleyebilirsiniz.</div>`;
-    return;
-  }
-
-  roster.forEach((stu) => {
-    const row = document.createElement("div");
-    row.className = "roster-item";
-    row.innerHTML = `
-      <span class="roster-item-no">${escapeXml(stu.no || stu.email)}</span>
-      <span class="roster-item-name">${escapeXml(stu.name || "—")}</span>
-      <span class="roster-item-email">${escapeXml(stu.email || "Numara ile kayıt")}${stu.enabled ? "" : " · Engelli"}</span>
-      ${stu.email ? "" : `<button type="button" class="btn btn-outline" data-reset-number="${escapeXml(stu.no)}" title="Bu numaranın önceki hesabıyla bağlantısını kaldır">Hesap Bağını Sıfırla</button>`}
-      <button type="button" class="btn-clear-rating" data-remove-stu="${escapeXml(stu.email || stu.no)}" title="Bu öğrencinin giriş iznini kaldır">&times; Sil</button>
-    `;
-    container.appendChild(row);
-  });
-
-  container.querySelectorAll("[data-remove-stu]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!isAdminAuthenticated) return;
-      const result = await FirebaseStudents.removeStudent(btn.dataset.removeStu);
-      if (!result.ok) alert(result.error);
-      renderRosterAdminList();
-      renderCatalog();
-    });
-  });
-  container.querySelectorAll("[data-reset-number]").forEach(button => {
-    button.addEventListener("click", async () => {
-      if (!confirm("Bu numaranın mevcut hesap bağlantısı kaldırılacak; öğrenci yeniden kayıt yapabilecek. Devam edilsin mi?")) return;
-      const result = await FirebaseStudents.resetNumber(button.dataset.resetNumber);
-      if (!result.ok) alert(result.error);
-    });
-  });
+  registeredRoster.render();
 }
 
 async function appendOrUpdateRosterFromText(rawText, replaceAll = false) {

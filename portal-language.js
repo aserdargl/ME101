@@ -8,7 +8,7 @@
     ".slide-kicker", ".slide > h2",
     ".slide-body-web", ".slide-body-ppt", ".edit-thumb-preview", ".edit-thumb-title",
     ".edit-live-preview-stage",
-    ".roster-item"
+    ".roster-item", "[data-roster-value]"
   ].join(",");
   let language = "en";
 

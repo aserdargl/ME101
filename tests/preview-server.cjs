@@ -44,12 +44,12 @@ http.createServer(async (req, res) => {
   }
   if (baselineApp && url.pathname === "/app.js") { res.setHeader("Content-Type", "text/javascript; charset=utf-8"); return res.end(baselineApp); }
   if (url.pathname === "/fixture.pptx") { res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation"); return res.end(await fixture()); }
-  const filename = path.resolve(root, "." + (url.pathname === "/qa" || url.pathname === "/" ? "/index.html" : url.pathname));
+  const filename = path.resolve(root, "." + (url.pathname === "/qa" || url.pathname === "/qa-roster" || url.pathname === "/" ? "/index.html" : url.pathname));
   if (!filename.startsWith(root + path.sep)) { res.writeHead(403); return res.end(); }
   fs.readFile(filename, (error, bytes) => {
     if (error) { res.writeHead(404); return res.end(); }
     const types = { ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".html": "text/html; charset=utf-8" };
     res.setHeader("Content-Type", types[path.extname(filename)] || "application/octet-stream");
-    res.end(url.pathname === "/qa" ? bytes.toString().replace("<head>", "<head>" + seed).replace("</body>", harness + '<script src="/tests/ui-regression.js"></script></body>') : bytes);
+    res.end(["/qa", "/qa-roster"].includes(url.pathname) ? bytes.toString().replace("<head>", "<head>" + seed).replace("</body>", harness + '<script src="/tests/ui-regression.js"></script>' + (url.pathname === '/qa-roster' ? '<script src="/tests/registered-roster-qa.js"></script>' : '') + '</body>') : bytes);
   });
 }).listen(port, "127.0.0.1", () => process.stdout.write(`Isolated preview: http://127.0.0.1:${port}/qa\n`));

@@ -172,3 +172,22 @@ body:has(> .course-editor:not(.hidden)) { overflow: hidden; }
 @media (max-width: 700px) {
   #tab-student-roster > .form-grid { grid-template-columns: minmax(0, 1fr) !important; }
 }
+
+/* Registered students: compact spreadsheet columns and explicit term cleanup. */
+.course-editor .registered-roster-box { grid-column: 1 / -1; max-height: none; }
+.course-editor .registered-roster-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 10px; border-bottom: 1px solid #dfe4e9; }
+.course-editor .registered-roster-toolbar [role="status"] { font-size: 11px; color: #506172; }
+.course-editor .registered-roster-box .roster-items-container { display: block; padding: 0; max-height: 350px; overflow: auto; }
+.course-editor .registered-roster-table { width: 100%; min-width: 590px; border-collapse: collapse; font-size: 12px; text-align: left; }
+.course-editor .registered-roster-table th { position: sticky; top: 0; z-index: 1; background: #edf1f5; white-space: nowrap; }
+.course-editor .registered-roster-table th, .course-editor .registered-roster-table td { padding: 8px 10px; border-bottom: 1px solid #e5e9ed; vertical-align: middle; }
+.course-editor .registered-roster-table th:first-child { width: 36px; }
+.course-editor .registered-roster-table input[type="checkbox"] { width: 15px; height: 15px; margin: 0; cursor: pointer; }
+.course-editor .registered-roster-table th .btn-clear-rating { margin-left: 10px; font-weight: 400; }
+.course-editor .registered-roster-table td:nth-child(2) { font-family: 'JetBrains Mono', monospace; }
+.course-editor .registered-roster-table td[data-roster-value] { user-select: text; white-space: pre-wrap; overflow-wrap: anywhere; }
+.course-editor .registered-roster-actions { min-width: 180px; }
+.course-editor .registered-roster-actions small { display: block; color: #697684; overflow-wrap: anywhere; }
+.course-editor .registered-roster-actions button { margin: 2px 8px 2px 0; }
+.course-editor .registered-roster-table tbody tr:has(input:checked) { background: #edf4fa; }
+.course-editor .registered-roster-box button:disabled { opacity: .45; cursor: default; }

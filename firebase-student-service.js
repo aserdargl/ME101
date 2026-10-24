@@ -114,8 +114,22 @@
     }
 
     async removeStudent(key) {
-      if (!this.isAdmin) return failure("Öğretim üyesi girişi gerekli.");
-      return this.perform(() => this.adapter.writeRoster([], [key.includes("@") ? { email: key } : { no: key }]));
+      return this.removeStudents([key]);
+    }
+
+    /** Removes only the explicitly selected roster records in bounded batches. */
+    async removeStudents(keys) {
+      const BATCH_SIZE = 450;
+      const selected = [...new Set(keys)];
+      let removed = 0;
+      for (let start = 0; start < selected.length; start += BATCH_SIZE) {
+        if (!this.isAdmin) return { ...failure("Öğretim üyesi girişi gerekli."), removed };
+        const records = selected.slice(start, start + BATCH_SIZE).map(key => key.includes("@") ? { email: key } : { no: key });
+        const result = await this.perform(() => this.adapter.writeRoster([], records));
+        if (!result.ok) return { ...result, removed };
+        removed += records.length;
+      }
+      return this.isAdmin ? { ok: true, removed } : failure("Öğretim üyesi girişi gerekli.");
     }
 
     async resetNumber(no) {
