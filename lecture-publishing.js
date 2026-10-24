@@ -24,20 +24,20 @@
   }
 
   /** Conflicting versions become separate lessons, keeping every original note. */
-  function mergePreservingNotes(remote, local) {
+  async function mergePreservingNotes(remote, local) {
     const merged = structuredClone(remote);
     for (const lecture of local) {
       const existing = remote.find(item => item.id === lecture.id);
       if (!existing) merged.push(structuredClone(lecture));
-      else if (JSON.stringify(existing) !== JSON.stringify(lecture)) merged.push({ ...structuredClone(lecture), id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
+      else if (await repository.documentDigest(existing) !== await repository.documentDigest(lecture)) merged.push({ ...structuredClone(lecture), id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
     }
     return merged;
   }
 
   async function portableDocument(lectures) {
-    let text = JSON.stringify(lectures);
-    const addresses = [...new Set(text.match(/blob:[^\s"'<>\\)]+/g) || [])];
-    for (const address of addresses) {
+    const replacements = new Map();
+    async function readAddress(address) {
+      if (replacements.has(address)) return replacements.get(address);
       let response;
       try { response = await fetch(address); } catch { throw new Error("Eski bir geçici görselin veya dosyanın süresi dolmuş. Özgün PPTX/görseli yeniden seçerek onarın; notlarınız korunuyor."); }
       if (!response.ok) throw new Error("Geçici dosya okunamadı. Özgün dosyayı yeniden seçin.");
@@ -48,9 +48,21 @@
         reader.onerror = () => reject(new Error("Dosya okunamadı."));
         reader.readAsDataURL(blob);
       });
-      text = text.split(address).join(replacement);
+      replacements.set(address, replacement);
+      return replacement;
     }
-    return JSON.parse(text);
+    async function visit(value) {
+      if (typeof value === "string") {
+        const pattern = /blob:[^\s"'<>\\)]+/g;
+        for (const match of value.matchAll(pattern)) await readAddress(match[0]);
+        return value.replace(pattern, address => replacements.get(address));
+      }
+      if (value && typeof value === "object") {
+        for (const key of Object.keys(value)) value[key] = await visit(value[key]);
+      }
+      return value;
+    }
+    return visit(structuredClone(lectures));
   }
 
   async function publish(explicit = false) {
@@ -63,7 +75,7 @@
       let lectures = await portableDocument(getLectures());
       const current = await repository.readCurrent();
       if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
-      if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = mergePreservingNotes(current.lectures, lectures);
+      if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = await mergePreservingNotes(current.lectures, lectures);
       const manifest = await repository.publish(lectures, current);
       version = manifest.id;
       synchronized = !pendingSave;
@@ -86,12 +98,13 @@
     try {
       const remote = await repository.readPublished();
       version = remote.manifest?.id || null;
-      const localHash = remote.manifest ? await repository.digest(JSON.stringify(getLectures())) : null;
-      synchronized = Boolean(remote.manifest && (remote.manifest.digest === localHash || localStorage.getItem(SYNC_KEY) === localHash));
+      const localHash = remote.manifest ? await repository.documentDigest(getLectures()) : null;
+      const remoteHash = remote.manifest?.format === 2 ? remote.manifest.digest : remote.lectures ? await repository.documentDigest(remote.lectures) : null;
+      synchronized = Boolean(remote.manifest && (remoteHash === localHash || localStorage.getItem(SYNC_KEY) === localHash));
       if (remote.lectures && (!options.hasLocalData || synchronized)) {
         await applyLectures(remote.lectures);
         synchronized = true;
-        if (await LectureStorage.save(remote.lectures)) rememberDigest(remote.manifest.digest);
+        if (await LectureStorage.save(remote.lectures)) rememberDigest(remoteHash);
         message("GitHub ortak ders kaydı · Tüm cihazlardan erişilebilir.");
       } else message(options.hasLocalData ? "Bu tarayıcıdaki notlar korunuyor · GitHub’a henüz aktarılmadı." : "GitHub’da ortak ders kaydı henüz yayımlanmadı.");
     } catch { message("GitHub kaydı okunamadı; bu tarayıcıdaki dersler ve notlar gösteriliyor.", true); }

@@ -1163,10 +1163,82 @@ window.PptxPreview = (() => {
 })(window);
 ;
 
+/* lecture-document.js */
+(function (root) {
+  const STRING_LENGTH = 32 * 1024;
+  const PART_LENGTH = 512 * 1024;
+  const REFERENCE_LENGTH = 4096;
+
+  /** Encodes bounded records, sharing repeated media without changing the document. */
+  function* records(value, path = [], strings = new Map()) {
+    if (typeof value === "string") {
+      if (strings.has(value)) { yield { path, reference: strings.get(value) }; return; }
+      const reference = value.length >= REFERENCE_LENGTH ? strings.size : undefined;
+      if (reference !== undefined) strings.set(value, reference);
+      if (!value.length) { yield { path, value }; return; }
+      for (let start = 0; start < value.length; start += STRING_LENGTH) {
+        yield { path, value: value.slice(start, start + STRING_LENGTH), append: start > 0,
+          ...(start === 0 && reference !== undefined ? { id: reference } : {}) };
+      }
+    } else if (value && typeof value === "object") {
+      yield { path, value: Array.isArray(value) ? [] : {} };
+      for (const key of Object.keys(value)) {
+        const item = value[key];
+        if (item !== undefined && typeof item !== "function" && typeof item !== "symbol") yield* records(item, [...path, key], strings);
+        else if (Array.isArray(value)) yield { path: [...path, key], value: null };
+      }
+    } else yield { path, value };
+  }
+
+  /** Each part is independently readable; the whole document never becomes one string. */
+  function* parts(document) {
+    let lines = [], length = 0;
+    for (const record of records(document)) {
+      const line = JSON.stringify(record);
+      if (length + line.length + 1 > PART_LENGTH && lines.length) {
+        yield lines.join("\n"); lines = []; length = 0;
+      }
+      lines.push(line); length += line.length + 1;
+    }
+    if (lines.length) yield lines.join("\n");
+  }
+
+  /** Reassembles verified parts while keeping large strings confined to their fields. */
+  function decoder() {
+    let document;
+    const references = new Map();
+    const get = path => path.reduce((value, key) => {
+      if (!value || !Object.hasOwn(value, key)) throw new Error("Invalid lecture document reference");
+      return value[key];
+    }, document);
+    return {
+      add(text) {
+        for (const line of text.split("\n")) {
+          const record = JSON.parse(line);
+          const { path } = record;
+          if (!Array.isArray(path) || path.some(key => typeof key !== "string")) throw new Error("Invalid lecture document path");
+          if (record.id !== undefined) references.set(record.id, path);
+          let value = record.reference === undefined ? record.value : get(references.get(record.reference));
+          if (record.append) value = get(path) + value;
+          if (!path.length) document = value;
+          else Object.defineProperty(get(path.slice(0, -1)), path.at(-1), { value, writable: true, enumerable: true, configurable: true });
+        }
+      },
+      result: () => document
+    };
+  }
+
+  root.LectureDocument = { parts, decoder };
+  if (typeof module !== "undefined") module.exports = root.LectureDocument;
+})(typeof window !== "undefined" ? window : globalThis);
+;
+
 /* github-repository.js */
 (function (root) {
   const MANIFEST = "data/manifest.json";
   const CHUNK_LENGTH = 512 * 1024;
+  const MAX_DOCUMENT_PARTS = 4096;
+  const documentCodec = root.LectureDocument || (typeof require !== "undefined" ? require("./lecture-document.js") : null);
 
   /** GitHub is the shared store. Every update uses the current tree and a non-forced commit. */
   class GitHubLectureRepository {
@@ -1184,6 +1256,20 @@ window.PptxPreview = (() => {
     async digest(text) {
       const bytes = await this.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
       return Array.from(new Uint8Array(bytes)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    async documentHashes(lectures) {
+      const hashes = [];
+      for (const part of documentCodec.parts(lectures)) {
+        if (hashes.length >= MAX_DOCUMENT_PARTS) throw new Error("Ders verisi tek yayın sınırını aşıyor. Yerel kayıtlar korunuyor.");
+        hashes.push(await this.digest(part));
+      }
+      return hashes;
+    }
+
+    /** Fingerprints bounded parts, including repeated media, without a giant JSON string. */
+    async documentDigest(lectures) {
+      return this.digest(JSON.stringify(await this.documentHashes(lectures)));
     }
 
     async api(path, { method = "GET", body, raw = false, optional = false } = {}) {
@@ -1221,12 +1307,26 @@ window.PptxPreview = (() => {
 
     async decode(manifest, readPart) {
       if (!manifest) return { manifest: null, lectures: null };
-      if (!/^[a-f0-9-]{36}$/i.test(manifest.id) || !Number.isInteger(manifest.parts) || manifest.parts < 1 || manifest.parts > 400) throw new Error("GitHub ders kaydı geçersiz; yerel notlar korunuyor.");
+      if (!/^[a-f0-9-]{36}$/i.test(manifest.id) || !Number.isInteger(manifest.parts) || manifest.parts < 1 || manifest.parts > (manifest.format === 2 ? MAX_DOCUMENT_PARTS : 400)) throw new Error("GitHub ders kaydı geçersiz; yerel notlar korunuyor.");
+      if (manifest.format === 2) return this.decodeDocument(manifest, readPart);
       const chunks = [];
       for (let part = 0; part < manifest.parts; part += 1) chunks.push(await readPart(`data/snapshots/${manifest.id}/${part}.txt`));
       const text = chunks.join("");
       if (await this.digest(text) !== manifest.digest) throw new Error("GitHub kaydının bütünlüğü doğrulanamadı; yerel notlar korunuyor.");
       const lectures = JSON.parse(text);
+      if (!Array.isArray(lectures)) throw new Error("GitHub ders kaydı okunamadı.");
+      return { manifest, lectures };
+    }
+
+    async decodeDocument(manifest, readPart) {
+      if (!Array.isArray(manifest.hashes) || manifest.hashes.length !== manifest.parts || await this.digest(JSON.stringify(manifest.hashes)) !== manifest.digest) throw new Error("GitHub kaydının bütünlüğü doğrulanamadı; yerel notlar korunuyor.");
+      const decoder = documentCodec.decoder();
+      for (let part = 0; part < manifest.parts; part += 1) {
+        const text = await readPart(`data/snapshots/${manifest.id}/${part}.txt`);
+        if (await this.digest(text) !== manifest.hashes[part]) throw new Error("GitHub kaydının bütünlüğü doğrulanamadı; yerel notlar korunuyor.");
+        decoder.add(text);
+      }
+      const lectures = decoder.result();
       if (!Array.isArray(lectures)) throw new Error("GitHub ders kaydı okunamadı.");
       return { manifest, lectures };
     }
@@ -1268,16 +1368,16 @@ window.PptxPreview = (() => {
     /** Publishes one atomic commit; never removes source files or older snapshots. */
     async publish(lectures, current) {
       if (!this.token) throw new Error("Yayımlamak için GitHub girişi gerekli.");
-      const text = JSON.stringify(lectures);
-      const chunks = this.chunks(text);
-      if (chunks.length > 400) throw new Error("Ders verisi tek yayın sınırını aşıyor. Yerel kayıtlar korunuyor.");
+      const hashes = await this.documentHashes(lectures);
       const id = this.crypto.randomUUID();
       const entries = [];
-      for (const [index, content] of chunks.entries()) {
+      let index = 0;
+      for (const content of documentCodec.parts(lectures)) {
         const blob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content, encoding: "utf-8" } });
         entries.push({ path: `data/snapshots/${id}/${index}.txt`, mode: "100644", type: "blob", sha: blob.sha });
+        index += 1;
       }
-      const manifest = { id, parts: chunks.length, digest: await this.digest(text), savedAt: new Date().toISOString(), lectureCount: lectures.length };
+      const manifest = { format: 2, id, parts: hashes.length, hashes, digest: await this.digest(JSON.stringify(hashes)), savedAt: new Date().toISOString(), lectureCount: lectures.length };
       const manifestBlob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: JSON.stringify(manifest), encoding: "utf-8" } });
       entries.push({ path: MANIFEST, mode: "100644", type: "blob", sha: manifestBlob.sha });
       const tree = await this.api(`${this.prefix}/git/trees`, { method: "POST", body: { base_tree: current.tree, tree: entries } });
@@ -1321,20 +1421,20 @@ window.PptxPreview = (() => {
   }
 
   /** Conflicting versions become separate lessons, keeping every original note. */
-  function mergePreservingNotes(remote, local) {
+  async function mergePreservingNotes(remote, local) {
     const merged = structuredClone(remote);
     for (const lecture of local) {
       const existing = remote.find(item => item.id === lecture.id);
       if (!existing) merged.push(structuredClone(lecture));
-      else if (JSON.stringify(existing) !== JSON.stringify(lecture)) merged.push({ ...structuredClone(lecture), id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
+      else if (await repository.documentDigest(existing) !== await repository.documentDigest(lecture)) merged.push({ ...structuredClone(lecture), id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
     }
     return merged;
   }
 
   async function portableDocument(lectures) {
-    let text = JSON.stringify(lectures);
-    const addresses = [...new Set(text.match(/blob:[^\s"'<>\\)]+/g) || [])];
-    for (const address of addresses) {
+    const replacements = new Map();
+    async function readAddress(address) {
+      if (replacements.has(address)) return replacements.get(address);
       let response;
       try { response = await fetch(address); } catch { throw new Error("Eski bir geçici görselin veya dosyanın süresi dolmuş. Özgün PPTX/görseli yeniden seçerek onarın; notlarınız korunuyor."); }
       if (!response.ok) throw new Error("Geçici dosya okunamadı. Özgün dosyayı yeniden seçin.");
@@ -1345,9 +1445,21 @@ window.PptxPreview = (() => {
         reader.onerror = () => reject(new Error("Dosya okunamadı."));
         reader.readAsDataURL(blob);
       });
-      text = text.split(address).join(replacement);
+      replacements.set(address, replacement);
+      return replacement;
     }
-    return JSON.parse(text);
+    async function visit(value) {
+      if (typeof value === "string") {
+        const pattern = /blob:[^\s"'<>\\)]+/g;
+        for (const match of value.matchAll(pattern)) await readAddress(match[0]);
+        return value.replace(pattern, address => replacements.get(address));
+      }
+      if (value && typeof value === "object") {
+        for (const key of Object.keys(value)) value[key] = await visit(value[key]);
+      }
+      return value;
+    }
+    return visit(structuredClone(lectures));
   }
 
   async function publish(explicit = false) {
@@ -1360,7 +1472,7 @@ window.PptxPreview = (() => {
       let lectures = await portableDocument(getLectures());
       const current = await repository.readCurrent();
       if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
-      if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = mergePreservingNotes(current.lectures, lectures);
+      if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = await mergePreservingNotes(current.lectures, lectures);
       const manifest = await repository.publish(lectures, current);
       version = manifest.id;
       synchronized = !pendingSave;
@@ -1383,12 +1495,13 @@ window.PptxPreview = (() => {
     try {
       const remote = await repository.readPublished();
       version = remote.manifest?.id || null;
-      const localHash = remote.manifest ? await repository.digest(JSON.stringify(getLectures())) : null;
-      synchronized = Boolean(remote.manifest && (remote.manifest.digest === localHash || localStorage.getItem(SYNC_KEY) === localHash));
+      const localHash = remote.manifest ? await repository.documentDigest(getLectures()) : null;
+      const remoteHash = remote.manifest?.format === 2 ? remote.manifest.digest : remote.lectures ? await repository.documentDigest(remote.lectures) : null;
+      synchronized = Boolean(remote.manifest && (remoteHash === localHash || localStorage.getItem(SYNC_KEY) === localHash));
       if (remote.lectures && (!options.hasLocalData || synchronized)) {
         await applyLectures(remote.lectures);
         synchronized = true;
-        if (await LectureStorage.save(remote.lectures)) rememberDigest(remote.manifest.digest);
+        if (await LectureStorage.save(remote.lectures)) rememberDigest(remoteHash);
         message("GitHub ortak ders kaydı · Tüm cihazlardan erişilebilir.");
       } else message(options.hasLocalData ? "Bu tarayıcıdaki notlar korunuyor · GitHub’a henüz aktarılmadı." : "GitHub’da ortak ders kaydı henüz yayımlanmadı.");
     } catch { message("GitHub kaydı okunamadı; bu tarayıcıdaki dersler ve notlar gösteriliyor.", true); }

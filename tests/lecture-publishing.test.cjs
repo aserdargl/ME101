@@ -19,6 +19,7 @@ test("unsynced browser notes stay local until an explicit merge; conflicts prese
     async readPublished() { return { manifest, lectures: remote }; }
     async readCurrent() { return { manifest, lectures: remote, head: "head", tree: "tree" }; }
     async digest(text) { return digest(text); }
+    async documentDigest(lectures) { return digest(JSON.stringify(lectures)); }
     async login() { return true; }
     async publish(lectures) { published = structuredClone(lectures); return { id: "new-id", digest: digest(JSON.stringify(lectures)) }; }
     logout() {}

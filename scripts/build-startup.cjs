@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '..');
 const sources = [
   'portal-translations.js', 'portal-language.js', 'catalog-order.js', 'catalog-ui.js',
   'pptx-display.js', 'pptx-import.js', 'slide-visual.js', 'pptx-preview.js',
-  'lecture-storage.js', 'github-repository.js', 'lecture-publishing.js', 'legacy-content.js',
+  'lecture-storage.js', 'lecture-document.js', 'github-repository.js', 'lecture-publishing.js', 'legacy-content.js',
   'student-numbers.js', 'firebase-student-service.js', 'firebase-enrollment.js',
   'approval-client.js', 'roster-edit-client.js', 'firebase-adapter.js', 'firebase-students.js', 'approval-ui.js',
   'instructor-login.js', 'roster-table.js', 'registered-roster.js', 'app.js'

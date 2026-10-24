@@ -1,6 +1,8 @@
 (function (root) {
   const MANIFEST = "data/manifest.json";
   const CHUNK_LENGTH = 512 * 1024;
+  const MAX_DOCUMENT_PARTS = 4096;
+  const documentCodec = root.LectureDocument || (typeof require !== "undefined" ? require("./lecture-document.js") : null);
 
   /** GitHub is the shared store. Every update uses the current tree and a non-forced commit. */
   class GitHubLectureRepository {
@@ -18,6 +20,20 @@
     async digest(text) {
       const bytes = await this.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
       return Array.from(new Uint8Array(bytes)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    async documentHashes(lectures) {
+      const hashes = [];
+      for (const part of documentCodec.parts(lectures)) {
+        if (hashes.length >= MAX_DOCUMENT_PARTS) throw new Error("Ders verisi tek yayın sınırını aşıyor. Yerel kayıtlar korunuyor.");
+        hashes.push(await this.digest(part));
+      }
+      return hashes;
+    }
+
+    /** Fingerprints bounded parts, including repeated media, without a giant JSON string. */
+    async documentDigest(lectures) {
+      return this.digest(JSON.stringify(await this.documentHashes(lectures)));
     }
 
     async api(path, { method = "GET", body, raw = false, optional = false } = {}) {
@@ -55,12 +71,26 @@
 
     async decode(manifest, readPart) {
       if (!manifest) return { manifest: null, lectures: null };
-      if (!/^[a-f0-9-]{36}$/i.test(manifest.id) || !Number.isInteger(manifest.parts) || manifest.parts < 1 || manifest.parts > 400) throw new Error("GitHub ders kaydı geçersiz; yerel notlar korunuyor.");
+      if (!/^[a-f0-9-]{36}$/i.test(manifest.id) || !Number.isInteger(manifest.parts) || manifest.parts < 1 || manifest.parts > (manifest.format === 2 ? MAX_DOCUMENT_PARTS : 400)) throw new Error("GitHub ders kaydı geçersiz; yerel notlar korunuyor.");
+      if (manifest.format === 2) return this.decodeDocument(manifest, readPart);
       const chunks = [];
       for (let part = 0; part < manifest.parts; part += 1) chunks.push(await readPart(`data/snapshots/${manifest.id}/${part}.txt`));
       const text = chunks.join("");
       if (await this.digest(text) !== manifest.digest) throw new Error("GitHub kaydının bütünlüğü doğrulanamadı; yerel notlar korunuyor.");
       const lectures = JSON.parse(text);
+      if (!Array.isArray(lectures)) throw new Error("GitHub ders kaydı okunamadı.");
+      return { manifest, lectures };
+    }
+
+    async decodeDocument(manifest, readPart) {
+      if (!Array.isArray(manifest.hashes) || manifest.hashes.length !== manifest.parts || await this.digest(JSON.stringify(manifest.hashes)) !== manifest.digest) throw new Error("GitHub kaydının bütünlüğü doğrulanamadı; yerel notlar korunuyor.");
+      const decoder = documentCodec.decoder();
+      for (let part = 0; part < manifest.parts; part += 1) {
+        const text = await readPart(`data/snapshots/${manifest.id}/${part}.txt`);
+        if (await this.digest(text) !== manifest.hashes[part]) throw new Error("GitHub kaydının bütünlüğü doğrulanamadı; yerel notlar korunuyor.");
+        decoder.add(text);
+      }
+      const lectures = decoder.result();
       if (!Array.isArray(lectures)) throw new Error("GitHub ders kaydı okunamadı.");
       return { manifest, lectures };
     }
@@ -102,16 +132,16 @@
     /** Publishes one atomic commit; never removes source files or older snapshots. */
     async publish(lectures, current) {
       if (!this.token) throw new Error("Yayımlamak için GitHub girişi gerekli.");
-      const text = JSON.stringify(lectures);
-      const chunks = this.chunks(text);
-      if (chunks.length > 400) throw new Error("Ders verisi tek yayın sınırını aşıyor. Yerel kayıtlar korunuyor.");
+      const hashes = await this.documentHashes(lectures);
       const id = this.crypto.randomUUID();
       const entries = [];
-      for (const [index, content] of chunks.entries()) {
+      let index = 0;
+      for (const content of documentCodec.parts(lectures)) {
         const blob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content, encoding: "utf-8" } });
         entries.push({ path: `data/snapshots/${id}/${index}.txt`, mode: "100644", type: "blob", sha: blob.sha });
+        index += 1;
       }
-      const manifest = { id, parts: chunks.length, digest: await this.digest(text), savedAt: new Date().toISOString(), lectureCount: lectures.length };
+      const manifest = { format: 2, id, parts: hashes.length, hashes, digest: await this.digest(JSON.stringify(hashes)), savedAt: new Date().toISOString(), lectureCount: lectures.length };
       const manifestBlob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: JSON.stringify(manifest), encoding: "utf-8" } });
       entries.push({ path: MANIFEST, mode: "100644", type: "blob", sha: manifestBlob.sha });
       const tree = await this.api(`${this.prefix}/git/trees`, { method: "POST", body: { base_tree: current.tree, tree: entries } });
