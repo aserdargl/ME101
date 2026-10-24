@@ -961,6 +961,8 @@ function renderCatalog() {
     lectureGrid.appendChild(card);
   });
 
+  updateCatalogOverview();
+
   // Yıldız hover ve kayıtlı öğrenci oy verme etkileşimleri
   document.querySelectorAll(".star-group").forEach((groupEl) => {
     const buttons = Array.from(groupEl.querySelectorAll(".star-btn"));

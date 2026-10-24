@@ -3,24 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MEE 101 Makine Mühendisliğine Giriş: haftalık ders notları, etkileşimli uygulamalar ve sunumlar." />
   <title>MEE 101 — Makine Mühendisliğine Giriş | Ders Portalı</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="style.css?v=10" />
+  <link rel="stylesheet" href="modern.css?v=1" />
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
   <header id="top-navbar" class="navbar">
     <div class="nav-container">
-      <div class="brand" id="btn-home" title="Ders Kataloğuna Dön">
+      <button type="button" class="brand" id="btn-home" title="Ders Kataloğuna Dön" aria-label="Ders kataloğuna dön">
         <div class="brand-mark">MEE<br><span>101</span></div>
         <div class="brand-text">
           <span class="department-label">MAKİNE MÜHENDİSLİĞİ BÖLÜMÜ</span>
-          <h1 class="course-title">Makine Mühendisliğine Giriş</h1>
+          <span class="course-title">Makine Mühendisliğine Giriş</span>
         </div>
-      </div>
+      </button>
 
       <div class="nav-right-group">
         <!-- SADECE YÖNETİCİ (ÖĞRETİM ÜYESİ) GİRİŞİ YAPILDIĞINDA GÖRÜNEN ARAÇLAR -->
@@ -72,8 +74,30 @@
     <!-- Üst Bilgi ve Eşit Genişlikte Şık 3 Yöntem Butonu -->
     <section class="compact-top-bar">
       <div class="compact-top-left">
-        <span class="hero-kicker">MEE 101 • LİSANS DERS NOTLARI VE SUNUM PORTALI</span>
+        <span class="hero-kicker">MEE 101 <span class="kicker-divider">/</span> DERS PORTALI</span>
+        <h1 class="catalog-title">Makine Mühendisliğine<br><span>Giriş</span></h1>
         <p>Haftalık ders notlarını inceleyebilir, <strong>Sunum</strong> moduyla tam ekran takip edebilir veya sunum dosyalarını kullanabilirsiniz.</p>
+        <div class="catalog-summary" aria-label="Ders içeriği">
+          <span><strong id="catalog-lecture-count">—</strong> haftalık ders</span>
+          <span><strong id="catalog-slide-count">—</strong> slayt</span>
+          <span>Etkileşimli uygulamalar</span>
+        </div>
+      </div>
+
+      <div class="hero-drawing" aria-hidden="true">
+        <svg viewBox="0 0 340 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs><pattern id="engineering-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" stroke="currentColor" stroke-opacity=".09" stroke-width=".6"/></pattern></defs>
+          <rect width="340" height="220" fill="url(#engineering-grid)"/>
+          <g stroke="currentColor" stroke-width="1.2">
+            <circle cx="132" cy="108" r="65"/><circle cx="132" cy="108" r="47"/>
+            <circle cx="132" cy="108" r="15"/><circle cx="243" cy="108" r="45"/>
+            <circle cx="243" cy="108" r="30"/><circle cx="243" cy="108" r="10"/>
+            <path d="M132 37V28m0 160v-9M61 108H52m160 0h-9M82 58l-7-7m114 114-7-7M82 158l-7 7M189 51l-7 7M106 42l-4-9m60 150-4-9M66 82l-9-4m150 60-9-4M66 134l-9 4M207 78l-9 4M106 174l-4 9M162 33l-4 9M243 58v-8m0 116v-8M293 108h8M208 73l-6-6m82 82-6-6M208 143l-6 6m82-82-6 6" stroke-width="4"/>
+            <path d="M38 108h272M132 15v184M243 33v150" stroke-dasharray="4 5" stroke-opacity=".4" stroke-width=".7"/>
+            <path d="M67 189v14m221-58v58M67 197h221m-221 0 5-3m-5 3 5 3m216-3-5-3m5 3-5 3" stroke-opacity=".55" stroke-width=".7"/>
+          </g>
+          <text x="172" y="214" fill="currentColor" font-family="monospace" font-size="8" letter-spacing="2">MEE / 101</text>
+        </svg>
       </div>
 
       <div id="admin-compact-methods" class="methods-equal-group">
@@ -112,8 +136,13 @@
     <section class="weeks-section">
       <div class="section-header">
         <div>
-          <h3>Haftalık Ders Programı</h3>
+          <span class="section-eyebrow">DERS İÇERİKLERİ</span>
+          <h2>Haftalık Ders Programı</h2>
         </div>
+        <label class="catalog-search" for="lecture-search">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+          <input id="lecture-search" type="search" placeholder="Ders veya konu ara…" autocomplete="off" />
+        </label>
         <div id="admin-section-actions" class="admin-toolbar hidden">
           <button id="btn-section-student-roster" class="btn btn-secondary" title="Derse kayıtlı öğrenci numaralarını tanımla veya düzenle">
             Öğrenci Listesi
@@ -130,7 +159,10 @@
       <div id="lecture-grid" class="lecture-grid">
         <!-- JS tarafından doldurulacak -->
       </div>
+      <p id="catalog-empty" class="catalog-empty hidden" role="status">Aramanıza uygun ders bulunamadı. Farklı bir konu veya hafta arayabilirsiniz.</p>
+      <p id="catalog-search-status" class="visually-hidden" role="status" aria-live="polite"></p>
     </section>
+    <footer class="catalog-footer"><span>MEE 101</span><span>Makine Mühendisliği Bölümü · Ders Notları ve Sunumlar</span></footer>
   </main>
 
   <!-- DERS GÖRÜNÜMÜ -->
@@ -216,14 +248,14 @@
           <span class="department-label">MEE 101 DERS KAYIT DOĞRULAMASI</span>
           <h3>Öğrenci Numarası ile Giriş</h3>
         </div>
-        <button id="btn-close-student-login" class="modal-close-btn">&times;</button>
+        <button id="btn-close-student-login" class="modal-close-btn" aria-label="Öğrenci girişini kapat">&times;</button>
       </div>
       <div class="modal-body">
         <p id="student-login-prompt-desc" class="modal-desc">
           Derslere yıldız puanı verebilmek ve sunum dosyalarını (<code>.pptx</code>) indirebilmek için derse kayıtlı <strong>Öğrenci Numaranızı</strong> giriniz. Her öğrenci her ders için yalnızca 1 kez oy kullanabilir.
         </p>
         <div class="form-field">
-          <label>Öğrenci Numarası</label>
+          <label for="inp-student-no">Öğrenci Numarası</label>
           <input type="text" id="inp-student-no" placeholder="Örn: 20261001" autocomplete="off" />
         </div>
         <p id="student-login-error" class="hidden" style="color:#9b2226; font-size:0.78rem; margin-top:0.45rem; font-weight:600;">
@@ -246,14 +278,14 @@
           <span class="department-label">YETKİLİ ERİŞİMİ</span>
           <h3>Öğretim Üyesi Girişi</h3>
         </div>
-        <button id="btn-close-admin-login" class="modal-close-btn">&times;</button>
+        <button id="btn-close-admin-login" class="modal-close-btn" aria-label="Öğretim üyesi girişini kapat">&times;</button>
       </div>
       <div class="modal-body">
         <p class="modal-desc">
           Ders ekleme, PPTX yükleme, öğrenci listesi tanımlama ve yıldız sıfırlama işlemleri yalnızca dersi veren öğretim üyesine açıktır.
         </p>
         <div class="form-field">
-          <label>Yönetici Parolası</label>
+          <label for="inp-admin-pass">Yönetici Parolası</label>
           <input type="password" id="inp-admin-pass" placeholder="Parolanızı giriniz..." />
         </div>
         <p id="admin-login-error" class="hidden" style="color:#9b2226; font-size:0.78rem; margin-top:0.4rem; font-weight:600;">
@@ -647,6 +679,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=10"></script>
+  <script src="catalog-ui.js?v=1"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
