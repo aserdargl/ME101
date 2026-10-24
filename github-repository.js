@@ -32,8 +32,8 @@
       if (!response.ok) {
         const error = new Error([409, 422].includes(response.status)
           ? "GitHub’da daha yeni değişiklik var. Yerel notlar korundu; yeniden yayımlarken iki sürüm birleştirilecek."
-          : response.status === 401 ? "GitHub erişim anahtarı geçersiz veya süresi dolmuş."
-          : response.status === 403 ? "GitHub yazma izni vermedi. Anahtar için yalnızca ME101 deposunda Contents: Read and write iznini seçin."
+          : response.status === 401 ? "GitHub oturumunun süresi dolmuş. Hesabınızla yeniden giriş yapınız."
+          : response.status === 403 ? "GitHub yazma izni vermedi. LectureNotes uygulamasının ME101 deposuna içerik yazma iznini kontrol ediniz."
           : "GitHub işlemine ulaşılamadı. Yerel notlar ve önceki yayın korunuyor.");
         error.status = response.status;
         throw error;
@@ -47,7 +47,8 @@
       try {
         const user = await this.api("/user");
         if (user.login.toLowerCase() !== this.owner.toLowerCase()) throw new Error("Yayımlama yalnızca depo sahibinin GitHub hesabına açık.");
-        await this.api(this.prefix);
+        const repository = await this.api(this.prefix);
+        if (repository.permissions?.push !== true) throw new Error("ME101 deposunda ders yayımlama izni bulunamadı.");
         return true;
       } catch (error) { this.token = ""; throw error; }
     }

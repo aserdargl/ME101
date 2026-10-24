@@ -10,6 +10,7 @@ command = "worker-build --release"
 FIREBASE_PROJECT = "lecturenotes-b97ad"
 FIREBASE_API_KEY = "AIzaSyCgr3kG_bsU-pKV6DSb2oQ1oi0B2bj2K9E"
 ALLOWED_ORIGIN = "https://aserdargl.github.io"
+GITHUB_CLIENT_ID = "Iv23liotEwgq3ypqh8cO"
 
 [triggers]
 crons = ["*/10 * * * *"]
@@ -24,3 +25,4 @@ FIREBASE_PROJECT = "demo-lecturenotes"
 FIREBASE_API_KEY = "demo-key"
 ALLOWED_ORIGIN = "http://127.0.0.1:4197"
 EMULATOR = "true"
+GITHUB_CLIENT_ID = "synthetic-github-app"

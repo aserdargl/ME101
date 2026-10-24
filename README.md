@@ -5,7 +5,7 @@ https://aserdargl.github.io/ME101/
 ## Ders ve görselleri tüm cihazlarda yayımlama
 
 1. Mevcut notların bulunduğu tarayıcıda sayfayı açın.
-2. Öğretim Üyesi menüsünden **GitHub ile Giriş** seçeneğini kullanın. Yalnızca `ME101` deposuna `Contents: Read and write` izni veren fine-grained GitHub anahtarı kullanılır. Anahtar yalnızca sekmenin belleğinde tutulur.
+2. Öğretim Üyesi menüsünden **GitHub ile Giriş → GitHub Hesabımla Giriş Yap** seçeneğini kullanın. GitHub hesabınızla giriş tamamlanır; token kopyalayıp yapıştırmanız gerekmez. Özel **LectureNotes Publisher - aserdargl** GitHub uygulaması yalnız `aserdargl/ME101` deposuna içerik okuma/yazma izniyle kuruludur. Oturum tokenı yalnız sekmenin belleğinde tutulur; sekme kapanınca veya süre dolunca hesabınızla tekrar giriş yaparsınız.
 3. **Yerel Notları GitHub’a Aktar** düğmesine basın. Sonraki düzenlemeler için **Kaydet** yerel yedeği korur; **GitHub’a Yayımla** tamamladığınız değişiklikleri ortak kayda gönderir. Pages yayını tamamlandığında içerikler diğer cihazlarda da görünür.
 
 Ortak ders kaydı `data/manifest.json` ve `data/snapshots/` altında tutulur. Yayın tek Git commit'iyle yapılır; mevcut site dosyaları ve eski kayıtlar korunur. Çakışan notlar silinmez; yerel sürüm ayrı ders olarak korunur. Öğrenci listeleri, parolalar ve kişisel oturum bilgileri ortak ders verisine eklenmez.
@@ -33,6 +33,14 @@ Site ve ders dosyaları GitHub Pages'te kalır. Öğrenci numarası/ad-soyad lis
 - `lecture-approval` hizmet hesabı yalnız LectureNotes projesinde kullanıcı okuma/silme ve gerekli Firestore belge izinlerine sahiptir. JSON anahtar yalnız Cloudflare `FIREBASE_SERVICE_ACCOUNT` secret alanına konur; depoya, tarayıcıya veya loga eklenmez.
 - Derleme: `rustup target add wasm32-unknown-unknown`, `cargo install worker-build --version 0.8.7 --locked`, ardından `approval-worker` içinde `npx wrangler deploy`. `firebase-config.js` içindeki `MEE101_APPROVAL_URL` yayımlanan Worker adresidir. Ücretli plana geçiş gerekmez.
 - Yerel test: `demo-lecturenotes` Authentication 9099 ve Firestore 8088 emülatörlerini başlatın. `approval-worker` içinde `npx wrangler dev --env test --local --ip 127.0.0.1 --port 8787 --test-scheduled`, sonra kökten `npm run test:approval`. Test modu yalnız demo proje kimliğiyle çalışır. Gerçek kullanıcı silinmez.
+
+## GitHub hesabıyla giriş
+
+GitHub App `lecturenotes-publisher-aserdargl` yalnız `aserdargl` hesabına kurulabilir. İzinleri Contents read/write ve zorunlu Metadata read ile sınırlıdır; kurulumda yalnız ME101 seçilidir. OAuth tokenı ayrıca ME101 depo kimliğiyle sınırlandırılır. GitHub App Client ID herkese açık yapılandırmadır; Client Secret yalnız Worker `GITHUB_CLIENT_SECRET` gizli ayarında saklanır. GitHub App özel anahtarı gerekmez.
+
+Giriş akışı mevcut Rust Worker'ın `/github/start` ve `/github/callback` yollarında çalışır. Rastgele state ve PKCE doğrulayıcısı kısa ömürlü Secure/HttpOnly/SameSite=Lax çerezinde saklanır. GitHub sonucu yalnız açılan pencereye, tam site kaynağına ve o girişin benzersiz kimliğine bağlı olarak iletilir. Token URL'ye veya kalıcı tarayıcı kaydına eklenmez. Giriş otomatik ders yayını yapmaz; mevcut aktar/yayımla işlemi ve çakışma koruması devam eder. Cloudflare Free ve Firebase Spark planları değişmez.
+
+`npm test` pencere kaynağı ve sahte mesaj kontrollerini de çalıştırır. Yerel Rust Worker `--env test` ile açıkken `node --test tests/github-oauth-worker.cjs` yalnız sentetik yerel GitHub sunucusuyla state/PKCE, hesap ve yazma izni denetimlerini sınar. Gerçek GitHub'a test dersi yayımlanmaz.
 
 ## PPTX görsellerini onarma
 

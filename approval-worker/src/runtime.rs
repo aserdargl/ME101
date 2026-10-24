@@ -16,6 +16,7 @@ fn respond(status:u16, value:Value, origin:&str) -> Result<Response> {
 
 #[event(fetch)]
 pub async fn main(mut req:Request, env:Env, _ctx:Context) -> Result<Response> {
+    if req.path().starts_with("/github/") { return crate::github_oauth::handle(&req,&env).await; }
     let origin=env.var("ALLOWED_ORIGIN")?.to_string();
     if req.path()=="/health" && req.method()==Method::Get {
         return respond(200,json!({"ok":true,"service":"lecturenotes-approval"}),&origin);

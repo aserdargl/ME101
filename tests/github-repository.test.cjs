@@ -7,7 +7,7 @@ function fakeGitHub() {
   const blobs = new Map([["original-html", "<h1>Mevcut site</h1>"]]);
   const trees = new Map([["tree-0", new Map([["index.html", "original-html"]])]]);
   const commits = new Map([["commit-0", { tree: { sha: "tree-0" }, parents: [] }]]);
-  const state = { head: "commit-0", requests: [], owner: "aserdargl" };
+  const state = { head: "commit-0", requests: [], owner: "aserdargl", canPush: true };
   let sequence = 0;
   const response = (value, status = 200) => Response.json(value, { status });
   async function fetch(url, options = {}) {
@@ -20,7 +20,7 @@ function fakeGitHub() {
       return file ? new Response(blobs.get(file)) : response({}, 404);
     }
     if (path === "/user") return response({ login: state.owner });
-    if (path === "") return response({ permissions: { push: true } });
+    if (path === "") return response({ permissions: { push: state.canPush } });
     if (path === "/git/ref/heads/main") return response({ object: { sha: state.head } });
     if (path.startsWith("/contents/")) {
       const commit = commits.get(parsed.searchParams.get("ref"));
@@ -79,6 +79,10 @@ test("only the owner can connect and access keys are cleared on logout or reject
   await assert.rejects(() => repository.login("isolated-key"), /yalnızca depo sahibinin/);
   assert.equal(repository.token, "");
   server.state.owner = "aserdargl";
+  server.state.canPush = false;
+  await assert.rejects(() => repository.login("read-only-key"), /yayımlama izni/);
+  assert.equal(repository.token, "");
+  server.state.canPush = true;
   await repository.login("isolated-key"); repository.logout();
   assert.equal(repository.token, "");
 });
