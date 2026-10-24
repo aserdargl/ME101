@@ -1,5 +1,16 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Numara": "Number",
+  "İsim": "First name",
+  "Soyisim": "Surname",
+  "Öğrenci numaraları": "Student numbers",
+  "Öğrenci isimleri": "Student first names",
+  "Öğrenci soyisimleri": "Student surnames",
+  "En fazla üç sütun yapıştırınız: numara, isim, soyisim.": "Paste up to three columns: number, first name, surname.",
+  "Numara, isim ve soyisim sütunlarını Excel’den ayrı ayrı veya birlikte yapıştırınız. Her sütunda aynı satır aynı öğrenciye karşılık gelir. Öğrenciler eşleşen bilgilerle istedikleri e-postayı kullanarak kayıt olur. Her numara tek hesaba bağlanır. Liste gizli tutulur; mevcut eski e-posta kayıtları korunur.": "Paste the number, first name and surname columns from Excel separately or together. The same row in each column belongs to the same student. Students register with matching details using their preferred email. Each number links to one account. The roster stays private; existing email records are preserved.",
+  "İlk Kayıt · Öğrenci Bilgileri": "First Registration · Student Details",
+  "Ad Soyad": "Full Name",
+
   "GitHub ile Giriş Yap": "Sign In with GitHub",
   "GitHub hesabınızla bir kez giriş yaparak dersleri düzenleyip yayımlayabilir, öğrenci listesini ve başvuruları yönetebilirsiniz.": "Sign in once with GitHub to edit and publish lessons and manage students and applications.",
   "Öğrencileri yönetmek için öğretim üyesi girişi yapınız.": "Sign in as an instructor to manage students.",

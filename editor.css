@@ -161,3 +161,14 @@ body:has(> .course-editor:not(.hidden)) { overflow: hidden; }
   .course-editor .editor-save-bar .btn { flex: 1; justify-content: center; font-size: 10px !important; }
   .course-editor .editor-save-bar .btn-primary { padding: 9px 10px !important; }
 }
+.course-editor .roster-table-wrap { overflow-x: auto; border: 1px solid #dfe4e9; border-radius: 8px; }
+.course-editor .roster-entry-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.course-editor .roster-entry-table th { padding: 8px; background: #edf1f5; text-align: left; }
+.course-editor .roster-entry-table th label { margin: 0; }
+.course-editor .roster-entry-table td { padding: 0; vertical-align: top; border-top: 1px solid #dfe4e9; }
+.course-editor .roster-entry-table th + th, .course-editor .roster-entry-table td + td { border-left: 1px solid #dfe4e9; }
+.course-editor .roster-entry-table textarea { display: block; width: 100%; min-width: 0; border: 0; border-radius: 0; resize: none; padding: 8px; font: 12px/24px 'JetBrains Mono', monospace; }
+.course-editor .roster-entry-table textarea:focus { outline: 2px solid #748ba3; outline-offset: -2px; box-shadow: none; }
+@media (max-width: 700px) {
+  #tab-student-roster > .form-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}

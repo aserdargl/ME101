@@ -1135,6 +1135,8 @@ document.getElementById("btn-student-resend-verification").addEventListener("cli
 });
 
 // --- ÖĞRETİM ÜYESİ: ÖĞRENCİ NUMARASI LİSTESİ (OBS) YÖNETİMİ ---
+const rosterTable = new RosterTable(document);
+
 function renderRosterAdminList() {
   renderApprovalApplications();
   document.getElementById("btn-roster-firebase-login").classList.toggle("hidden", FirebaseStudents.isAdmin);
@@ -1186,20 +1188,20 @@ async function appendOrUpdateRosterFromText(rawText, replaceAll = false) {
   if (!isAdminAuthenticated) return;
   const result = await FirebaseStudents.saveText(rawText, replaceAll);
   if (!result.ok) { alert(result.error); return; }
-  document.getElementById("inp-roster-bulk").value = "";
+  rosterTable.clear();
   renderRosterAdminList();
   renderCatalog();
 }
 
 document.getElementById("btn-roster-append").addEventListener("click", () => {
-  const txt = document.getElementById("inp-roster-bulk").value;
+  const txt = rosterTable.read();
   appendOrUpdateRosterFromText(txt, false);
 });
 
 document.getElementById("btn-roster-replace").addEventListener("click", () => {
-  const txt = document.getElementById("inp-roster-bulk").value;
+  const txt = rosterTable.read();
   if (!txt.trim()) {
-    alert("Sıfırlayıp yeniden tanımlamak için önce metin kutusuna yeni öğrenci listesini yapıştırınız.");
+    alert("Sıfırlayıp yeniden tanımlamak için önce tabloya yeni öğrenci listesini yapıştırınız.");
     return;
   }
   if (confirm("Ortak listedeki diğer öğrencilerin giriş izni kaldırılacak. Yeni listeyle değiştirmek istiyor musunuz?")) appendOrUpdateRosterFromText(txt, true);
@@ -1210,7 +1212,8 @@ document.getElementById("inp-roster-file").addEventListener("change", (e) => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    document.getElementById("inp-roster-bulk").value = String(reader.result || "");
+    const result = rosterTable.load(String(reader.result || ""));
+    if (!result.ok) alert(result.error);
   };
   reader.readAsText(file, "utf-8");
 });
