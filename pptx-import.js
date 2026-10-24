@@ -229,7 +229,13 @@
     const size = presentation && first(presentation, "sldSz");
     const width = number(size, "cx", 12192000), height = number(size, "cy", 6858000);
     const slides = [];
+    const yieldIntervalMs = 12;
+    let lastYield = Date.now();
     for (const [index, path] of paths.entries()) {
+      if (root.document && Date.now() - lastYield >= yieldIntervalMs) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        lastYield = Date.now();
+      }
       const part = await pkg.part(path);
       if (!part) throw new Error(`Slayt dosyası bulunamadı: ${path}`);
       const layoutPath = [...part.relations.values()].find(item => item.type.endsWith("/slideLayout") && !item.external)?.path;

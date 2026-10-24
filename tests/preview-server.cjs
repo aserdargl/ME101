@@ -4,6 +4,8 @@ const path = require("node:path");
 const { fixture } = require("./pptx-fixture.cjs");
 const root = path.resolve(__dirname, "..");
 const port = Number(process.env.MEE101_QA_PORT || 4189);
+const baselineApp = process.env.MEE101_QA_BASELINE === "1"
+  ? require("node:child_process").execFileSync("git", ["show", "HEAD:app.js"], { cwd: root }) : null;
 const original = [{ id: "qa-original", week: "5. Hafta", title: "Korunacak Özgün Notlar", description: "Mevcut özel not ve görsel verileri.", custom: { keep: true }, slides: [{ kicker: "5. HAFTA", title: "Özel açıklama", defaultViewMode: "web", pptSummaryBullets: ["Kendi eklediğim madde"], html: '<p class="lead">Benim özgün açıklamam</p><p data-user-note="keep">Bu not silinmemeli.</p>' }] }];
 const seed = `<script>window.MEE101_GITHUB_ENABLED=false;if(!localStorage.getItem('qa-seeded')){localStorage.setItem('me101_all_lectures_v2',${JSON.stringify(JSON.stringify(original))});localStorage.setItem('mee101_preferred_view_mode_v1','ppt');localStorage.setItem('qa-seeded','true');}sessionStorage.setItem('me101_instructor_unlocked','true');</script>`;
 const harness = `<script>
@@ -18,6 +20,13 @@ setInterval(()=>{const saved=LECTURES.find(lecture=>lecture.id==='qa-original');
 http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${port}`);
   res.setHeader("Cache-Control", "no-store");
+  if (url.pathname === "/firebase-config.js") {
+    res.setHeader("Content-Type", "text/javascript; charset=utf-8");
+    return res.end(process.env.MEE101_QA_FIREBASE === "1"
+      ? 'window.MEE101_FIREBASE_EMULATORS=true;window.MEE101_FIREBASE_CONFIG={apiKey:"demo-key",projectId:"demo-lecturenotes",authDomain:"demo-lecturenotes.firebaseapp.com",appId:"1:123:web:demo"};'
+      : 'window.MEE101_FIREBASE_CONFIG=null;');
+  }
+  if (baselineApp && url.pathname === "/app.js") { res.setHeader("Content-Type", "text/javascript; charset=utf-8"); return res.end(baselineApp); }
   if (url.pathname === "/fixture.pptx") { res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation"); return res.end(await fixture()); }
   const filename = path.resolve(root, "." + (url.pathname === "/qa" || url.pathname === "/" ? "/index.html" : url.pathname));
   if (!filename.startsWith(root + path.sep)) { res.writeHead(403); return res.end(); }
@@ -25,6 +34,6 @@ http.createServer(async (req, res) => {
     if (error) { res.writeHead(404); return res.end(); }
     const types = { ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".html": "text/html; charset=utf-8" };
     res.setHeader("Content-Type", types[path.extname(filename)] || "application/octet-stream");
-    res.end(url.pathname === "/qa" ? bytes.toString().replace("<head>", "<head>" + seed).replace("</body>", harness + "</body>") : bytes);
+    res.end(url.pathname === "/qa" ? bytes.toString().replace("<head>", "<head>" + seed).replace("</body>", harness + '<script src="/tests/ui-regression.js"></script></body>') : bytes);
   });
 }).listen(port, "127.0.0.1", () => process.stdout.write(`Isolated preview: http://127.0.0.1:${port}/qa\n`));

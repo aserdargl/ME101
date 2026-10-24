@@ -1,5 +1,18 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Doğrulamayı Yeniden Gönder": "Resend Verification",
+  "Ders listesinde tanımlı e-posta adresiniz ve parolanızla giriş yapınız. İlk kullanımda hesap oluşturup e-postanızı doğrulayınız.": "Sign in with the email address on the course roster and your password. Create an account and verify your email before your first sign-in.",
+  "Gizli ortak liste · Firebase bağlantısı etkin.": "Private shared roster · Firebase connected.",
+  "Ortak listeyi yönetmek için yetkili Firebase hesabıyla giriş yapınız.": "Sign in with an authorized Firebase account to manage the shared roster.",
+  "Bu hesap için etkin ders kaydı bulunamadı veya kayıt doğrulanamadı. Öğretim üyesine başvurunuz.": "No active course enrollment was found or enrollment could not be verified. Contact your instructor.",
+  "E-posta ve Parola ile Giriş": "Sign In with Email and Password",
+  "E-posta": "Email",
+  "Parola": "Password",
+  "Giriş Yap": "Sign In",
+  "Hesap Oluştur": "Create Account",
+  "Parolamı Unuttum": "Forgot Password",
+  "Firebase Yönetici Girişi": "Firebase Administrator Sign In",
+  "Öğrenci Listesi · e-posta;numara;ad soyad": "Student Roster · email;number;full name",
   "Makine Mühendisliğine Giriş, Tarihsel Gelişim ve Temel Disiplinler": "Introduction to Mechanical Engineering, Historical Development and Core Disciplines",
   "Makine mühendisliğinin tanımı, Sanayi Devrimleri, beş temel anabilim dalı ve dişli çark mekanizmaları üzerinde güç/moment iletimi analizi.": "Definition of mechanical engineering, industrial revolutions, five core disciplines, and analysis of power and torque transmission in gear mechanisms.",
   "Kuvvet, Moment ve Mukavemet: Kiriş Eğilme Analizi": "Force, Moment and Strength of Materials: Beam Bending Analysis",

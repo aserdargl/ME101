@@ -330,10 +330,12 @@ function getActiveAdminPassHash() {
 const DEFAULT_STUDENT_ROSTER = [];
 
 let isAdminAuthenticated = sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
-let activeStudentNo = sessionStorage.getItem(STUDENT_SESSION_KEY) || null;
+let activeStudentNo = null;
+let firebaseAdminSession = false;
 let pendingStudentAction = null; // { type: 'vote', lecId, val } veya { type: 'download', href, fileName }
 
 function getStudentRoster() {
+  if (FirebaseStudents.isAdmin) return FirebaseStudents.roster;
   try {
     const raw = localStorage.getItem(STUDENT_ROSTER_KEY);
     if (!raw) return [...DEFAULT_STUDENT_ROSTER];
@@ -344,37 +346,11 @@ function getStudentRoster() {
   }
 }
 
-function saveStudentRoster(rosterArr) {
-  try {
-    localStorage.setItem(STUDENT_ROSTER_KEY, JSON.stringify(rosterArr));
-  } catch {
-    // ignore
-  }
-}
-
 function findStudentInRoster(studentNoInput) {
   const cleanNo = String(studentNoInput || "").trim();
   if (!cleanNo) return null;
-  const roster = getStudentRoster();
-  return roster.find((s) => String(s.no).trim().toLowerCase() === cleanNo.toLowerCase()) || null;
-}
-
-function parseRosterText(rawText) {
-  const lines = String(rawText || "")
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  const parsed = [];
-  lines.forEach((line) => {
-    // "20261001 - Ad Soyad", "20261001;Ad Soyad", "20261001,Ad Soyad" veya "20261001\tAd Soyad" desteklenir
-    const parts = line.split(/\s*[-;,\t]\s*/);
-    const no = (parts[0] || "").trim();
-    const name = parts.slice(1).join(" ").trim();
-    if (no) {
-      parsed.push({ no, name });
-    }
-  });
-  return parsed;
+  const student = FirebaseStudents.profile;
+  return student && String(student.no || student.email).toLowerCase() === cleanNo.toLowerCase() ? student : null;
 }
 
 function updateAdminUI() {
@@ -428,15 +404,14 @@ function updateStudentUI() {
 }
 
 function saveAllLecturesToStorage() {
-  const snapshot = structuredClone(LECTURES);
   let legacySaved = false;
   try {
-    localStorage.setItem(ALL_LECTURES_STORAGE_KEY, JSON.stringify(snapshot));
+    localStorage.setItem(ALL_LECTURES_STORAGE_KEY, JSON.stringify(LECTURES));
     legacySaved = true;
   } catch {
     // Large embedded images are saved to IndexedDB below instead.
   }
-  return LectureStorage.save(snapshot).then(saved => {
+  return LectureStorage.save(LECTURES).then(saved => {
     if (!saved && !legacySaved) alert("Notlar bu oturumda açık; ancak yerel kayıt yapılamadı. Sayfayı kapatmadan ders verisini dışa aktarın.");
     if (saved || legacySaved) LecturePublishing.save();
     return saved || legacySaved;
@@ -592,7 +567,7 @@ function renderCatalog() {
   updateStudentUI();
   lectureGrid.innerHTML = "";
 
-  LECTURES.forEach((lec) => {
+  [...LECTURES].sort((a, b) => CatalogOrder.compareWeeks(a.week, b.week)).forEach((lec) => {
     const card = document.createElement("article");
     card.className = "lecture-card";
     const pptxHref = lec.pptxUrl || "";
@@ -785,8 +760,9 @@ function openLecture(lectureId, startInPresentation = false) {
     const effectiveMode = preferredSlideViewMode || s.defaultViewMode || "web";
     slideEl.dataset.viewMode = effectiveMode;
 
-    const pptVisualHtml = buildPptExactVisualHtml(s, idx, lec.slides.length, lec.week);
     const isPptMode = effectiveMode === "ppt";
+    // Simulation controls must exist for setup even when the PPT view is selected.
+    const needsWebBody = !isPptMode || detectSlideSimType(s) !== "none";
 
     slideEl.innerHTML = `
       <div class="slide-top-controls interactive-zone">
@@ -798,8 +774,8 @@ function openLecture(lectureId, startInPresentation = false) {
       </div>
       <div class="slide-kicker">${escapeXml(s.kicker)}</div>
       <h2>${escapeXml(s.title)}</h2>
-      <div class="slide-body-web ${isPptMode ? "hidden" : ""}">${s.html}</div>
-      <div class="slide-body-ppt ${isPptMode ? "" : "hidden"}">${pptVisualHtml}</div>
+      <div class="slide-body-web ${isPptMode ? "hidden" : ""}" data-rendered="${needsWebBody}">${needsWebBody ? s.html : ""}</div>
+      <div class="slide-body-ppt ${isPptMode ? "" : "hidden"}" data-rendered="${isPptMode}">${isPptMode ? buildPptExactVisualHtml(s, idx, lec.slides.length, lec.week) : ""}</div>
     `;
     slidesContainer.appendChild(slideEl);
   });
@@ -843,6 +819,15 @@ function setSlideElementViewMode(slideEl, mode) {
   const webBody = slideEl.querySelector(".slide-body-web");
   const pptBody = slideEl.querySelector(".slide-body-ppt");
   const switchBtn = slideEl.querySelector(".btn-slide-mode-switch");
+  const body = mode === "ppt" ? pptBody : webBody;
+  if (body.dataset.rendered !== "true") {
+    const index = Number(slideEl.dataset.index);
+    const slide = currentLecture.slides[index];
+    body.innerHTML = mode === "ppt"
+      ? buildPptExactVisualHtml(slide, index, currentLecture.slides.length, currentLecture.week)
+      : slide.html;
+    body.dataset.rendered = "true";
+  }
 
   slideEl.dataset.viewMode = mode;
 
@@ -901,6 +886,7 @@ function goHome() {
     exitPresentationMode();
   }
   currentLecture = null;
+  stopSimulations();
   lectureView.classList.add("hidden");
   lectureNavActions.classList.add("hidden");
   catalogView.classList.remove("hidden");
@@ -1027,7 +1013,7 @@ const inpAdminPass = document.getElementById("inp-admin-pass");
 const adminLoginError = document.getElementById("admin-login-error");
 
 const studentLoginBackdrop = document.getElementById("student-login-backdrop");
-const inpStudentNo = document.getElementById("inp-student-no");
+const inpStudentNo = document.getElementById("inp-student-email");
 const studentLoginError = document.getElementById("student-login-error");
 
 const inpPptxFile = document.getElementById("inp-pptx-file");
@@ -1041,6 +1027,7 @@ let pendingAdminTab = null;
 function openStudentLoginModal(actionAfterLogin = null) {
   pendingStudentAction = actionAfterLogin;
   inpStudentNo.value = "";
+  document.getElementById("inp-student-password").value = "";
   studentLoginError.classList.add("hidden");
   studentLoginBackdrop.classList.remove("hidden");
   setTimeout(() => inpStudentNo.focus(), 50);
@@ -1051,16 +1038,22 @@ function closeStudentLoginModal() {
   pendingStudentAction = null;
 }
 
-function handleStudentLoginSubmit() {
-  const enteredNo = inpStudentNo.value.trim();
-  const matchedStu = findStudentInRoster(enteredNo);
-  if (!matchedStu) {
+async function handleStudentLoginSubmit() {
+  const button = document.getElementById("btn-submit-student-login");
+  if (button.disabled) return;
+  button.disabled = true;
+  studentLoginError.classList.add("hidden");
+  const passwordInput = document.getElementById("inp-student-password");
+  const result = await FirebaseStudents.signIn(inpStudentNo.value, passwordInput.value);
+  passwordInput.value = "";
+  button.disabled = false;
+  if (!result.ok) {
+    studentLoginError.textContent = result.error;
     studentLoginError.classList.remove("hidden");
     return;
   }
-
-  activeStudentNo = matchedStu.no;
-  sessionStorage.setItem(STUDENT_SESSION_KEY, matchedStu.no);
+  const matchedStu = FirebaseStudents.profile;
+  activeStudentNo = matchedStu ? matchedStu.no || matchedStu.email : null;
   const actionToRun = pendingStudentAction;
   closeStudentLoginModal();
   renderCatalog();
@@ -1075,8 +1068,9 @@ function handleStudentLoginSubmit() {
   }
 }
 
-document.getElementById("btn-student-toggle").addEventListener("click", () => {
+document.getElementById("btn-student-toggle").addEventListener("click", async () => {
   if (activeStudentNo) {
+    await FirebaseStudents.signOut();
     activeStudentNo = null;
     sessionStorage.removeItem(STUDENT_SESSION_KEY);
     renderCatalog();
@@ -1090,10 +1084,31 @@ document.getElementById("btn-submit-student-login").addEventListener("click", ha
 inpStudentNo.addEventListener("keydown", (e) => {
   if (e.key === "Enter") handleStudentLoginSubmit();
 });
+document.getElementById("inp-student-password").addEventListener("keydown", event => {
+  if (event.key === "Enter") handleStudentLoginSubmit();
+});
+document.getElementById("btn-student-register").addEventListener("click", async () => {
+  const input = document.getElementById("inp-student-password");
+  const result = await FirebaseStudents.register(inpStudentNo.value, input.value);
+  input.value = "";
+  studentLoginError.textContent = result.ok ? "Doğrulama e-postası gönderildi. Bağlantıyı açtıktan sonra giriş yapınız." : result.error;
+  studentLoginError.classList.remove("hidden");
+});
+document.getElementById("btn-student-reset-password").addEventListener("click", async () => {
+  const result = await FirebaseStudents.resetPassword(inpStudentNo.value);
+  studentLoginError.textContent = result.ok ? "Adresiniz için bir hesap varsa parola sıfırlama e-postası gönderilecektir." : result.error;
+  studentLoginError.classList.remove("hidden");
+});
+document.getElementById("btn-roster-firebase-login").addEventListener("click", () => openStudentLoginModal());
+document.getElementById("btn-student-resend-verification").addEventListener("click", async () => {
+  const result = await FirebaseStudents.resendVerification();
+  studentLoginError.textContent = result.ok ? "Doğrulama e-postası yeniden gönderildi." : result.error;
+  studentLoginError.classList.remove("hidden");
+});
 
 // --- ÖĞRETİM ÜYESİ: ÖĞRENCİ NUMARASI LİSTESİ (OBS) YÖNETİMİ ---
 function renderRosterAdminList() {
-  const roster = getStudentRoster();
+  const roster = FirebaseStudents.isAdmin ? FirebaseStudents.roster : [];
   const countBadge = document.getElementById("roster-count-badge");
   const container = document.getElementById("roster-items-container");
   if (!countBadge || !container) return;
@@ -1110,51 +1125,29 @@ function renderRosterAdminList() {
     const row = document.createElement("div");
     row.className = "roster-item";
     row.innerHTML = `
-      <span class="roster-item-no">${escapeXml(stu.no)}</span>
+      <span class="roster-item-no">${escapeXml(stu.no || stu.email)}</span>
       <span class="roster-item-name">${escapeXml(stu.name || "—")}</span>
-      <button type="button" class="btn-clear-rating" data-remove-stu="${escapeXml(stu.no)}" title="Bu öğrenciyi listeden çıkar">&times; Sil</button>
+      <span class="roster-item-email">${escapeXml(stu.email)}${stu.enabled ? "" : " · Engelli"}</span>
+      <button type="button" class="btn-clear-rating" data-remove-stu="${escapeXml(stu.email)}" title="Bu öğrencinin giriş iznini kaldır">&times; Sil</button>
     `;
     container.appendChild(row);
   });
 
   container.querySelectorAll("[data-remove-stu]").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       if (!isAdminAuthenticated) return;
-      const targetNo = btn.dataset.removeStu;
-      const updated = getStudentRoster().filter(
-        (s) => String(s.no).trim().toLowerCase() !== String(targetNo).trim().toLowerCase()
-      );
-      saveStudentRoster(updated);
+      const result = await FirebaseStudents.removeStudent(btn.dataset.removeStu);
+      if (!result.ok) alert(result.error);
       renderRosterAdminList();
       renderCatalog();
     });
   });
 }
 
-function appendOrUpdateRosterFromText(rawText, replaceAll = false) {
+async function appendOrUpdateRosterFromText(rawText, replaceAll = false) {
   if (!isAdminAuthenticated) return;
-  const incoming = parseRosterText(rawText);
-  if (incoming.length === 0) {
-    alert("Lütfen en az bir öğrenci numarası giriniz.");
-    return;
-  }
-
-  const baseList = replaceAll ? [] : getStudentRoster();
-  const mapByNo = new Map();
-  baseList.forEach((s) => {
-    mapByNo.set(String(s.no).trim().toLowerCase(), { no: String(s.no).trim(), name: s.name || "" });
-  });
-  incoming.forEach((s) => {
-    const key = String(s.no).trim().toLowerCase();
-    const existing = mapByNo.get(key);
-    mapByNo.set(key, {
-      no: String(s.no).trim(),
-      name: s.name || (existing ? existing.name : "")
-    });
-  });
-
-  const merged = Array.from(mapByNo.values());
-  saveStudentRoster(merged);
+  const result = await FirebaseStudents.saveText(rawText, replaceAll);
+  if (!result.ok) { alert(result.error); return; }
   document.getElementById("inp-roster-bulk").value = "";
   renderRosterAdminList();
   renderCatalog();
@@ -1171,7 +1164,7 @@ document.getElementById("btn-roster-replace").addEventListener("click", () => {
     alert("Sıfırlayıp yeniden tanımlamak için önce metin kutusuna yeni öğrenci listesini yapıştırınız.");
     return;
   }
-  appendOrUpdateRosterFromText(txt, true);
+  if (confirm("Ortak listedeki diğer öğrencilerin giriş izni kaldırılacak. Yeni listeyle değiştirmek istiyor musunuz?")) appendOrUpdateRosterFromText(txt, true);
 });
 
 document.getElementById("inp-roster-file").addEventListener("change", (e) => {
@@ -1237,6 +1230,7 @@ async function handleAdminLoginSubmit() {
 
 document.getElementById("btn-admin-toggle").addEventListener("click", () => {
   if (isAdminAuthenticated) {
+    FirebaseStudents.signOut();
     LecturePublishing.logout();
     isAdminAuthenticated = false;
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
@@ -1337,6 +1331,7 @@ function handlePptxFileChosen(file) {
   if (!titleInput.value.trim()) {
     titleInput.value = file.name.replace(/\.pptx$/i, "").replace(/[-_]/g, " ");
   }
+  PptxPreview.prepare(file);
 }
 
 async function parsePptxFileToSlides(pptxFile, weekLabel, customTitle) {
@@ -1408,7 +1403,7 @@ btnProcessPptx.addEventListener("click", async () => {
 
   try {
     const customTitle = customTitleInput || selectedPptxFile.name.replace(/\.pptx$/i, "");
-    const parsedSlides = await parsePptxFileToSlides(selectedPptxFile, weekLabel, customTitle);
+    const parsedSlides = await PptxPreview.getSlides(selectedPptxFile, weekLabel, customTitle);
 
     if (simType !== "none") {
       parsedSlides.push(getSimulationSlideObject(simType, weekLabel.toUpperCase()));
@@ -1430,6 +1425,7 @@ btnProcessPptx.addEventListener("click", async () => {
     LECTURES.push(newLecture);
     await saveCustomLectureToStorage(newLecture);
     selectedPptxFile = null;
+    PptxPreview.clear();
     pptxFileStatus.textContent = "Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.";
     renderCatalog();
     closePptxModal();
@@ -1693,12 +1689,13 @@ function updateEditLivePreview() {
   if (activeThumbCard) {
     const thumbPrev = activeThumbCard.querySelector(".edit-thumb-preview");
     const thumbTitle = activeThumbCard.querySelector(".edit-thumb-title");
+    if (thumbPrev) editThumbnailObserver?.unobserve(thumbPrev);
     if (thumbPrev) thumbPrev.innerHTML = renderedVisual;
     if (thumbTitle) thumbTitle.textContent = title;
   }
 }
 
-function loadSlideIntoEditForm(slideIdx) {
+function loadSlideIntoEditForm(slideIdx, rebuildTabs = true) {
   if (!editingLectureDraft || !editingLectureDraft.slides.length) return;
   editingSlideIndex = Math.max(0, Math.min(slideIdx, editingLectureDraft.slides.length - 1));
   const slide = editingLectureDraft.slides[editingSlideIndex];
@@ -1737,7 +1734,10 @@ function loadSlideIntoEditForm(slideIdx) {
     standardFieldsBox.classList.toggle("hidden", fields.simType !== "none");
   }
 
-  renderEditSlideTabs();
+  if (rebuildTabs) renderEditSlideTabs();
+  else document.querySelectorAll("#edit-slide-tabs .edit-thumb-card").forEach((card, index) => {
+    card.classList.toggle("active", index === editingSlideIndex);
+  });
   updateEditLivePreview();
 }
 
@@ -1779,13 +1779,26 @@ function createInsertBetweenBar(insertPos, totalSlides) {
   return bar;
 }
 
+let editThumbnailObserver;
+
 function renderEditSlideTabs() {
   const tabsContainer = document.getElementById("edit-slide-tabs");
   if (!tabsContainer || !editingLectureDraft) return;
+  editThumbnailObserver?.disconnect();
   tabsContainer.innerHTML = "";
 
   const total = editingLectureDraft.slides.length;
   const weekVal = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
+  editThumbnailObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting || !editingLectureDraft || !entry.target.isConnected) return;
+      const index = Number(entry.target.dataset.slideIndex);
+      if (index !== editingSlideIndex) {
+        entry.target.innerHTML = buildPptExactVisualHtml(editingLectureDraft.slides[index], index, total, weekVal);
+      }
+      editThumbnailObserver.unobserve(entry.target);
+    });
+  }, { root: tabsContainer, rootMargin: "150px" });
 
   // 0. pozisyona (En Başa) ekleme çubuğu
   tabsContainer.appendChild(createInsertBetweenBar(0, total));
@@ -1799,24 +1812,23 @@ function renderEditSlideTabs() {
     const typeTagText =
       simType !== "none" ? `Simülasyon (${simType})` : hasImg ? "Görsel Slayt" : "Konu Slaytı";
 
-    const thumbVisualHtml = buildPptExactVisualHtml(s, idx, total, weekVal);
-
     card.innerHTML = `
       <div class="edit-thumb-top">
         <span class="edit-thumb-num">${idx + 1}. Slayt</span>
         <span class="edit-thumb-type-tag">${typeTagText}</span>
       </div>
-      <div class="edit-thumb-preview">${thumbVisualHtml}</div>
+      <div class="edit-thumb-preview" data-slide-index="${idx}"></div>
       <div class="edit-thumb-title">${escapeXml(s.title || `Slayt ${idx + 1}`)}</div>
     `;
 
     card.addEventListener("click", () => {
       if (idx === editingSlideIndex) return;
       commitCurrentSlideFormToDraft();
-      loadSlideIntoEditForm(idx);
+      loadSlideIntoEditForm(idx, false);
     });
 
     tabsContainer.appendChild(card);
+    editThumbnailObserver.observe(card.querySelector(".edit-thumb-preview"));
 
     // Bu slayt ile bir sonraki slayt arasına (idx + 1) ekleme çubuğu
     tabsContainer.appendChild(createInsertBetweenBar(idx + 1, total));
@@ -1827,6 +1839,14 @@ function commitCurrentSlideFormToDraft() {
   if (!editingLectureDraft || !editingLectureDraft.slides[editingSlideIndex]) return;
   const slide = editingLectureDraft.slides[editingSlideIndex];
   const snap = editingSlideInitialSnapshot || extractSlideEditableFields(slide);
+  const unchangedFields = [
+    ["edit-slide-kicker", snap.kicker], ["edit-slide-title", snap.title],
+    ["edit-slide-viewmode", snap.viewMode], ["edit-slide-simtype", snap.simType],
+    ["edit-slide-lead", snap.lead], ["edit-slide-bullets", snap.bulletsText],
+    ["edit-slide-formula", snap.formula], ["edit-slide-formula-sub", snap.formulaSub]
+  ].every(([id, value]) => document.getElementById(id).value === value);
+  // An untouched slide must keep its original HTML, media and optional fields verbatim.
+  if (unchangedFields && !editingSlideRawHtmlTouched && !slide._imageChanged) return;
 
   const weekVal = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
   const kicker = document.getElementById("edit-slide-kicker").value.trim() || `${weekVal.toUpperCase()} • BÖLÜM ${editingSlideIndex + 1}`;
@@ -1979,7 +1999,7 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
   const targetLec = LECTURES.find((l) => l.id === lecId);
   if (!targetLec) return;
 
-  editingLectureDraft = JSON.parse(JSON.stringify(targetLec));
+  editingLectureDraft = structuredClone(targetLec);
   if (!Array.isArray(editingLectureDraft.slides) || editingLectureDraft.slides.length === 0) {
     editingLectureDraft.slides = [
       {
@@ -2009,6 +2029,7 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
 }
 
 function closeEditLectureModal() {
+  editThumbnailObserver?.disconnect();
   if (editLectureBackdrop) {
     editLectureBackdrop.classList.add("hidden");
   }
@@ -2226,6 +2247,7 @@ document.getElementById("inp-edit-pptx-file").addEventListener("change", async (
     } else {
       statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> indirme dosyası olarak tanımlandı.`;
     }
+    document.querySelector(".edit-live-preview-wrap").scrollIntoView({ block: "nearest" });
   } catch (err) {
     statusEl.textContent = "Hata: " + err.message;
   }
@@ -2302,9 +2324,22 @@ function drawDraftingGrid(ctx, w, h) {
   }
 }
 
-function initSimulations() {
+function stopSimulations() {
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   if (tensileAutoTimer) clearInterval(tensileAutoTimer);
+  animationFrameId = null;
+  tensileAutoTimer = null;
+}
+
+/** Skips drawing hidden and offscreen canvases without changing simulation data. */
+function isSimulationVisible(canvas) {
+  if (!canvas || document.hidden || !currentLecture || !canvas.getClientRects().length) return false;
+  const bounds = canvas.getBoundingClientRect();
+  return bounds.bottom > 0 && bounds.top < innerHeight && bounds.right > 0 && bounds.left < innerWidth;
+}
+
+function initSimulations() {
+  stopSimulations();
 
   setupGearSim();
   setupBeamSim();
@@ -2316,7 +2351,7 @@ function initSimulations() {
     stepCrankAnimation();
     animationFrameId = requestAnimationFrame(animateLoop);
   }
-  animateLoop();
+  if (document.getElementById("gear-canvas") || document.getElementById("crank-canvas")) animateLoop();
 }
 
 function setupGearSim() {
@@ -2409,7 +2444,7 @@ function drawGear(ctx, cx, cy, teeth, modulePitch, angle, fillColor, strokeColor
 
 function stepGearAnimation() {
   const canvas = document.getElementById("gear-canvas");
-  if (!canvas) return;
+  if (!isSimulationVisible(canvas)) return;
   const ctx = canvas.getContext("2d");
 
   const n1 = parseInt(document.getElementById("inp-n1").value, 10);
@@ -2708,6 +2743,7 @@ function setupTensileSim() {
       inpStrain.value = 0;
       btnPlay.textContent = "Durdur";
       tensileAutoTimer = setInterval(() => {
+        if (!isSimulationVisible(canvas)) return;
         let v = parseFloat(inpStrain.value) + 0.25;
         if (v > 25) {
           clearInterval(tensileAutoTimer);
@@ -2745,7 +2781,7 @@ function setupCrankSim() {
 
 function stepCrankAnimation() {
   const canvas = document.getElementById("crank-canvas");
-  if (!canvas) return;
+  if (!isSimulationVisible(canvas)) return;
   const ctx = canvas.getContext("2d");
 
   const rpm = parseFloat(document.getElementById("inp-crank-rpm").value);
@@ -2971,6 +3007,18 @@ window.addEventListener("resize", () => {
 
 /** Opens existing notes first; shared content never silently replaces unsynced notes. */
 async function initializeLectures() {
+  FirebaseStudents.initialize(state => {
+    activeStudentNo = state.profile ? state.profile.no || state.profile.email : null;
+    if (state.isAdmin) {
+      isAdminAuthenticated = true;
+      firebaseAdminSession = true;
+    } else if (firebaseAdminSession) {
+      isAdminAuthenticated = false;
+      firebaseAdminSession = false;
+    }
+    renderCatalog();
+    renderRosterAdminList();
+  });
   const stored = await LectureStorage.load();
   if (Array.isArray(stored)) {
     LECTURES.length = 0;

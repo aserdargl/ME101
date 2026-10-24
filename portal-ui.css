@@ -1,4 +1,7 @@
 /* Explicit action colors distinguish controls from editable fields. */
+.firebase-auth-actions, .roster-sync-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+.roster-sync-bar { justify-content: space-between; font-size: 12px; }
+.roster-item-email { font-size: 11px; overflow-wrap: anywhere; }
 .btn, .tool-btn, .btn-insert-here, .btn-edit-lecture,
 .btn-delete-lecture, .btn-clear-rating, .btn-slide-mode-switch {
   cursor: pointer;
@@ -7,11 +10,16 @@
   transition: background-color .15s, box-shadow .15s, transform .15s;
 }
 .btn-primary, .tool-btn-primary { background: #75513b; border-color: #75513b; color: #fff; }
+.tool-btn-primary:hover { background: #5e402e; color: #fff; }
+.tool-btn:not(.tool-btn-primary):not(.tool-btn-danger):not(.active) { background: #e0eaf2; border-color: #a7bfd3; color: #204e70; }
+.tool-btn-danger:hover { background: #94352e; color: #fff; }
 .btn-secondary, .btn-student-login { background: #225c83; border-color: #225c83; color: #fff; }
 .btn-secondary:hover:not(:disabled), .btn-student-login:hover:not(:disabled) { background: #174461; border-color: #174461; color: #fff; }
 .btn-outline, .btn-admin-lock, .btn-edit-lecture, .btn-slide-mode-switch {
   background: #e0eaf2; border: 1px solid #a7bfd3; color: #204e70;
 }
+.btn-outline:hover { background: #cbdfea; color: #173e59; }
+.btn-primary:focus-visible, .btn-secondary:focus-visible { outline-color: #225c83; }
 .btn-outline:hover:not(:disabled), .btn-admin-lock:hover:not(:disabled),
 .btn-edit-lecture:hover, .btn-slide-mode-switch:hover { background: #cbdfea; border-color: #739ab7; color: #173e59; }
 .btn-delete-lecture, .btn-clear-rating, #btn-delete-edit-slide,
@@ -37,10 +45,10 @@
 .language-button {
   display: inline-flex; align-items: center; gap: 5px; min-height: 36px;
   padding: 5px 7px; border: 1px solid transparent; border-radius: 7px;
-  background: transparent; color: #65717d; font-size: 10px; font-weight: 700; cursor: pointer;
+  background: #e0eaf2; border-color: #8aabc4; color: #204e70; font-size: 10px; font-weight: 700; cursor: pointer;
 }
 .language-button svg { width: 27px; height: 18px; border-radius: 2px; box-shadow: 0 0 0 1px #00000012; }
-.language-button[aria-pressed="true"] { background: #e0eaf2; border-color: #8aabc4; color: #204e70; }
+.language-button svg[hidden] { display: none; }
 .language-button:hover { background: #edf2f6; }
 @media (max-width: 700px) {
   .navbar { position: relative; }
@@ -51,4 +59,17 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .btn, .tool-btn, .language-button { transition: none; }
+}
+
+.import-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.import-fields { min-width: 0; }
+.import-preview { position: sticky; top: 0; min-width: 0; border: 1px solid #cbd1d8; border-radius: 8px; overflow: hidden; background: #fff; }
+.import-preview .edit-live-preview-stage { min-height: 220px; padding: 12px; background: #e9edf1; }
+.import-preview-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px; font-size: 11px; color: #46505b; }
+.import-preview-controls [role="status"] { text-align: center; overflow-wrap: anywhere; }
+.course-editor .edit-thumb-preview { min-height: 90px; }
+.course-editor .edit-thumb-card { content-visibility: auto; contain-intrinsic-size: auto 180px; }
+@media (max-width: 700px) {
+  .import-workspace { grid-template-columns: minmax(0, 1fr); }
+  .import-preview { position: static; }
 }

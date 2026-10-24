@@ -10,6 +10,20 @@ https://aserdargl.github.io/ME101/
 
 Ortak ders kaydı `data/manifest.json` ve `data/snapshots/` altında tutulur. Yayın tek Git commit'iyle yapılır; mevcut site dosyaları ve eski kayıtlar korunur. Çakışan notlar silinmez; yerel sürüm ayrı ders olarak korunur. Öğrenci listeleri, parolalar ve kişisel oturum bilgileri ortak ders verisine eklenmez.
 
+## Gizli öğrenci listesi ve Firebase girişi
+
+Site ve ders dosyaları GitHub Pages'te kalır. Öğrenci kayıtları yalnızca `lecturenotes-b97ad` Firebase projesinin Firestore veritabanındaki `students/{küçük-harf-e-posta}` belgelerinde tutulur; GitHub ders yayımlama akışına eklenmez. Parolaları Firebase Authentication yönetir.
+
+- Authentication içinde **Email/Password** etkin, şifresiz e-posta bağlantısı kapalı olmalıdır. Yetkili alan adlarına `aserdargl.github.io` eklenir.
+- Firestore için `firestore.rules` yayımlanır. Listeyi yalnızca yetkili yönetici okuyup değiştirebilir. E-postasını doğrulamış öğrenci sadece kendi belgesini okuyabilir.
+- İlk yönetici, Authentication'da kendi e-posta/parola hesabını oluşturup e-postasını doğrular. Proje sahibi Firebase konsolundan `admins/{Firebase-kullanıcı-UID}` belgesini oluşturur. İstemci bu yetkiyi kendisine veremez.
+- Öğrenci Listesi ekranında Firebase yönetici hesabıyla giriş yapın. CSV/TXT veya metin biçimi: `e-posta;öğrenci numarası;ad soyad`. **Listeye Ekle / Güncelle** diğer kayıtları korur. **Listeyi Sıfırla ve Yeniden Tanımla** yalnızca yeni listedekileri bırakır. Bir kaydı kaldırmak o öğrencinin uygulamadaki giriş iznini kaldırır; açık oturumlar da ortak kayıttaki değişikliği izler.
+- Eski yerel öğrenci listeleri ve oylar silinmez. **Listeyi Kopyala** yerel listeyi kurtarmak için de kullanılabilir; kişisel listeyi kaynak koda veya GitHub'a yapıştırmayın. E-posta bulunmayan eski kayıtlara e-posta eklemek gerekir.
+- Öğrenci **Hesap Oluştur** ile kaydolur, doğrulama e-postasını açar ve sonra giriş yapar. Hesap oluşturmak tek başına ders izni vermez; etkin liste kaydı da gereklidir.
+- GitHub'da yayımlanan ders dosyaları genel erişime açıktır. Firebase erişim kuralları öğrenci listesini korur; GitHub'daki dosya adreslerini özel dosyalara dönüştürmez.
+
+`npm test` uygulama testlerini; `npm run test:firebase` Java 21+ ile ayrı `demo-lecturenotes` emülatöründe izin kurallarını çalıştırır. Canlı projede sentetik öğrenci oluşturulmaz. Dağıtım için yalnızca Firestore kuralları kullanılır; Firebase Hosting yapılandırılmaz. `firebase-config.js` yalnızca herkese açık uygulama tanımlayıcılarını içerir; servis hesabı anahtarı eklemeyin.
+
 ## PPTX görsellerini onarma
 
 Dersi düzenlerken özgün PPTX'i seçip **Görselleri Onar · Notları Koru** seçeneğini kullanın. Slaytlar kaynak dosya yolu veya benzersiz başlıkla eşleştirilir; güvenle eşleşmeyen slaytlar değiştirilmez. Desteklenen tüm gömülü resimler alınır. Yeni dosyalar kalıcı veri adresleriyle saklanır; geçici `blob:` adresleri kaydedilmez.

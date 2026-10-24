@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function verified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function admin() {
+      return verified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    match /admins/{uid} {
+      allow get: if verified() && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+    match /students/{email} {
+      allow get: if admin() || (verified() && request.auth.token.email.lower() == email);
+      allow list: if admin();
+      allow create, update: if admin()
+        && request.resource.data.keys().hasOnly(['email', 'no', 'name', 'enabled'])
+        && request.resource.data.keys().hasAll(['email', 'no', 'name', 'enabled'])
+        && request.resource.data.email == email
+        && email == email.lower()
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254
+        && request.resource.data.no is string && request.resource.data.no.size() <= 80
+        && request.resource.data.name is string && request.resource.data.name.size() <= 200
+        && request.resource.data.enabled is bool;
+      allow delete: if admin();
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

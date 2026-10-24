@@ -4,7 +4,7 @@
   const originals = new WeakMap();
   const attributes = ["title", "placeholder", "aria-label"];
   const protectedContent = [
-    "script", "style", "[contenteditable]", "[data-language]",
+    "script", "style", "[contenteditable]", "[data-language-toggle]",
     ".slide-kicker", ".slide > h2",
     ".slide-body-web", ".slide-body-ppt", ".edit-thumb-preview", ".edit-thumb-title",
     ".edit-live-preview-stage",
@@ -81,8 +81,14 @@
     // The title is interface metadata, separate from all stored lesson titles.
     const title = "MEE 101 — Makine Mühendisliğine Giriş | Ders Portalı";
     document.title = language === "en" ? english(title) : title;
-    document.querySelectorAll("[data-language]").forEach(button => {
-      button.setAttribute("aria-pressed", String(button.dataset.language === language));
+    document.querySelectorAll("[data-language-toggle]").forEach(button => {
+      button.querySelector("span").textContent = language.toUpperCase();
+      const action = language === "en" ? "Switch to Turkish" : "İngilizceye geç";
+      button.setAttribute("aria-label", action);
+      button.title = action;
+      button.querySelectorAll("[data-language-flag]").forEach(flag => {
+        flag.toggleAttribute("hidden", flag.dataset.languageFlag !== language);
+      });
     });
   }
 
@@ -92,10 +98,15 @@
       if (record.type === "childList") record.addedNodes.forEach(node => pending.add(node));
       else pending.add(record.target);
     }
-    pending.forEach(translateNode);
+    pending.forEach(node => {
+      // An added parent already covers its descendants in this mutation batch.
+      let parent = node.parentNode;
+      while (parent && !pending.has(parent)) parent = parent.parentNode;
+      if (!parent) translateNode(node);
+    });
   });
-  document.querySelectorAll("[data-language]").forEach(button => {
-    button.addEventListener("click", () => setLanguage(button.dataset.language));
+  document.querySelectorAll("[data-language-toggle]").forEach(button => {
+    button.addEventListener("click", () => setLanguage(language === "en" ? "tr" : "en"));
   });
   setLanguage("en");
   observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: attributes });
