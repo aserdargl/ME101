@@ -1,0 +1,91 @@
+/** Localizes rendered interface nodes without touching course models or form values. */
+(function () {
+  const translations = window.PORTAL_ENGLISH;
+  const originals = new WeakMap();
+  const attributes = ["title", "placeholder", "aria-label"];
+  const protectedContent = [
+    "script", "style", "[contenteditable]", "[data-language]",
+    ".lecture-title-wrap", ".lecture-desc-wrap", ".slide-kicker", ".slide > h2",
+    ".slide-body-web", ".slide-body-ppt", ".edit-thumb-preview", ".edit-thumb-title",
+    ".edit-live-preview-stage", "#nav-current-lecture-title", "#pres-lecture-name",
+    ".roster-item"
+  ].join(",");
+  let language = "en";
+
+  function english(text) {
+    if (Object.hasOwn(translations, text)) return translations[text];
+    const patterns = [
+      [/^1 Slayt$/, "1 Slide"], [/^(\d+) Slayt$/, "$1 Slides"], [/^(\d+)\. Slayt$/, "Slide $1"],
+      [/^Slayt (\d+) \/ (\d+)$/, "Slide $1 / $2"],
+      [/^Adım (\d+)\/(\d+)$/, "Step $1/$2"],
+      [/^Seçili: Slayt (\d+) \/ (\d+)$/, "Selected: Slide $1 / $2"],
+      [/^(.+) — Dersi ve Slaytları Düzenle$/, "$1 — Edit Lesson and Slides"],
+      [/^(\d+) ders gösteriliyor\.$/, "$1 lessons shown."],
+      [/^(\d+) Yıldız Ver$/, "Rate $1 Stars"],
+      [/^\+ (\d+) ile (\d+) Arasına:$/, "+ Insert Between $1 and $2:"],
+      [/^Simülasyon \((.+)\)$/, "Simulation ($1)"],
+      [/^Teknik Simülasyon Slaytı \((.+)\)$/, "Technical Simulation Slide ($1)"],
+      [/^(\d+) oy$/, "$1 votes"],
+      [/^\((\d+) oy( • Sizin: (\d+)★)?\)$/, (_, count, vote, score) => `(${count} votes${vote ? ` • Yours: ${score}★` : ""})`]
+    ];
+    for (const [pattern, replacement] of patterns) {
+      if (pattern.test(text)) return text.replace(pattern, replacement);
+    }
+    return text;
+  }
+
+  function localize(owner, key, current, write) {
+    const records = originals.get(owner) || {};
+    let record = records[key];
+    if (!record || current !== record.rendered) record = { source: current };
+    const trimmed = record.source.trim();
+    const translated = language === "en" ? english(trimmed) : trimmed;
+    record.rendered = record.source.replace(trimmed, () => translated);
+    records[key] = record;
+    originals.set(owner, records);
+    if (current !== record.rendered) write(record.rendered);
+  }
+
+  function translateNode(node) {
+    const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (!element || element.closest(protectedContent)) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (node.textContent.trim()) localize(node, "text", node.textContent, value => { node.textContent = value; });
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    for (const name of attributes) {
+      if (node.hasAttribute(name)) localize(node, name, node.getAttribute(name), value => node.setAttribute(name, value));
+    }
+    if (node.tagName === "TEXTAREA") return;
+    for (const child of node.childNodes) translateNode(child);
+  }
+
+  /** Changes the display language; no persistence or lecture-writing APIs are used. */
+  function setLanguage(next) {
+    language = next === "tr" ? "tr" : "en";
+    document.documentElement.lang = language;
+    translateNode(document.body);
+    // The title is interface metadata, separate from all stored lesson titles.
+    const title = "MEE 101 — Makine Mühendisliğine Giriş | Ders Portalı";
+    document.title = language === "en" ? english(title) : title;
+    document.querySelectorAll("[data-language]").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.language === language));
+    });
+  }
+
+  const observer = new MutationObserver(records => {
+    const pending = new Set();
+    for (const record of records) {
+      if (record.type === "childList") record.addedNodes.forEach(node => pending.add(node));
+      else pending.add(record.target);
+    }
+    pending.forEach(translateNode);
+  });
+  document.querySelectorAll("[data-language]").forEach(button => {
+    button.addEventListener("click", () => setLanguage(button.dataset.language));
+  });
+  setLanguage("en");
+  observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: attributes });
+  window.PortalLanguage = { setLanguage, text: text => language === "en" ? english(text) : text };
+})();
