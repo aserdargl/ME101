@@ -177,6 +177,10 @@ body:has(> .course-editor:not(.hidden)) { overflow: hidden; }
 .course-editor .registered-roster-box { grid-column: 1 / -1; max-height: none; }
 .course-editor .registered-roster-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 10px; border-bottom: 1px solid #dfe4e9; }
 .course-editor .registered-roster-toolbar [role="status"] { font-size: 11px; color: #506172; }
+.course-editor #inp-roster-search { flex: 1 1 220px; min-width: 0; }
+.course-editor #inp-roster-search, .course-editor #sel-roster-sort { padding: 6px 8px; border: 1px solid #cbd5df; border-radius: 4px; background: white; color: inherit; font: inherit; font-size: 12px; }
+.course-editor #sel-roster-sort { max-width: 100%; }
+.course-editor #roster-visible-count { font-size: 11px; color: #506172; white-space: nowrap; }
 .course-editor .registered-roster-box .roster-items-container { display: block; padding: 0; max-height: 350px; overflow: auto; }
 .course-editor .registered-roster-table { width: 100%; min-width: 590px; border-collapse: collapse; font-size: 12px; text-align: left; }
 .course-editor .registered-roster-table th { position: sticky; top: 0; z-index: 1; background: #edf1f5; white-space: nowrap; }

@@ -1,14 +1,36 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { displayColumns, RegisteredRoster } = require("../registered-roster.js");
+const { displayColumns, RegisteredRoster, visibleStudents } = require("../registered-roster.js");
 const { FirebaseStudentService } = require("../firebase-student-service.js");
+
+test("roster search handles Turkish characters, multiple words, IDs and legacy email without mutations", () => {
+  const students = [{ no: "00123", name: "Ahmet Serdar Güldibi" }, { no: "2", firstName: "Işıl", surname: "Öztürk Kaya" }, { email: "old@example.test", name: "Ayşe" }];
+  const before = JSON.stringify(students);
+  for (const query of ["serdar guldibi", "00123", "GÜLDİBİ ahmet"]) assert.deepEqual(visibleStudents(students, query), [students[0]]);
+  assert.deepEqual(visibleStudents(students, "ISIL ozturk"), [students[1]]);
+  assert.deepEqual(visibleStudents(students, "old@"), [students[2]]);
+  assert.deepEqual(visibleStudents(students, "missing"), []);
+  assert.deepEqual(visibleStudents(students, "   "), students);
+  assert.equal(JSON.stringify(students), before);
+});
+
+test("all sort directions respect numeric IDs, Turkish names and explicit compound surnames", () => {
+  const students = [{ no: "010", firstName: "Zeynep", surname: "Ak Kaya" }, { no: "002", name: "Çağla Öztürk" }, { no: "1", name: "Cem Şen" }];
+  const before = JSON.stringify(students);
+  for (const [order, expected] of [["0:asc", [2, 1, 0]], ["1:asc", [2, 1, 0]], ["2:asc", [0, 1, 2]]]) {
+    assert.deepEqual(visibleStudents(students, "", order), expected.map(index => students[index]));
+    assert.deepEqual(visibleStudents(students, "", order.replace("asc", "desc")), expected.toReversed().map(index => students[index]));
+  }
+  assert.deepEqual(visibleStudents(students, "kaya", "1:asc"), [students[0]]);
+  assert.equal(JSON.stringify(students), before);
+});
 
 test("display and column copy preserve leading zeroes, Turkish names and blank legacy cells", async () => {
   const students = [{ no: "00123", name: "Ahmet Serdar Güldibi" }, { email: "legacy@example.test", name: "Ayşe" }];
   const original = JSON.stringify(students);
   assert.deepEqual(displayColumns(students[0]), ["00123", "Ahmet Serdar", "Güldibi"]);
   const copied = [];
-  const view = { students: () => students, clipboard: { writeText: async value => copied.push(value) }, feedback: {}, text: value => value };
+  const view = { visibleStudents: () => students, clipboard: { writeText: async value => copied.push(value) }, feedback: {}, text: value => value };
   for (let column = 0; column < 3; column++) await RegisteredRoster.prototype.copy.call(view, column);
   assert.deepEqual(copied, ["00123\n", "Ahmet Serdar\nAyşe", "Güldibi\n"]);
   assert.equal(JSON.stringify(students), original);

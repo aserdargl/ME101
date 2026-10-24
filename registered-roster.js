@@ -1,6 +1,20 @@
 (function (root) {
   const COLUMNS = ["Numara", "İsim", "Soyisim"];
   const keyOf = student => student.email || student.no;
+  const normalizeSearch = value => String(value || "").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ı/g, "i");
+  const collator = new Intl.Collator("tr", { numeric: true, sensitivity: "base" });
+
+  /** Filters and sorts a copy; private records and their stored order stay intact. */
+  function visibleStudents(students, query = "", order = "") {
+    const terms = normalizeSearch(query).trim().split(/\s+/).filter(Boolean);
+    const visible = students.filter(student => {
+      const searchable = normalizeSearch([...displayColumns(student), student.email].join(" "));
+      return terms.every(term => searchable.includes(term));
+    });
+    if (!order) return visible;
+    const [column, direction] = order.split(":");
+    return visible.sort((a, b) => collator.compare(displayColumns(a)[Number(column)], displayColumns(b)[Number(column)]) * (direction === "desc" ? -1 : 1));
+  }
 
   /** Splits legacy full names for display only; stored names remain unchanged. */
   function displayColumns(student) {
@@ -17,6 +31,10 @@
       this.selected = new Set();
       this.drafts = new Map();
       this.busy = false;
+      this.search = document.getElementById("inp-roster-search");
+      this.sort = document.getElementById("sel-roster-sort");
+      this.search.addEventListener("input", () => this.render());
+      this.sort.addEventListener("change", () => this.render());
       this.container = document.getElementById("roster-items-container");
       this.feedback = document.getElementById("roster-list-feedback");
       this.feedback.textContent = this.text("Hücreleri düzenleyip satırdaki Kaydet düğmesine basınız.");
@@ -42,22 +60,28 @@
 
     render() {
       const students = this.students();
+      const visible = this.visibleStudents();
       const current = new Set(students.map(keyOf));
       this.selected = new Set([...this.selected].filter(key => current.has(key)));
       this.drafts.forEach((_, key) => { if (!current.has(key)) this.drafts.delete(key); });
       this.document.getElementById("roster-count-badge").textContent = String(students.length);
+      this.document.getElementById("roster-visible-count").textContent = `${visible.length} / ${students.length}`;
       this.container.replaceChildren();
       const table = this.element("table", "", "registered-roster-table");
       table.setAttribute("aria-label", this.text("Kayıtlı Öğrenciler"));
-      table.append(this.header(students));
+      table.append(this.header(visible));
       const body = this.element("tbody");
-      students.forEach(student => body.append(this.row(student)));
-      if (!students.length) {
-        const cell = this.element("td", this.text("Henüz kayıtlı öğrenci bulunmuyor."));
+      visible.forEach(student => body.append(this.row(student)));
+      if (!visible.length) {
+        const cell = this.element("td", this.text(students.length ? "Aramanızla eşleşen öğrenci bulunamadı." : "Henüz kayıtlı öğrenci bulunmuyor."));
         cell.colSpan = 5;
         const row = this.element("tr"); row.append(cell); body.append(row);
       }
       table.append(body); this.container.append(table); this.updateSelection();
+    }
+
+    visibleStudents() {
+      return visibleStudents(this.students(), this.search.value, this.sort.value);
     }
 
     checkbox(label, checked, action) {
@@ -69,8 +93,10 @@
 
     header(students) {
       const head = this.element("thead"), row = this.element("tr"), select = this.element("th");
-      this.selectAll = this.checkbox("Tüm öğrencileri seç", false, () => {
-        this.selected = new Set(this.selectAll.checked ? students.map(keyOf) : []);
+      this.selectAll = this.checkbox("Görünen öğrencileri seç", false, () => {
+        students.forEach(student => {
+          if (this.selectAll.checked) this.selected.add(keyOf(student)); else this.selected.delete(keyOf(student));
+        });
         this.render();
       });
       select.append(this.selectAll); row.append(select);
@@ -145,9 +171,11 @@
 
     updateSelection() {
       const count = this.students().length;
-      this.selectAll.checked = count > 0 && this.selected.size === count;
-      this.selectAll.indeterminate = this.selected.size > 0 && this.selected.size < count;
-      this.selectAll.disabled = this.busy || !count;
+      const visible = this.visibleStudents();
+      const selectedCount = visible.filter(student => this.selected.has(keyOf(student))).length;
+      this.selectAll.checked = visible.length > 0 && selectedCount === visible.length;
+      this.selectAll.indeterminate = selectedCount > 0 && selectedCount < visible.length;
+      this.selectAll.disabled = this.busy || !visible.length;
       this.document.getElementById("btn-roster-delete-selected").disabled = this.busy || !this.selected.size;
       this.document.getElementById("btn-roster-delete-all").disabled = this.busy || !count;
       this.document.getElementById("roster-selected-count").textContent = String(this.selected.size);
@@ -156,7 +184,7 @@
     /** Copies exactly one displayed column, retaining blank cells and leading zeroes. */
     async copy(column) {
       try {
-        await this.clipboard.writeText(this.students().map(student => (this.drafts?.get(keyOf(student))?.values || displayColumns(student))[column]).join("\n"));
+        await this.clipboard.writeText(this.visibleStudents().map(student => (this.drafts?.get(keyOf(student))?.values || displayColumns(student))[column]).join("\n"));
         this.feedback.textContent = this.text("Sütun kopyalandı.");
       } catch { this.feedback.textContent = this.text("Kopyalanamadı. Sütundaki metni seçip kopyalayınız."); }
     }
@@ -183,5 +211,5 @@
   }
 
   root.RegisteredRoster = RegisteredRoster;
-  if (typeof module !== "undefined") module.exports = { RegisteredRoster, displayColumns };
+  if (typeof module !== "undefined") module.exports = { RegisteredRoster, displayColumns, visibleStudents };
 })(typeof window !== "undefined" ? window : globalThis);

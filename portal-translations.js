@@ -1,5 +1,18 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Öğrenci ara: numara, isim, soyisim": "Search students: ID, first name, surname",
+  "Öğrenci ara": "Search students",
+  "Öğrencileri sırala": "Sort students",
+  "Mevcut sıra": "Original order",
+  "Numara · Artan": "ID · Ascending",
+  "Numara · Azalan": "ID · Descending",
+  "İsim · A–Z": "First name · A–Z",
+  "İsim · Z–A": "First name · Z–A",
+  "Soyisim · A–Z": "Surname · A–Z",
+  "Soyisim · Z–A": "Surname · Z–A",
+  "Görünen / toplam öğrenci": "Visible / total students",
+  "Görünen öğrencileri seç": "Select visible students",
+  "Aramanızla eşleşen öğrenci bulunamadı.": "No students match your search.",
   "Hücreleri düzenleyip satırdaki Kaydet düğmesine basınız.": "Edit the cells, then press Save on that row.",
   "Kaydet": "Save",
   "Kaydediliyor…": "Saving…",
