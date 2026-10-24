@@ -6,14 +6,19 @@ const path = require("node:path");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const { fakeGitHub } = require("./github-fixture.cjs");
 const root = path.resolve(__dirname, "..");
-const modules = ["lecture-document.js", "lecture-storage.js", "github-repository.js", "lecture-publishing.js"];
+const modules = ["lecture-document.js", "lecture-storage.js", "github-repository.js", "lecture-publishing.js", "instructor-login.js"];
 const html = '<div id="cloud-status"><span id="cloud-status-text"></span></div><button id="btn-cloud-publish"></button>'
   + modules.map(name => `<script src="/${name}"></script>`).join("");
 
 async function main() {
   const github = fakeGitHub();
+  let interruptUploads = false, acknowledged = 0;
   const server = http.createServer((request, response) => {
-    const name = request.url.slice(1);
+    const name = new URL(request.url, "http://localhost").pathname.slice(1);
+    if (name === "full" || name === "portal-startup.js" || name.endsWith(".css")) {
+      response.setHeader("Content-Type", name.endsWith(".js") ? "text/javascript" : name.endsWith(".css") ? "text/css" : "text/html");
+      return response.end(fs.readFileSync(path.join(root, name === "full" ? "index.html" : name)));
+    }
     response.setHeader("Content-Type", modules.includes(name) ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8");
     response.end(modules.includes(name) ? fs.readFileSync(path.join(root, name)) : html);
   });
@@ -27,6 +32,11 @@ async function main() {
     await page.route("**/*", async route => {
       const request = route.request(), url = new URL(request.url());
       if (url.hostname === "api.github.com" || url.pathname.startsWith("/data/")) {
+        if (interruptUploads && url.pathname.endsWith("/git/blobs")) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+          if (acknowledged >= 2) return route.abort("failed");
+          acknowledged += 1;
+        }
         const target = url.pathname.startsWith("/data/") ? `https://aserdargl.github.io/ME101${url.pathname}` : url.href;
         const response = await github.fetch(target, { method: request.method(), body: request.postData(), headers: request.headers() });
         return route.fulfill({ status: response.status, body: await response.text(), headers: { "Access-Control-Allow-Origin": origin, "Content-Type": "application/json" } });
@@ -43,7 +53,9 @@ async function main() {
       localStorage.setItem("mee101_preferred_view_mode_v1", "ppt");
       await LectureStorage.save(notes);
       await LecturePublishing.initialize({ hasLocalData: true, getLectures: () => notes, applyLectures: value => { window.notes = value; } });
-      await LecturePublishing.login("isolated-test-key");
+      window.students = { isAdmin: true, signInInstructor: async () => ({ ok: true }), signOut: async () => { students.isAdmin = false; } };
+      window.instructor = new InstructorSession({ publishing: LecturePublishing, students });
+      await instructor.login({ token: "isolated-test-key", firebaseToken: "synthetic-firebase-once" });
       return { originalSize: JSON.stringify(notes).length, temporary };
     });
     const failure = await page.evaluate(async () => {
@@ -78,14 +90,84 @@ async function main() {
     const restored = await page.evaluate(async () => {
       window.notes = await LectureStorage.load();
       await LecturePublishing.initialize({ hasLocalData: true, getLectures: () => notes, applyLectures: value => { window.notes = value; } });
-      return { count: notes[0].slides.length, title: notes[0].title, preference: localStorage.getItem("mee101_preferred_view_mode_v1"), status: document.getElementById("cloud-status-text").textContent };
+      const status = document.getElementById("cloud-status-text").textContent;
+      window.students = { isAdmin: true, signOut: async () => {} };
+      window.instructor = new InstructorSession({ publishing: LecturePublishing, students });
+      const session = await instructor.restore();
+      return { count: notes[0].slides.length, title: notes[0].title, preference: localStorage.getItem("mee101_preferred_view_mode_v1"), status, signedIn: session.ok && LecturePublishing.isAuthenticated() };
     });
     assert.equal(restored.count, 24);
     assert.equal(restored.title, "Özgün ders");
     assert.equal(restored.preference, "ppt");
     assert.ok(restored.status.includes("GitHub ortak ders kaydı"));
+    assert.equal(restored.signedIn, true);
+    interruptUploads = true;
+    await page.evaluate(() => {
+      notes.push({ id: "qa-resume", title: "Büyük örnek ders", slides: Array.from({ length: 56 }, (_, index) => ({ title: `Not ${index}`, image: "A".repeat(256 * 1024) + index })) });
+    });
+    await page.click("#btn-cloud-publish");
+    await page.waitForFunction(() => document.getElementById("cloud-status-text").textContent.includes("tamamlanan parçalar kullanılacak"));
+    assert.equal(acknowledged, 2);
+    const checkpoint = await page.evaluate(() => JSON.parse(sessionStorage.getItem("mee101_github_upload_v1:aserdargl/ME101/main")));
+    assert.equal(Object.keys(checkpoint.uploaded).length, 2);
+    await page.reload();
+    const restoredInterrupted = await page.evaluate(async () => {
+      window.notes = await LectureStorage.load();
+      await LecturePublishing.initialize({ hasLocalData: true, getLectures: () => notes, applyLectures: value => { window.notes = value; } });
+      window.students = { isAdmin: true, signOut: async () => {} };
+      window.instructor = new InstructorSession({ publishing: LecturePublishing, students });
+      return { restored: (await instructor.restore()).ok, slides: notes.find(lecture => lecture.id === "qa-resume").slides.length };
+    });
+    assert.deepEqual(restoredInterrupted, { restored: true, slides: 56 });
+    const requestsBeforeResume = github.state.requests.filter(request => request.path === "/git/blobs").length;
+    interruptUploads = false;
+    await page.click("#btn-cloud-publish");
+    await page.waitForFunction(() => document.getElementById("cloud-status-text").textContent.startsWith("GitHub’a kaydedildi"));
+    const manifest = await page.evaluate(async () => (await new GitHubLectureRepository({ owner: "aserdargl", repository: "ME101" }).readPublished()).manifest);
+    const resumedRequests = github.state.requests.filter(request => request.path === "/git/blobs").length - requestsBeforeResume;
+    assert.equal(resumedRequests, manifest.parts - 2 + 1, "reload must upload only unfinished parts and the manifest");
+    await page.evaluate(() => instructor.logout());
+    assert.equal(await page.evaluate(() => sessionStorage.getItem("mee101_instructor_tab_session_v1")), null);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ originalBytes: first.originalSize, uploadedBytes: uploaded, ...result, failurePreserved: failure.preserved, reloadPreserved: true }));
+    const full = await browser.newPage();
+    await full.route("**/*", async route => {
+      const url = new URL(route.request().url());
+      if (url.pathname.endsWith("firebase-config.js")) return route.fulfill({ contentType: "text/javascript", body: "window.MEE101_FIREBASE_CONFIG={synthetic:true};" });
+      if (url.pathname.startsWith("/data/")) return route.fulfill({ status: 404, body: "" });
+      if (url.hostname === "api.github.com") {
+        const response = await github.fetch(url.href, { method: route.request().method(), body: route.request().postData(), headers: route.request().headers() });
+        return route.fulfill({ status: response.status, body: await response.text(), headers: { "Access-Control-Allow-Origin": origin, "Content-Type": "application/json" } });
+      }
+      return url.origin === origin ? route.continue() : route.abort();
+    });
+    await full.addInitScript(() => {
+      if (!sessionStorage.getItem("qa-login-seeded")) {
+        sessionStorage.setItem("qa-login-seeded", "true");
+        sessionStorage.setItem("mee101_instructor_tab_session_v1", JSON.stringify({ token: "isolated-test-key", expiresAt: Date.now() + 60000 }));
+      }
+      Object.defineProperty(window, "createFirebaseStudentAdapter", {
+        get: () => async () => {
+          let notify;
+          const user = { uid: "qa-instructor", emailVerified: true };
+          return {
+            start: async callback => { notify = callback; await callback(user); },
+            isAdmin: async () => true, getUser: () => user,
+            watchRoster: next => { queueMicrotask(() => next([])); return () => {}; },
+            watchApplications: next => { queueMicrotask(() => next([])); return () => {}; },
+            signOut: async () => notify(null)
+          };
+        }, set() {}
+      });
+    });
+    await full.goto(`${origin}/full`);
+    await full.waitForFunction(() => LecturePublishing.isAuthenticated() && isAdminAuthenticated);
+    await full.reload();
+    await full.waitForFunction(() => LecturePublishing.isAuthenticated() && isAdminAuthenticated);
+    await full.click("#btn-admin-toggle");
+    await full.waitForFunction(() => !LecturePublishing.isAuthenticated() && !isAdminAuthenticated);
+    assert.equal(await full.evaluate(() => sessionStorage.getItem("mee101_instructor_tab_session_v1")), null);
+    await full.close();
+    console.log(JSON.stringify({ originalBytes: first.originalSize, uploadedBytes: uploaded, ...result, failurePreserved: failure.preserved, reloadPreserved: true, loginRestored: restored.signedIn, reusedParts: 2, resumedRequests }));
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

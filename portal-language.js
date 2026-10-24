@@ -15,6 +15,9 @@
   function english(text) {
     if (Object.hasOwn(translations, text)) return translations[text];
     const patterns = [
+      [/^Aktarım hazırlanıyor · (\d+) parça hazır$/, "Preparing transfer · $1 parts ready"],
+      [/^GitHub’a aktarılıyor · (\d+)\/(\d+) parça · %(\d+)$/, "Transferring to GitHub · $1/$2 parts · $3%"],
+      [/^(.+) · Yerel notlar korunuyor\. Yeniden aktarırken tamamlanan parçalar kullanılacak\.$/, (_, reason) => `${english(reason)} · Local notes are preserved. Retry Transfer to reuse completed parts.`],
       [/^(\d+)\.\s*Hafta$/i, "Week $1"],
       [/^(\d+)\.\s*Hafta:\s*(.+)$/i, (_, week, title) => `Week ${week}: ${english(title)}`],
       [/^1 Slayt$/, "1 Slide"], [/^(\d+) Slayt$/, "$1 Slides"], [/^(\d+)\. Slayt$/, "Slide $1"],

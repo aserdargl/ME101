@@ -5,8 +5,10 @@ https://aserdargl.github.io/ME101/
 ## Ders ve görselleri tüm cihazlarda yayımlama
 
 1. Mevcut notların bulunduğu tarayıcıda sayfayı açın.
-2. **Öğretim Üyesi → GitHub ile Giriş Yap** seçeneğini kullanın. Tek giriş hem ders yayımlamayı hem öğrenci listesi ve başvuru yönetimini açar. Ayrı yönetici parolası veya Firebase girişi gerekmez. Özel **LectureNotes Publisher - aserdargl** uygulaması yalnız `aserdargl/ME101` deposunda içerik okuma/yazma iznine sahiptir. GitHub oturumu sekmenin belleğinde tutulur; sayfa yeniden açıldığında aynı düğmeyle giriş yapılır.
+2. **Öğretim Üyesi → GitHub ile Giriş Yap** seçeneğini kullanın. Tek giriş hem ders yayımlamayı hem öğrenci listesi ve başvuru yönetimini açar. Ayrı yönetici parolası veya Firebase girişi gerekmez. Özel **LectureNotes Publisher - aserdargl** uygulaması yalnız `aserdargl/ME101` deposunda içerik okuma/yazma iznine sahiptir. GitHub oturumu aynı sekmenin sessionStorage alanında en fazla sekiz saat tutulur. Yenilemede hem mevcut Firebase yönetici yetkisi hem GitHub hesabı/yazma yetkisi yeniden doğrulanır; çıkışta oturum silinir. Tek kullanımlık Firebase giriş belirteci saklanmaz.
 3. **Yerel Notları GitHub’a Aktar** düğmesine basın. Sonraki düzenlemeler için **Kaydet** yerel yedeği korur; **GitHub’a Yayımla** tamamladığınız değişiklikleri ortak kayda gönderir. Pages yayını tamamlandığında içerikler diğer cihazlarda da görünür.
+
+Aktarım ilerlemesi parça sayısı ve yüzde olarak gösterilir. Parçalar en fazla üç eşzamanlı istekle gönderilir; tamamlanan parçaların GitHub kimlikleri aynı sekmede saklanır. Yenilemeden sonra Aktar düğmesine tekrar basıldığında aynı içerik için yalnız eksik parçalar gönderilir. Aktarım başlamadan önce yerel yedek kaydedilir.
 
 Ortak ders kaydı `data/manifest.json` ve `data/snapshots/` altında tutulur. Yayın tek Git commit'iyle yapılır; mevcut site dosyaları ve eski kayıtlar korunur. Çakışan notlar silinmez; yerel sürüm ayrı ders olarak korunur. Öğrenci listeleri, parolalar ve kişisel oturum bilgileri ortak ders verisine eklenmez.
 

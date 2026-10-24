@@ -1,19 +1,19 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { parts, decoder } = require("../lecture-document.js");
+const { parts, decoder, partLength } = require("../lecture-document.js");
 
 function roundTrip(document) {
   const reader = decoder();
   let size = 0, count = 0;
   for (const part of parts(document)) {
-    assert.ok(part.length <= 512 * 1024);
+    assert.ok(part.length <= partLength);
     size += part.length; count += 1; reader.add(part);
   }
   return { document: reader.result(), size, count };
 }
 
 test("bounded records preserve Unicode, escaped notes, metadata and repeated images", () => {
-  const media = "data:image/svg+xml," + "A".repeat(32767) + "😀\n\"\\".repeat(80000);
+  const media = "data:image/svg+xml," + "A".repeat(32767) + "😀\n\"\\".repeat(400000);
   const input = [{ id: "custom", title: "Özgün ders", metadata: { keep: true, empty: null },
     slides: [{ html: `<p>Notlar</p><img src='${media}'>`, extractedImages: [media], visual: media },
       { html: "", image: media, list: [], object: {} }] }];

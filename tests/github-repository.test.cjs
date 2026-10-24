@@ -69,3 +69,37 @@ test("corrupt document parts fail verification before any notes are applied", as
   server.blobs.set(tree.get(`data/snapshots/${manifest.id}/0.txt`), "corrupted");
   await assert.rejects(() => repository.readPublished(), /bütünlüğü/);
 });
+
+test("uploads run with bounded concurrency and a recreated repository resumes acknowledged parts", async () => {
+  const server = fakeGitHub(), values = new Map();
+  const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
+  let active = 0, maximum = 0, successful = 0, interrupted = true;
+  const fetch = async (url, options) => {
+    if (String(url).endsWith("/git/blobs")) {
+      active += 1; maximum = Math.max(maximum, active);
+      await new Promise(resolve => setTimeout(resolve, 15));
+      active -= 1;
+      if (interrupted && successful >= 2) throw new Error("Synthetic interrupted connection");
+      successful += 1;
+    }
+    return server.fetch(url, options);
+  };
+  const options = { owner: "aserdargl", repository: "ME101", fetch, crypto: webcrypto, storage, baseUrl: "https://aserdargl.github.io/ME101/" };
+  const lectures = [{ id: "resume", slides: Array.from({ length: 56 }, (_, index) => ({ image: "A".repeat(256 * 1024) + index })) }];
+  const first = new GitHubLectureRepository(options);
+  await first.login("synthetic");
+  const current = await first.readCurrent();
+  await assert.rejects(() => first.publish(lectures, current), /Synthetic interrupted/);
+  assert.equal(maximum, 3);
+  assert.equal(server.state.head, "commit-0");
+  const acknowledged = successful;
+  assert.equal(acknowledged, 2);
+  interrupted = false;
+  const resumed = new GitHubLectureRepository(options), progress = [];
+  await resumed.login("synthetic");
+  const manifest = await resumed.publish(lectures, await resumed.readCurrent(), event => progress.push(event));
+  assert.equal(successful, manifest.parts + 1, "only missing parts and the manifest should be uploaded");
+  assert.equal(progress.filter(event => event.stage === "upload").at(-1).completed, manifest.parts);
+  assert.deepEqual((await resumed.readPublished()).lectures, lectures);
+  assert.ok([...values.values()].every(value => !value.includes("synthetic")), "checkpoints contain no access token");
+});

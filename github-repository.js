@@ -2,11 +2,13 @@
   const MANIFEST = "data/manifest.json";
   const CHUNK_LENGTH = 512 * 1024;
   const MAX_DOCUMENT_PARTS = 4096;
+  const UPLOAD_CONCURRENCY = 3;
+  const REQUEST_TIMEOUT_MS = 90000;
   const documentCodec = root.LectureDocument || (typeof require !== "undefined" ? require("./lecture-document.js") : null);
 
   /** GitHub is the shared store. Every update uses the current tree and a non-forced commit. */
   class GitHubLectureRepository {
-    constructor({ owner, repository, branch = "main", fetch: fetcher = root.fetch.bind(root), crypto = root.crypto, baseUrl = root.location?.href }) {
+    constructor({ owner, repository, branch = "main", fetch: fetcher = root.fetch.bind(root), crypto = root.crypto, baseUrl = root.location?.href, storage = root.sessionStorage }) {
       this.owner = owner;
       this.repository = repository;
       this.branch = branch;
@@ -15,6 +17,8 @@
       this.baseUrl = baseUrl;
       this.token = "";
       this.prefix = `/repos/${owner}/${repository}`;
+      this.storage = storage;
+      this.checkpointKey = `mee101_github_upload_v1:${owner}/${repository}/${branch}`;
     }
 
     async digest(text) {
@@ -22,11 +26,12 @@
       return Array.from(new Uint8Array(bytes)).map(byte => byte.toString(16).padStart(2, "0")).join("");
     }
 
-    async documentHashes(lectures) {
+    async documentHashes(lectures, onProgress = () => {}) {
       const hashes = [];
       for (const part of documentCodec.parts(lectures)) {
         if (hashes.length >= MAX_DOCUMENT_PARTS) throw new Error("Ders verisi tek yayın sınırını aşıyor. Yerel kayıtlar korunuyor.");
         hashes.push(await this.digest(part));
+        onProgress({ stage: "prepare", completed: hashes.length });
       }
       return hashes;
     }
@@ -38,7 +43,7 @@
 
     async api(path, { method = "GET", body, raw = false, optional = false } = {}) {
       const response = await this.fetch(`https://api.github.com${path}`, {
-        method, cache: "no-store", headers: {
+        method, cache: "no-store", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), headers: {
           Accept: raw ? "application/vnd.github.raw+json" : "application/vnd.github+json",
           Authorization: `Bearer ${this.token}`, "X-GitHub-Api-Version": "2022-11-28",
           ...(body ? { "Content-Type": "application/json" } : {})
@@ -55,6 +60,48 @@
         throw error;
       }
       return raw ? response.text() : response.json();
+    }
+
+    checkpoint(digest) {
+      try {
+        const saved = JSON.parse(this.storage?.getItem(this.checkpointKey) || "null");
+        if (saved?.digest === digest && /^[a-f0-9-]{36}$/i.test(saved.id) && saved.uploaded && typeof saved.uploaded === "object") return saved;
+      } catch { /* A missing checkpoint never changes the local document. */ }
+      return { digest, id: this.crypto.randomUUID(), uploaded: {} };
+    }
+
+    rememberCheckpoint(checkpoint) {
+      try { this.storage?.setItem(this.checkpointKey, JSON.stringify(checkpoint)); }
+      catch { /* Publishing still works when tab storage is unavailable. */ }
+    }
+
+    /** Sends a bounded number of parts together and reuses acknowledged parts after reload. */
+    async uploadParts(lectures, hashes, checkpoint, onProgress) {
+      const iterator = documentCodec.parts(lectures);
+      const entries = new Array(hashes.length);
+      let next = 0, completed = 0, failure;
+      const worker = async () => {
+        while (!failure) {
+          const item = iterator.next();
+          if (item.done) return;
+          const index = next++;
+          try {
+            let sha = checkpoint.uploaded[index];
+            if (!sha) {
+              const blob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: item.value, encoding: "utf-8" } });
+              sha = blob.sha;
+              checkpoint.uploaded[index] = sha;
+              this.rememberCheckpoint(checkpoint);
+            }
+            entries[index] = { path: `data/snapshots/${checkpoint.id}/${index}.txt`, mode: "100644", type: "blob", sha };
+            completed += 1;
+            onProgress({ stage: "upload", completed, total: hashes.length });
+          } catch (error) { failure = error; }
+        }
+      };
+      await Promise.all(Array.from({ length: UPLOAD_CONCURRENCY }, worker));
+      if (failure) throw failure;
+      return entries;
     }
 
     /** Keeps the access key in memory only and verifies the repository owner. */
@@ -130,18 +177,15 @@
     }
 
     /** Publishes one atomic commit; never removes source files or older snapshots. */
-    async publish(lectures, current) {
+    async publish(lectures, current, onProgress = () => {}) {
       if (!this.token) throw new Error("Yayımlamak için GitHub girişi gerekli.");
-      const hashes = await this.documentHashes(lectures);
-      const id = this.crypto.randomUUID();
-      const entries = [];
-      let index = 0;
-      for (const content of documentCodec.parts(lectures)) {
-        const blob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content, encoding: "utf-8" } });
-        entries.push({ path: `data/snapshots/${id}/${index}.txt`, mode: "100644", type: "blob", sha: blob.sha });
-        index += 1;
-      }
-      const manifest = { format: 2, id, parts: hashes.length, hashes, digest: await this.digest(JSON.stringify(hashes)), savedAt: new Date().toISOString(), lectureCount: lectures.length };
+      const hashes = await this.documentHashes(lectures, onProgress);
+      const digest = await this.digest(JSON.stringify(hashes));
+      const checkpoint = this.checkpoint(digest);
+      this.rememberCheckpoint(checkpoint);
+      const entries = await this.uploadParts(lectures, hashes, checkpoint, onProgress);
+      onProgress({ stage: "commit", completed: hashes.length, total: hashes.length });
+      const manifest = { format: 2, partLength: documentCodec.partLength, id: checkpoint.id, parts: hashes.length, hashes, digest, savedAt: new Date().toISOString(), lectureCount: lectures.length };
       const manifestBlob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: JSON.stringify(manifest), encoding: "utf-8" } });
       entries.push({ path: MANIFEST, mode: "100644", type: "blob", sha: manifestBlob.sha });
       const tree = await this.api(`${this.prefix}/git/trees`, { method: "POST", body: { base_tree: current.tree, tree: entries } });

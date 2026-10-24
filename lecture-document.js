@@ -1,6 +1,6 @@
 (function (root) {
   const STRING_LENGTH = 32 * 1024;
-  const PART_LENGTH = 512 * 1024;
+  const PART_LENGTH = 4 * 1024 * 1024;
   const REFERENCE_LENGTH = 4096;
 
   /** Encodes bounded records, sharing repeated media without changing the document. */
@@ -62,6 +62,6 @@
     };
   }
 
-  root.LectureDocument = { parts, decoder };
+  root.LectureDocument = { parts, decoder, partLength: PART_LENGTH };
   if (typeof module !== "undefined") module.exports = root.LectureDocument;
 })(typeof window !== "undefined" ? window : globalThis);

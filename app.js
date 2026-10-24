@@ -405,6 +405,7 @@ function updateStudentUI() {
 }
 
 function saveAllLecturesToStorage() {
+  LecturePublishing.markChanged();
   let legacySaved = false;
   try {
     localStorage.setItem(ALL_LECTURES_STORAGE_KEY, JSON.stringify(LECTURES));
@@ -3034,6 +3035,15 @@ async function initializeLectures() {
   FirebaseStudents.initialize(state => {
     const hadStudentAccess = Boolean(activeStudentNo);
     activeStudentNo = state.profile ? state.profile.accessKey || state.profile.no || state.profile.email : null;
+    if (state.isAdmin && !LecturePublishing.isAuthenticated()) {
+      instructorSession.restore().then(result => {
+        if (!result.ok || !FirebaseStudents.isAdmin || !LecturePublishing.isAuthenticated()) return;
+        isAdminAuthenticated = true;
+        firebaseAdminSession = true;
+        renderCatalog();
+        renderRosterAdminList();
+      });
+    }
     if (state.isAdmin && LecturePublishing.isAuthenticated()) {
       isAdminAuthenticated = true;
       firebaseAdminSession = true;

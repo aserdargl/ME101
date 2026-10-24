@@ -11,6 +11,12 @@
   const status = document.getElementById("cloud-status-text");
   const button = document.getElementById("btn-cloud-publish");
 
+  function progress({ stage, completed, total }) {
+    if (stage === "prepare") message(`Aktarım hazırlanıyor · ${completed} parça hazır`);
+    else if (stage === "upload") message(`GitHub’a aktarılıyor · ${completed}/${total} parça · %${Math.floor(completed / total * 100)}`);
+    else message("Aktarım tamamlandı · GitHub kaydı kesinleştiriliyor…");
+  }
+
   function rememberDigest(digest) {
     try { localStorage.setItem(SYNC_KEY, digest); } catch { /* Optional sync metadata; content is backed up independently. */ }
   }
@@ -73,10 +79,12 @@
     message("Dersler GitHub’a kaydediliyor…");
     try {
       let lectures = await portableDocument(getLectures());
+      await LectureStorage.save(lectures);
+      message("GitHub’daki mevcut kayıt kontrol ediliyor…");
       const current = await repository.readCurrent();
       if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
       if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = await mergePreservingNotes(current.lectures, lectures);
-      const manifest = await repository.publish(lectures, current);
+      const manifest = await repository.publish(lectures, current, progress);
       version = manifest.id;
       synchronized = !pendingSave;
       if (!pendingSave) {
@@ -85,7 +93,11 @@
         rememberDigest(manifest.digest);
       }
       message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
-    } catch (error) { synchronized = false; message(error.message, true); }
+    } catch (error) {
+      synchronized = false;
+      const reason = error.name === "TimeoutError" ? "GitHub yanıtı zaman aşımına uğradı." : error.name === "TypeError" ? "GitHub bağlantısı kesildi." : error.message;
+      message(`${reason} · Yerel notlar korunuyor. Yeniden aktarırken tamamlanan parçalar kullanılacak.`, true);
+    }
     finally { publishing = false; pendingSave = false; button.disabled = false; }
   }
 
@@ -94,12 +106,16 @@
     applyLectures = options.applyLectures;
     button.addEventListener("click", () => authenticated ? publish(true) : options.onLoginRequired());
     root.addEventListener("lecture-storage-status", event => message(event.detail, true));
+    root.addEventListener("beforeunload", event => {
+      if (publishing) { event.preventDefault(); event.returnValue = ""; }
+    });
     if (root.MEE101_GITHUB_ENABLED === false) { message("Ayrı test ortamı · GitHub kayıtlarına bağlantı yok."); return; }
     try {
       const remote = await repository.readPublished();
       version = remote.manifest?.id || null;
       const localHash = remote.manifest ? await repository.documentDigest(getLectures()) : null;
-      const remoteHash = remote.manifest?.format === 2 ? remote.manifest.digest : remote.lectures ? await repository.documentDigest(remote.lectures) : null;
+      const currentEncoding = remote.manifest?.format === 2 && remote.manifest.partLength === root.LectureDocument?.partLength;
+      const remoteHash = currentEncoding ? remote.manifest.digest : remote.lectures ? await repository.documentDigest(remote.lectures) : null;
       synchronized = Boolean(remote.manifest && (remoteHash === localHash || localStorage.getItem(SYNC_KEY) === localHash));
       if (remote.lectures && (!options.hasLocalData || synchronized)) {
         await applyLectures(remote.lectures);
@@ -115,7 +131,11 @@
     isAuthenticated: () => authenticated,
     publish: () => publish(true),
     setLocalAdmin: enabled => { localAdmin = enabled; message(status.textContent); },
-    save: () => message(authenticated ? "Yerel yedek kaydedildi · Değişiklikleri tüm cihazlara açmak için GitHub’a Yayımla düğmesini kullanın." : "Yerel notlar korundu · Tüm cihazlara açmak için GitHub’a bağlanıp yayımlayın."),
+    markChanged: () => { if (publishing) pendingSave = true; },
+    save: () => {
+      if (publishing) { pendingSave = true; return; }
+      message(authenticated ? "Yerel yedek kaydedildi · Değişiklikleri tüm cihazlara açmak için GitHub’a Yayımla düğmesini kullanın." : "Yerel notlar korundu · Tüm cihazlara açmak için GitHub’a bağlanıp yayımlayın.");
+    },
     logout: () => { authenticated = false; repository.logout(); message("GitHub düzenleme oturumu kapatıldı."); },
     changePassword: async () => { throw new Error("Erişim anahtarınızı GitHub hesap ayarlarından yönetebilirsiniz."); }
   };

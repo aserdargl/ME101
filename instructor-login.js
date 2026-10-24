@@ -1,16 +1,22 @@
 (function (root) {
+  const SESSION_KEY = "mee101_instructor_tab_session_v1";
+  const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
   /** Opens both permissions together and rolls back partial or cancelled sign-ins. */
   class InstructorSession {
-    constructor({ publishing, students }) {
+    constructor({ publishing, students, storage = root.sessionStorage, now = Date.now }) {
       this.publishing = publishing;
       this.students = students;
       this.generation = 0;
       this.busy = false;
+      this.storage = storage;
+      this.now = now;
+      this.restoring = null;
     }
 
     async login({ token, firebaseToken }) {
       if (this.busy) return { ok: false, error: "Önceki giriş tamamlanıyor. Yeniden deneyiniz." };
       this.busy = true;
+      this.restoring = null;
       const generation = ++this.generation;
       try {
         if (!token || !firebaseToken) throw new Error("Giriş bilgileri eksik. Yeniden deneyiniz.");
@@ -20,6 +26,8 @@
         await this.publishing.login(token);
         if (generation !== this.generation) throw new Error("Giriş iptal edildi.");
         if (this.students.isAdmin === false) throw new Error("Öğretim üyesi yetkisi artık etkin değil.");
+        try { this.storage?.setItem(SESSION_KEY, JSON.stringify({ token, expiresAt: this.now() + SESSION_DURATION_MS })); }
+        catch { /* Login remains available if browser tab storage is disabled. */ }
         return { ok: true };
       } catch (error) {
         await this.logout();
@@ -29,8 +37,39 @@
       }
     }
 
+    /** Restores only after Firebase has independently confirmed the current admin. */
+    async restore() {
+      if (this.students.isAdmin !== true || this.busy) return { ok: false };
+      if (this.restoring) return this.restoring;
+      this.restoring = this.restoreToken();
+      return this.restoring;
+    }
+
+    async restoreToken() {
+      const generation = this.generation;
+      try {
+        const saved = JSON.parse(this.storage?.getItem(SESSION_KEY) || "null");
+        if (!saved || typeof saved.token !== "string" || !Number.isFinite(saved.expiresAt) || saved.expiresAt <= this.now()) {
+          this.storage?.removeItem(SESSION_KEY);
+          return { ok: false };
+        }
+        await this.publishing.login(saved.token);
+        if (generation !== this.generation || !this.students.isAdmin) {
+          this.publishing.logout();
+          return { ok: false };
+        }
+        return { ok: true };
+      } catch {
+        this.publishing.logout();
+        try { this.storage?.removeItem(SESSION_KEY); } catch { /* Storage may be blocked. */ }
+        return { ok: false };
+      }
+    }
+
     async logout() {
       ++this.generation;
+      this.restoring = null;
+      try { this.storage?.removeItem(SESSION_KEY); } catch { /* Session still ends in memory. */ }
       this.publishing.logout();
       return this.students.signOut();
     }

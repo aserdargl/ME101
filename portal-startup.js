@@ -352,6 +352,10 @@ window.PORTAL_ENGLISH = {
   "Ayrı test ortamı · GitHub kayıtlarına bağlantı yok.": "Isolated test environment · GitHub storage is disconnected.",
   "Bu tarayıcıdaki notlar korunuyor · GitHub’a henüz aktarılmadı.": "Your local notes are preserved · Not yet transferred to GitHub.",
   "GitHub’da ortak ders kaydı henüz yayımlanmadı.": "No shared lessons have been published to GitHub yet.",
+  "GitHub’daki mevcut kayıt kontrol ediliyor…": "Checking existing GitHub notes…",
+  "Aktarım tamamlandı · GitHub kaydı kesinleştiriliyor…": "Transfer complete · Finalizing the GitHub save…",
+  "GitHub yanıtı zaman aşımına uğradı.": "GitHub did not respond in time.",
+  "GitHub bağlantısı kesildi.": "The GitHub connection was interrupted.",
   "GitHub ortak ders kaydı · Tüm cihazlardan erişilebilir.": "Shared lessons on GitHub · Accessible on all devices.",
   "GitHub kaydı okunamadı; bu tarayıcıdaki dersler ve notlar gösteriliyor.": "Could not load GitHub data; showing lessons and notes saved in this browser.",
   "Dersler GitHub’a kaydediliyor…": "Saving lessons to GitHub…",
@@ -384,6 +388,9 @@ window.PORTAL_ENGLISH = {
   function english(text) {
     if (Object.hasOwn(translations, text)) return translations[text];
     const patterns = [
+      [/^Aktarım hazırlanıyor · (\d+) parça hazır$/, "Preparing transfer · $1 parts ready"],
+      [/^GitHub’a aktarılıyor · (\d+)\/(\d+) parça · %(\d+)$/, "Transferring to GitHub · $1/$2 parts · $3%"],
+      [/^(.+) · Yerel notlar korunuyor\. Yeniden aktarırken tamamlanan parçalar kullanılacak\.$/, (_, reason) => `${english(reason)} · Local notes are preserved. Retry Transfer to reuse completed parts.`],
       [/^(\d+)\.\s*Hafta$/i, "Week $1"],
       [/^(\d+)\.\s*Hafta:\s*(.+)$/i, (_, week, title) => `Week ${week}: ${english(title)}`],
       [/^1 Slayt$/, "1 Slide"], [/^(\d+) Slayt$/, "$1 Slides"], [/^(\d+)\. Slayt$/, "Slide $1"],
@@ -1166,7 +1173,7 @@ window.PptxPreview = (() => {
 /* lecture-document.js */
 (function (root) {
   const STRING_LENGTH = 32 * 1024;
-  const PART_LENGTH = 512 * 1024;
+  const PART_LENGTH = 4 * 1024 * 1024;
   const REFERENCE_LENGTH = 4096;
 
   /** Encodes bounded records, sharing repeated media without changing the document. */
@@ -1228,7 +1235,7 @@ window.PptxPreview = (() => {
     };
   }
 
-  root.LectureDocument = { parts, decoder };
+  root.LectureDocument = { parts, decoder, partLength: PART_LENGTH };
   if (typeof module !== "undefined") module.exports = root.LectureDocument;
 })(typeof window !== "undefined" ? window : globalThis);
 ;
@@ -1238,11 +1245,13 @@ window.PptxPreview = (() => {
   const MANIFEST = "data/manifest.json";
   const CHUNK_LENGTH = 512 * 1024;
   const MAX_DOCUMENT_PARTS = 4096;
+  const UPLOAD_CONCURRENCY = 3;
+  const REQUEST_TIMEOUT_MS = 90000;
   const documentCodec = root.LectureDocument || (typeof require !== "undefined" ? require("./lecture-document.js") : null);
 
   /** GitHub is the shared store. Every update uses the current tree and a non-forced commit. */
   class GitHubLectureRepository {
-    constructor({ owner, repository, branch = "main", fetch: fetcher = root.fetch.bind(root), crypto = root.crypto, baseUrl = root.location?.href }) {
+    constructor({ owner, repository, branch = "main", fetch: fetcher = root.fetch.bind(root), crypto = root.crypto, baseUrl = root.location?.href, storage = root.sessionStorage }) {
       this.owner = owner;
       this.repository = repository;
       this.branch = branch;
@@ -1251,6 +1260,8 @@ window.PptxPreview = (() => {
       this.baseUrl = baseUrl;
       this.token = "";
       this.prefix = `/repos/${owner}/${repository}`;
+      this.storage = storage;
+      this.checkpointKey = `mee101_github_upload_v1:${owner}/${repository}/${branch}`;
     }
 
     async digest(text) {
@@ -1258,11 +1269,12 @@ window.PptxPreview = (() => {
       return Array.from(new Uint8Array(bytes)).map(byte => byte.toString(16).padStart(2, "0")).join("");
     }
 
-    async documentHashes(lectures) {
+    async documentHashes(lectures, onProgress = () => {}) {
       const hashes = [];
       for (const part of documentCodec.parts(lectures)) {
         if (hashes.length >= MAX_DOCUMENT_PARTS) throw new Error("Ders verisi tek yayın sınırını aşıyor. Yerel kayıtlar korunuyor.");
         hashes.push(await this.digest(part));
+        onProgress({ stage: "prepare", completed: hashes.length });
       }
       return hashes;
     }
@@ -1274,7 +1286,7 @@ window.PptxPreview = (() => {
 
     async api(path, { method = "GET", body, raw = false, optional = false } = {}) {
       const response = await this.fetch(`https://api.github.com${path}`, {
-        method, cache: "no-store", headers: {
+        method, cache: "no-store", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), headers: {
           Accept: raw ? "application/vnd.github.raw+json" : "application/vnd.github+json",
           Authorization: `Bearer ${this.token}`, "X-GitHub-Api-Version": "2022-11-28",
           ...(body ? { "Content-Type": "application/json" } : {})
@@ -1291,6 +1303,48 @@ window.PptxPreview = (() => {
         throw error;
       }
       return raw ? response.text() : response.json();
+    }
+
+    checkpoint(digest) {
+      try {
+        const saved = JSON.parse(this.storage?.getItem(this.checkpointKey) || "null");
+        if (saved?.digest === digest && /^[a-f0-9-]{36}$/i.test(saved.id) && saved.uploaded && typeof saved.uploaded === "object") return saved;
+      } catch { /* A missing checkpoint never changes the local document. */ }
+      return { digest, id: this.crypto.randomUUID(), uploaded: {} };
+    }
+
+    rememberCheckpoint(checkpoint) {
+      try { this.storage?.setItem(this.checkpointKey, JSON.stringify(checkpoint)); }
+      catch { /* Publishing still works when tab storage is unavailable. */ }
+    }
+
+    /** Sends a bounded number of parts together and reuses acknowledged parts after reload. */
+    async uploadParts(lectures, hashes, checkpoint, onProgress) {
+      const iterator = documentCodec.parts(lectures);
+      const entries = new Array(hashes.length);
+      let next = 0, completed = 0, failure;
+      const worker = async () => {
+        while (!failure) {
+          const item = iterator.next();
+          if (item.done) return;
+          const index = next++;
+          try {
+            let sha = checkpoint.uploaded[index];
+            if (!sha) {
+              const blob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: item.value, encoding: "utf-8" } });
+              sha = blob.sha;
+              checkpoint.uploaded[index] = sha;
+              this.rememberCheckpoint(checkpoint);
+            }
+            entries[index] = { path: `data/snapshots/${checkpoint.id}/${index}.txt`, mode: "100644", type: "blob", sha };
+            completed += 1;
+            onProgress({ stage: "upload", completed, total: hashes.length });
+          } catch (error) { failure = error; }
+        }
+      };
+      await Promise.all(Array.from({ length: UPLOAD_CONCURRENCY }, worker));
+      if (failure) throw failure;
+      return entries;
     }
 
     /** Keeps the access key in memory only and verifies the repository owner. */
@@ -1366,18 +1420,15 @@ window.PptxPreview = (() => {
     }
 
     /** Publishes one atomic commit; never removes source files or older snapshots. */
-    async publish(lectures, current) {
+    async publish(lectures, current, onProgress = () => {}) {
       if (!this.token) throw new Error("Yayımlamak için GitHub girişi gerekli.");
-      const hashes = await this.documentHashes(lectures);
-      const id = this.crypto.randomUUID();
-      const entries = [];
-      let index = 0;
-      for (const content of documentCodec.parts(lectures)) {
-        const blob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content, encoding: "utf-8" } });
-        entries.push({ path: `data/snapshots/${id}/${index}.txt`, mode: "100644", type: "blob", sha: blob.sha });
-        index += 1;
-      }
-      const manifest = { format: 2, id, parts: hashes.length, hashes, digest: await this.digest(JSON.stringify(hashes)), savedAt: new Date().toISOString(), lectureCount: lectures.length };
+      const hashes = await this.documentHashes(lectures, onProgress);
+      const digest = await this.digest(JSON.stringify(hashes));
+      const checkpoint = this.checkpoint(digest);
+      this.rememberCheckpoint(checkpoint);
+      const entries = await this.uploadParts(lectures, hashes, checkpoint, onProgress);
+      onProgress({ stage: "commit", completed: hashes.length, total: hashes.length });
+      const manifest = { format: 2, partLength: documentCodec.partLength, id: checkpoint.id, parts: hashes.length, hashes, digest, savedAt: new Date().toISOString(), lectureCount: lectures.length };
       const manifestBlob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: JSON.stringify(manifest), encoding: "utf-8" } });
       entries.push({ path: MANIFEST, mode: "100644", type: "blob", sha: manifestBlob.sha });
       const tree = await this.api(`${this.prefix}/git/trees`, { method: "POST", body: { base_tree: current.tree, tree: entries } });
@@ -1407,6 +1458,12 @@ window.PptxPreview = (() => {
   let pendingSave = false;
   const status = document.getElementById("cloud-status-text");
   const button = document.getElementById("btn-cloud-publish");
+
+  function progress({ stage, completed, total }) {
+    if (stage === "prepare") message(`Aktarım hazırlanıyor · ${completed} parça hazır`);
+    else if (stage === "upload") message(`GitHub’a aktarılıyor · ${completed}/${total} parça · %${Math.floor(completed / total * 100)}`);
+    else message("Aktarım tamamlandı · GitHub kaydı kesinleştiriliyor…");
+  }
 
   function rememberDigest(digest) {
     try { localStorage.setItem(SYNC_KEY, digest); } catch { /* Optional sync metadata; content is backed up independently. */ }
@@ -1470,10 +1527,12 @@ window.PptxPreview = (() => {
     message("Dersler GitHub’a kaydediliyor…");
     try {
       let lectures = await portableDocument(getLectures());
+      await LectureStorage.save(lectures);
+      message("GitHub’daki mevcut kayıt kontrol ediliyor…");
       const current = await repository.readCurrent();
       if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
       if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = await mergePreservingNotes(current.lectures, lectures);
-      const manifest = await repository.publish(lectures, current);
+      const manifest = await repository.publish(lectures, current, progress);
       version = manifest.id;
       synchronized = !pendingSave;
       if (!pendingSave) {
@@ -1482,7 +1541,11 @@ window.PptxPreview = (() => {
         rememberDigest(manifest.digest);
       }
       message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
-    } catch (error) { synchronized = false; message(error.message, true); }
+    } catch (error) {
+      synchronized = false;
+      const reason = error.name === "TimeoutError" ? "GitHub yanıtı zaman aşımına uğradı." : error.name === "TypeError" ? "GitHub bağlantısı kesildi." : error.message;
+      message(`${reason} · Yerel notlar korunuyor. Yeniden aktarırken tamamlanan parçalar kullanılacak.`, true);
+    }
     finally { publishing = false; pendingSave = false; button.disabled = false; }
   }
 
@@ -1491,12 +1554,16 @@ window.PptxPreview = (() => {
     applyLectures = options.applyLectures;
     button.addEventListener("click", () => authenticated ? publish(true) : options.onLoginRequired());
     root.addEventListener("lecture-storage-status", event => message(event.detail, true));
+    root.addEventListener("beforeunload", event => {
+      if (publishing) { event.preventDefault(); event.returnValue = ""; }
+    });
     if (root.MEE101_GITHUB_ENABLED === false) { message("Ayrı test ortamı · GitHub kayıtlarına bağlantı yok."); return; }
     try {
       const remote = await repository.readPublished();
       version = remote.manifest?.id || null;
       const localHash = remote.manifest ? await repository.documentDigest(getLectures()) : null;
-      const remoteHash = remote.manifest?.format === 2 ? remote.manifest.digest : remote.lectures ? await repository.documentDigest(remote.lectures) : null;
+      const currentEncoding = remote.manifest?.format === 2 && remote.manifest.partLength === root.LectureDocument?.partLength;
+      const remoteHash = currentEncoding ? remote.manifest.digest : remote.lectures ? await repository.documentDigest(remote.lectures) : null;
       synchronized = Boolean(remote.manifest && (remoteHash === localHash || localStorage.getItem(SYNC_KEY) === localHash));
       if (remote.lectures && (!options.hasLocalData || synchronized)) {
         await applyLectures(remote.lectures);
@@ -1512,7 +1579,11 @@ window.PptxPreview = (() => {
     isAuthenticated: () => authenticated,
     publish: () => publish(true),
     setLocalAdmin: enabled => { localAdmin = enabled; message(status.textContent); },
-    save: () => message(authenticated ? "Yerel yedek kaydedildi · Değişiklikleri tüm cihazlara açmak için GitHub’a Yayımla düğmesini kullanın." : "Yerel notlar korundu · Tüm cihazlara açmak için GitHub’a bağlanıp yayımlayın."),
+    markChanged: () => { if (publishing) pendingSave = true; },
+    save: () => {
+      if (publishing) { pendingSave = true; return; }
+      message(authenticated ? "Yerel yedek kaydedildi · Değişiklikleri tüm cihazlara açmak için GitHub’a Yayımla düğmesini kullanın." : "Yerel notlar korundu · Tüm cihazlara açmak için GitHub’a bağlanıp yayımlayın.");
+    },
     logout: () => { authenticated = false; repository.logout(); message("GitHub düzenleme oturumu kapatıldı."); },
     changePassword: async () => { throw new Error("Erişim anahtarınızı GitHub hesap ayarlarından yönetebilirsiniz."); }
   };
@@ -2116,18 +2187,24 @@ window.renderApprovalApplications = () => {
 
 /* instructor-login.js */
 (function (root) {
+  const SESSION_KEY = "mee101_instructor_tab_session_v1";
+  const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
   /** Opens both permissions together and rolls back partial or cancelled sign-ins. */
   class InstructorSession {
-    constructor({ publishing, students }) {
+    constructor({ publishing, students, storage = root.sessionStorage, now = Date.now }) {
       this.publishing = publishing;
       this.students = students;
       this.generation = 0;
       this.busy = false;
+      this.storage = storage;
+      this.now = now;
+      this.restoring = null;
     }
 
     async login({ token, firebaseToken }) {
       if (this.busy) return { ok: false, error: "Önceki giriş tamamlanıyor. Yeniden deneyiniz." };
       this.busy = true;
+      this.restoring = null;
       const generation = ++this.generation;
       try {
         if (!token || !firebaseToken) throw new Error("Giriş bilgileri eksik. Yeniden deneyiniz.");
@@ -2137,6 +2214,8 @@ window.renderApprovalApplications = () => {
         await this.publishing.login(token);
         if (generation !== this.generation) throw new Error("Giriş iptal edildi.");
         if (this.students.isAdmin === false) throw new Error("Öğretim üyesi yetkisi artık etkin değil.");
+        try { this.storage?.setItem(SESSION_KEY, JSON.stringify({ token, expiresAt: this.now() + SESSION_DURATION_MS })); }
+        catch { /* Login remains available if browser tab storage is disabled. */ }
         return { ok: true };
       } catch (error) {
         await this.logout();
@@ -2146,8 +2225,39 @@ window.renderApprovalApplications = () => {
       }
     }
 
+    /** Restores only after Firebase has independently confirmed the current admin. */
+    async restore() {
+      if (this.students.isAdmin !== true || this.busy) return { ok: false };
+      if (this.restoring) return this.restoring;
+      this.restoring = this.restoreToken();
+      return this.restoring;
+    }
+
+    async restoreToken() {
+      const generation = this.generation;
+      try {
+        const saved = JSON.parse(this.storage?.getItem(SESSION_KEY) || "null");
+        if (!saved || typeof saved.token !== "string" || !Number.isFinite(saved.expiresAt) || saved.expiresAt <= this.now()) {
+          this.storage?.removeItem(SESSION_KEY);
+          return { ok: false };
+        }
+        await this.publishing.login(saved.token);
+        if (generation !== this.generation || !this.students.isAdmin) {
+          this.publishing.logout();
+          return { ok: false };
+        }
+        return { ok: true };
+      } catch {
+        this.publishing.logout();
+        try { this.storage?.removeItem(SESSION_KEY); } catch { /* Storage may be blocked. */ }
+        return { ok: false };
+      }
+    }
+
     async logout() {
       ++this.generation;
+      this.restoring = null;
+      try { this.storage?.removeItem(SESSION_KEY); } catch { /* Session still ends in memory. */ }
       this.publishing.logout();
       return this.students.signOut();
     }
@@ -2901,6 +3011,7 @@ function updateStudentUI() {
 }
 
 function saveAllLecturesToStorage() {
+  LecturePublishing.markChanged();
   let legacySaved = false;
   try {
     localStorage.setItem(ALL_LECTURES_STORAGE_KEY, JSON.stringify(LECTURES));
@@ -5530,6 +5641,15 @@ async function initializeLectures() {
   FirebaseStudents.initialize(state => {
     const hadStudentAccess = Boolean(activeStudentNo);
     activeStudentNo = state.profile ? state.profile.accessKey || state.profile.no || state.profile.email : null;
+    if (state.isAdmin && !LecturePublishing.isAuthenticated()) {
+      instructorSession.restore().then(result => {
+        if (!result.ok || !FirebaseStudents.isAdmin || !LecturePublishing.isAuthenticated()) return;
+        isAdminAuthenticated = true;
+        firebaseAdminSession = true;
+        renderCatalog();
+        renderRosterAdminList();
+      });
+    }
     if (state.isAdmin && LecturePublishing.isAuthenticated()) {
       isAdminAuthenticated = true;
       firebaseAdminSession = true;

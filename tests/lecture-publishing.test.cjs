@@ -9,7 +9,7 @@ test("unsynced browser notes stay local until an explicit merge; conflicts prese
   let local = [{ id: "same", title: "Ders", slides: [{ html: "Bu tarayıcıdaki özel not" }] }];
   const remote = [{ id: "same", title: "Ders", slides: [{ html: "Diğer cihazdaki özgün not" }] }];
   const manifest = { id: "published-id", digest: digest(JSON.stringify(remote)) };
-  let applied = 0, published;
+  let applied = 0, published, blockPublish;
   const metadata = new Map(), elements = new Map();
   const element = id => {
     if (!elements.has(id)) elements.set(id, { textContent: "", value: "", classList: { toggle() {}, add() {}, remove() {} }, addEventListener() {}, focus() {} });
@@ -21,7 +21,7 @@ test("unsynced browser notes stay local until an explicit merge; conflicts prese
     async digest(text) { return digest(text); }
     async documentDigest(lectures) { return digest(JSON.stringify(lectures)); }
     async login() { return true; }
-    async publish(lectures) { published = structuredClone(lectures); return { id: "new-id", digest: digest(JSON.stringify(lectures)) }; }
+    async publish(lectures) { if (blockPublish) await blockPublish; published = structuredClone(lectures); return { id: "new-id", digest: digest(JSON.stringify(lectures)) }; }
     logout() {}
   }
   const context = {
@@ -42,4 +42,15 @@ test("unsynced browser notes stay local until an explicit merge; conflicts prese
   assert.ok(published.some(lecture => lecture.slides[0].html === "Bu tarayıcıdaki özel not"));
   assert.equal(applied, 1);
   assert.ok([...metadata.values()].every(value => !value.includes("fixture-access-key")));
+  let release;
+  blockPublish = new Promise(resolve => { release = resolve; });
+  const inProgress = service.publish();
+  await new Promise(resolve => setImmediate(resolve));
+  local[0].slides[0].html = "Aktarım sırasında eklenen yeni not";
+  service.markChanged();
+  service.save();
+  release();
+  await inProgress;
+  assert.equal(local[0].slides[0].html, "Aktarım sırasında eklenen yeni not");
+  assert.equal(applied, 1, "a completed upload cannot overwrite edits saved during the transfer");
 });

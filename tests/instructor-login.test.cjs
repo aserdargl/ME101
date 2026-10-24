@@ -72,6 +72,49 @@ test("a rejected GitHub permission also closes the Firebase session", async () =
   assert.equal(students, false);
 });
 
+test("reload restores the tab session only after live admin verification; logout and expiry clear it", async () => {
+  const values = new Map();
+  const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
+  let now = 1000, publishing = false, calls = 0;
+  const students = { isAdmin: true, signInInstructor: async () => ({ ok: true }), signOut: async () => { students.isAdmin = false; } };
+  const options = { storage, now: () => now, students, publishing: {
+    login: async token => { assert.equal(token, "github-secret"); publishing = true; calls += 1; }, logout: () => { publishing = false; }
+  } };
+  await new InstructorSession(options).login({ token: "github-secret", firebaseToken: "one-use-firebase-token" });
+  assert.ok([...values.values()].every(value => !value.includes("one-use-firebase-token")));
+  publishing = false; students.isAdmin = false;
+  const refreshed = new InstructorSession(options);
+  assert.equal((await refreshed.restore()).ok, false);
+  assert.equal(calls, 1, "a cached token alone cannot grant admin rights");
+  students.isAdmin = true;
+  assert.equal((await refreshed.restore()).ok, true);
+  assert.equal(publishing, true);
+  await refreshed.logout();
+  assert.equal(values.size, 0);
+  assert.equal(publishing, false);
+  students.isAdmin = true;
+  await new InstructorSession(options).login({ token: "github-secret", firebaseToken: "one-use-firebase-token" });
+  now += 9 * 60 * 60 * 1000;
+  publishing = false;
+  assert.equal((await new InstructorSession(options).restore()).ok, false);
+  assert.equal(values.size, 0);
+});
+
+test("logout during session restoration cannot restore publishing permission", async () => {
+  let release, authenticated = false;
+  const values = new Map([["mee101_instructor_tab_session_v1", JSON.stringify({ token: "synthetic", expiresAt: Date.now() + 60000 })]]);
+  const session = new InstructorSession({
+    storage: { getItem: key => values.get(key), removeItem: key => values.delete(key) },
+    students: { isAdmin: true, signOut: async () => {} },
+    publishing: { login: async () => { await new Promise(resolve => { release = resolve; }); authenticated = true; }, logout: () => { authenticated = false; } }
+  });
+  const pending = session.restore();
+  await session.logout();
+  release();
+  assert.equal((await pending).ok, false);
+  assert.equal(authenticated, false);
+});
+
 test("instructor sign-in reuses the admin without touching students, applications or enrollments", async () => {
   const roster = [{ no: "00123", name: "Preserved Student", enabled: true }];
   const applications = [{ uid: "pending", status: "pending" }];
