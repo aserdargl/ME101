@@ -12,6 +12,7 @@ FIREBASE_API_KEY = "AIzaSyCgr3kG_bsU-pKV6DSb2oQ1oi0B2bj2K9E"
 ALLOWED_ORIGIN = "https://aserdargl.github.io"
 FIREBASE_ADMIN_UID = "Fjjw2a4oMjQF5PFxgeNE1W2WVyP2"
 GITHUB_CLIENT_ID = "Iv23liotEwgq3ypqh8cO"
+DRIVE_CLIENT_ID = "174739317961-nuejuj9ej24rpboui8u4n7comuupa129.apps.googleusercontent.com"
 
 [triggers]
 crons = ["*/10 * * * *"]

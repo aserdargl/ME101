@@ -16,6 +16,12 @@ fn respond(status:u16, value:Value, origin:&str) -> Result<Response> {
 
 #[event(fetch)]
 pub async fn main(mut req:Request, env:Env, _ctx:Context) -> Result<Response> {
+    if req.path().starts_with("/drive/") {
+        return match crate::drive::handle(req,&env,&_ctx).await {
+            Ok(response)=>Ok(response),
+            Err(_)=>crate::drive::respond(&env,503,json!({"error":"Drive bağlantısı tamamlanamadı. Yerel notlar ve önceki yayın korunuyor."}))
+        };
+    }
     if req.path().starts_with("/github/") { return crate::github_oauth::handle(&req,&env).await; }
     let origin=env.var("ALLOWED_ORIGIN")?.to_string();
     if req.path()=="/health" && req.method()==Method::Get {

@@ -15,6 +15,9 @@
   function english(text) {
     if (Object.hasOwn(translations, text)) return translations[text];
     const patterns = [
+      [/^Drive yedeği kaydediliyor · (\d+)\/(\d+) parça$/, "Saving Drive backup · $1/$2 parts"],
+      [/^Drive ders dosyaları kaydediliyor · (\d+)\/(\d+) dosya$/, "Saving lesson files to Drive · $1/$2 files"],
+      [/^Drive’a yükleniyor · %(\d+)$/, "Uploading to Drive · $1%"],
       [/^Aktarım hazırlanıyor · (\d+) parça hazır$/, "Preparing transfer · $1 parts ready"],
       [/^GitHub’a aktarılıyor · (\d+)\/(\d+) parça · %(\d+)$/, "Transferring to GitHub · $1/$2 parts · $3%"],
       [/^(.+) · Yerel notlar korunuyor\. Yeniden aktarırken tamamlanan parçalar kullanılacak\.$/, (_, reason) => `${english(reason)} · Local notes are preserved. Retry Transfer to reuse completed parts.`],

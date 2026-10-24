@@ -5,6 +5,9 @@ const http = require("node:http");
 const path = require("node:path");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const { fakeGitHub } = require("./github-fixture.cjs");
+const { fakeDrive } = require("./drive-fixture.cjs");
+const { fixture } = require("./pptx-fixture.cjs");
+const JSZip = require("jszip");
 const root = path.resolve(__dirname, "..");
 const modules = ["lecture-document.js", "lecture-storage.js", "github-repository.js", "lecture-publishing.js", "instructor-login.js"];
 const html = '<div id="cloud-status"><span id="cloud-status-text"></span></div><button id="btn-cloud-publish"></button>'
@@ -15,7 +18,7 @@ async function main() {
   let interruptUploads = false, acknowledged = 0;
   const server = http.createServer((request, response) => {
     const name = new URL(request.url, "http://localhost").pathname.slice(1);
-    if (name === "full" || name === "portal-startup.js" || name.endsWith(".css")) {
+    if (name === "full" || name === "portal-startup.js" || name.startsWith("vendor/") || name.endsWith(".css")) {
       response.setHeader("Content-Type", name.endsWith(".js") ? "text/javascript" : name.endsWith(".css") ? "text/css" : "text/html");
       return response.end(fs.readFileSync(path.join(root, name === "full" ? "index.html" : name)));
     }
@@ -131,9 +134,18 @@ async function main() {
     assert.deepEqual(errors, []);
     const full = await browser.newPage();
     const fullGithub = fakeGitHub();
+    const googleDrive = fakeDrive();
     await full.route("**/*", async route => {
       const url = new URL(route.request().url());
-      if (url.pathname.endsWith("firebase-config.js")) return route.fulfill({ contentType: "text/javascript", body: "window.MEE101_FIREBASE_CONFIG={synthetic:true};" });
+      if (url.pathname.endsWith("firebase-config.js")) return route.fulfill({ contentType: "text/javascript", body: "window.MEE101_FIREBASE_CONFIG={synthetic:true};window.MEE101_DRIVE_ENABLED=true;window.MEE101_APPROVAL_URL='https://lecture.example.test/';" });
+      if (["lecture.example.test", "www.googleapis.com"].includes(url.hostname)) {
+        const headers = route.request().headers();
+        const cors = { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS", "Access-Control-Allow-Headers": "Authorization, Content-Type, Content-Range, X-Upload-Content-Type, X-Upload-Content-Length", "Access-Control-Expose-Headers": "Location, Range" };
+        if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors, body: "" });
+        const response = await googleDrive.fetch(url, { method: route.request().method(), headers: { Authorization: headers.authorization, "Content-Range": headers["content-range"] },
+          body: route.request().method() === "PUT" ? new Blob([route.request().postDataBuffer() || Buffer.alloc(0)]) : route.request().postData() });
+        return route.fulfill({ status: response.status, body: Buffer.from(await response.arrayBuffer()), headers: { ...Object.fromEntries(response.headers), ...cors } });
+      }
       if (url.pathname.startsWith("/data/")) return route.fulfill({ status: 404, body: "" });
       if (url.hostname === "api.github.com") {
         if (url.pathname.endsWith("/git/blobs")) await new Promise(resolve => setTimeout(resolve, 150));
@@ -150,7 +162,7 @@ async function main() {
       Object.defineProperty(window, "createFirebaseStudentAdapter", {
         get: () => async () => {
           let notify;
-          const user = { uid: "qa-instructor", emailVerified: true };
+          const user = { uid: "qa-instructor", emailVerified: true, getIdToken: async () => "firebase-fixture" };
           return {
             start: async callback => { notify = callback; await callback(user); },
             isAdmin: async () => true, getUser: () => user,
@@ -163,17 +175,26 @@ async function main() {
     });
     await full.goto(`${origin}/full`);
     await full.waitForFunction(() => LecturePublishing.isAuthenticated() && isAdminAuthenticated);
-    await full.evaluate(() => {
+    const nativeDeck = await JSZip.loadAsync(await fixture());
+    nativeDeck.comment = "QA".repeat(24000);
+    const pptxUrl = "data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64," + (await nativeDeck.generateAsync({ type: "nodebuffer" })).toString("base64");
+    await full.evaluate(pptxUrl => {
       window.qaProgress = [];
       const meter = document.getElementById("cloud-transfer-progress");
       new MutationObserver(() => qaProgress.push({ determinate: meter.hasAttribute("value"), value: meter.value })).observe(meter, { attributes: true });
-      LECTURES.push({ id: "qa-progress", week: "1. Hafta", title: "İlerleme testi", description: "Sentetik ders", slides: [{ title: "Özgün slayt", html: "Korunacak not", image: "A".repeat(1024 * 1024) }] });
-    });
+      LECTURES.push({ id: "qa-progress", week: "1. Hafta", title: "İlerleme testi", description: "Sentetik ders", pptxUrl,
+        slides: [{ title: "Özgün Görseller", sourceSlidePath: "ppt/slides/slide7.xml", html: "Korunacak not" }] });
+    }, pptxUrl);
     await full.click("#btn-cloud-publish");
     await full.waitForFunction(() => !document.getElementById("btn-cloud-publish").disabled);
     assert.equal(await full.locator("#cloud-status").evaluate(element => element.classList.contains("cloud-error")), false, await full.locator("#cloud-status-text").textContent());
     assert.equal(await full.locator("#cloud-transfer-progress").evaluate(element => element.value), 100);
     assert.equal(await full.locator("#cloud-transfer-meter").isVisible(), true);
+    const native = await full.evaluate(async () => {
+      const lecture = LECTURES.find(lecture => lecture.id === "qa-progress");
+      return { drive: lecture.pptxUrl.startsWith("https://lecture.example.test/drive/assets/"), native: await PptxDisplay.prepareLecture(lecture), note: lecture.slides[0].html };
+    });
+    assert.deepEqual(native, { drive: true, native: true, note: "Korunacak not" });
     const meter = await full.evaluate(() => ({
       indeterminateSeen: qaProgress.some(state => !state.determinate),
       finished: document.getElementById("cloud-transfer-percent").textContent,

@@ -21,7 +21,11 @@
   }
 
   function progress({ stage, completed, total }) {
-    showProgress(stage === "upload" ? Math.floor(completed / total * 100) : null);
+    const measured = ["upload", "drive-upload", "drive-assets", "drive-backup"].includes(stage);
+    showProgress(measured && total ? Math.floor(completed / total * 100) : null);
+    if (stage === "drive-backup") return message(`Drive yedeği kaydediliyor · ${completed}/${total} parça`);
+    if (stage === "drive-assets") return message(`Drive ders dosyaları kaydediliyor · ${completed}/${total} dosya`);
+    if (stage === "drive-upload") return message(`Drive’a yükleniyor · %${Math.floor(completed / total * 100)}`);
     if (stage === "prepare") message(`Aktarım hazırlanıyor · ${completed} parça hazır`);
     else if (stage === "upload") message(`GitHub’a aktarılıyor · ${completed}/${total} parça · %${Math.floor(completed / total * 100)}`);
     else message("Aktarım tamamlandı · GitHub kaydı kesinleştiriliyor…");
@@ -35,8 +39,11 @@
     status.textContent = text;
     document.getElementById("cloud-status").classList.toggle("cloud-error", error);
     button.classList.toggle("hidden", !authenticated && !localAdmin);
+    document.getElementById("btn-drive-connect")?.classList.toggle("hidden", !root.DrivePublishing?.enabled() || !authenticated);
     button.disabled = publishing;
-    button.textContent = !authenticated ? "GitHub’a Bağlan" : synchronized ? "GitHub’a Yayımla" : "Yerel Notları GitHub’a Aktar";
+    button.textContent = !authenticated ? "GitHub’a Bağlan" : root.DrivePublishing?.enabled()
+      ? synchronized ? "Dersleri Yayımla" : "Yerel Dersleri Drive’a Aktar"
+      : synchronized ? "GitHub’a Yayımla" : "Yerel Notları GitHub’a Aktar";
   }
 
   /** Conflicting versions become separate lessons, keeping every original note. */
@@ -95,6 +102,10 @@
       const current = await repository.readCurrent({ skipLecturesForVersion: synchronized ? version : null });
       if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
       if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = await mergePreservingNotes(current.lectures, lectures);
+      if (root.DrivePublishing?.enabled()) {
+        message("Derslerin bağımsız Drive yedeği hazırlanıyor…");
+        lectures = (await root.DrivePublishing.prepare(lectures, progress)).lectures;
+      }
       const manifest = await repository.publish(lectures, current, progress);
       version = manifest.id;
       synchronized = !pendingSave;
@@ -103,7 +114,9 @@
         await LectureStorage.save(lectures);
         rememberDigest(manifest.digest);
       }
-      message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
+      message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : root.DrivePublishing?.enabled()
+        ? "Drive dosyaları ve yedek kaydedildi · Ders listesi GitHub yayını tamamlandığında güncellenecek."
+        : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
       showProgress(100);
     } catch (error) {
       synchronized = false;
@@ -119,6 +132,10 @@
     getLectures = options.getLectures;
     applyLectures = options.applyLectures;
     button.addEventListener("click", () => authenticated ? publish(true) : options.onLoginRequired());
+    document.getElementById("btn-drive-connect")?.addEventListener("click", async () => {
+      try { await root.DrivePublishing.connect(); message("Drive bağlantısı hazır · Dersleri ve yedeği kaydetmek için Yayımla düğmesini kullanın."); }
+      catch (error) { message(error.message, true); }
+    });
     root.addEventListener("lecture-storage-status", event => message(event.detail, true));
     root.addEventListener("beforeunload", event => {
       if (publishing) { event.preventDefault(); event.returnValue = ""; }
@@ -150,7 +167,7 @@
       if (publishing) { pendingSave = true; return; }
       message(authenticated ? "Yerel yedek kaydedildi · Değişiklikleri tüm cihazlara açmak için GitHub’a Yayımla düğmesini kullanın." : "Yerel notlar korundu · Tüm cihazlara açmak için GitHub’a bağlanıp yayımlayın.");
     },
-    logout: () => { authenticated = false; repository.logout(); message("GitHub düzenleme oturumu kapatıldı."); },
+    logout: () => { authenticated = false; repository.logout(); root.DrivePublishing?.logout(); message("GitHub düzenleme oturumu kapatıldı."); },
     changePassword: async () => { throw new Error("Erişim anahtarınızı GitHub hesap ayarlarından yönetebilirsiniz."); }
   };
 })(window);

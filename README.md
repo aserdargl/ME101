@@ -2,6 +2,16 @@
 
 https://aserdargl.github.io/ME101/
 
+## GitHub sitesi ve kişisel Google Drive
+
+Site adresi GitHub Pages üzerinde kalır. 32 KiB üzerindeki gömülü ders dosyaları `drive.file` kapsamıyla öğretim üyesinin Drive hesabındaki **ME101 — Course Files** klasörüne kaydedilir. Ders listesi, küçük içerikler ve dosya adresleri GitHub’da tutulur. Mevcut `data/` kayıtları ve yerel notlar silinmez.
+
+Öğretim üyesi girişinden sonra **Drive’a Bağlan** ile bir kez Google hesabına izin verilir. **Yerel Dersleri Drive’a Aktar / Dersleri Yayımla** önce **ME101 — Backups** altında bağımsız yedeği tamamlar, ardından büyük dosyaları aktarır. Dosyanın boyutu ve Google SHA-256 değeri doğrulanmadan ders adresi değiştirilmez. Yedeklerde mevcut uzak medya için ayrı, özel kopyalar saklanır. Başarısız yüklemeler sonraki denemede kaldığı yerden sürer; kota hatası ücretli plana geçiş başlatmaz.
+
+Mevcut Rust Worker, yalnız yayımlanan ders dosyalarını içerik özetiyle sunar. Böylece mevcut PPTX görüntüleyicisi dosyayı tarayıcıda okumaya devam eder; indirme zorunlu değildir. Drive yedekleri bu dosya yolundan sunulmaz. Google yenileme belirteci yalnız sunucu hesabının erişebildiği `portalSettings` kaydındadır; istemci Firestore kuralları bu kayıtlara erişimi kapatır. Google erişim belirteci yalnız öğretim üyesinin sekme belleğinde tutulur.
+
+Google OAuth web istemcisi, mevcut projede `DRIVE_CLIENT_ID` ve Worker gizli ayarı `DRIVE_CLIENT_SECRET` ile yapılandırılır. Tek dönüş adresi `https://lecturenotes-approval.aserdargl.workers.dev/drive/callback` olur. Google uygulaması Testing durumundaysa izin verilen test kullanıcısı eklenmelidir ve Google izinleri dönemsel yenileme gerektirebilir. Kart, R2, yeni faturalandırma hesabı, ücretli plan veya kullandıkça öde açılmaz. Google Drive’ın mevcut depolama ve API kotaları uygulanır.
+
 ## Ders ve görselleri tüm cihazlarda yayımlama
 
 1. Mevcut notların bulunduğu tarayıcıda sayfayı açın.
