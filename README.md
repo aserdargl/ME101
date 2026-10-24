@@ -67,3 +67,5 @@ Kaynak değişikliklerinden önce uzak dalı alın; `data/` altındaki kullanıc
 JavaScript modülleri değiştiğinde yayımlamadan önce `npm run build` çalıştırın. Bu komut kaynak sırasını koruyarak `portal-startup.js` dosyasını oluşturur ve HTML içindeki önbellek sürümünü içeriğe göre günceller. `npm test`, paketin kaynaklarla eşleştiğini de denetler. `firebase-config.js` ayrı kalır; ZIP okuyucusu yalnız dosya içe aktarılırken GitHub’dan yüklenir.
 
 `PLAYWRIGHT_MODULE` Playwright kurulum yolunu gösterirken `node tests/startup-performance.cjs` ayrı localhost kaynağında beş soğuk açılış ölçer. `STARTUP_BEFORE=1` önceki yayını, `STARTUP_VERIFY=1` düzenleyicide açma/iptal/kaydetme/yenileme, kayıt koruma, ZIP içe aktarma ve katalog görünümü eşitliğini denetler. Sentetik veri kullanılır; canlı kayıtlara yazılmaz.
+
+Kullanıcı canlı açılış ölçümü istediğinde `node tests/live-startup.cjs`, gerçek siteyi temiz ve oturumsuz tarayıcılarda yalnız okuyarak ölçer; sentetik veri eklemez, düğmelere basmaz ve yazma isteklerini engeller. İlk ziyaret ve önbellekli tekrar ziyaret ayrı raporlanır. Sonuçlar `tests/live-startup-results.md` dosyasındadır.
