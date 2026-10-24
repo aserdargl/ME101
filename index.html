@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="style.css?v=9" />
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -497,115 +497,137 @@
           </div>
         </div>
 
-        <!-- 2. BÖLÜM: SLAYT SEÇİMİ VE SLAYT İÇERİĞİ DÜZENLEME -->
+        <!-- 2. BÖLÜM: KENARDA GÖRSEL SLAYT ÖNİZLEME ŞERİDİ VE SLAYT DÜZENLEME -->
         <div class="edit-section-box" style="margin-top:0.85rem;">
           <div class="edit-slides-header">
-            <div class="edit-section-title" style="margin-bottom:0;">2. Slayt İçeriklerini Düzenle</div>
+            <div>
+              <div class="edit-section-title" style="margin-bottom:0.1rem;">2. Slayt Önizlemeleri ve Araya Slayt Ekleme</div>
+              <small style="font-size:0.74rem; color:#6e6256;">Sol kenardaki slayt önizlemelerinden istediğiniz iki slaydın arasındaki <strong>+ Buraya Ekle</strong> butonuna tıklayarak tam o noktaya yeni slayt veya simülasyon ekleyebilirsiniz.</small>
+            </div>
             <div class="edit-slide-global-actions">
-              <button type="button" id="btn-edit-add-slide" class="btn btn-secondary" style="font-size:0.74rem; padding:0.28rem 0.6rem;">
-                + Yeni Slayt Ekle
+              <button type="button" id="btn-edit-add-slide" class="btn btn-secondary" style="font-size:0.74rem; padding:0.28rem 0.6rem;" title="Seçili slayttan hemen sonraya yeni konu slaytı ekle">
+                + Seçili Slayttan Sonra Konu Ekle
               </button>
-              <button type="button" id="btn-edit-add-sim-slide" class="btn btn-secondary" style="font-size:0.74rem; padding:0.28rem 0.6rem;">
-                + Simülasyon Slaytı Ekle
+              <button type="button" id="btn-edit-add-sim-slide" class="btn btn-secondary" style="font-size:0.74rem; padding:0.28rem 0.6rem;" title="Seçili slayttan hemen sonraya simülasyon slaytı ekle">
+                + Seçili Slayttan Sonra Simülasyon Ekle
               </button>
-              <label class="btn btn-secondary" style="cursor:pointer; margin:0; font-size:0.74rem; padding:0.28rem 0.6rem;">
-                + Görsel Slayt Ekle (PNG/JPG)
+              <label class="btn btn-secondary" style="cursor:pointer; margin:0; font-size:0.74rem; padding:0.28rem 0.6rem;" title="Seçili slayttan hemen sonraya görsel slayt(lar) ekle">
+                + Seçili Slayttan Sonra Görsel Ekle
                 <input type="file" id="inp-edit-add-images" accept="image/*" multiple class="hidden" />
               </label>
             </div>
           </div>
 
-          <!-- Slayt Sekmeleri -->
-          <div id="edit-slide-tabs" class="edit-slide-tabs">
-            <!-- JS ile doldurulacak -->
-          </div>
+          <div class="edit-slides-workspace">
+            <!-- SOL KENAR: GÖRSEL SLAYT ÖNİZLEME ŞERİDİ (POWERPOINT TARZI FILMSTRIP) -->
+            <aside class="edit-slides-sidebar">
+              <div class="edit-sidebar-header">
+                <span>Slayt Sırası ve Önizleme</span>
+                <span id="edit-sidebar-total-badge" class="slide-count-tag">4 Slayt</span>
+              </div>
+              <div id="edit-slide-tabs" class="edit-slide-filmstrip">
+                <!-- JS ile görsel slayt küçük resimleri ve aralardaki "+ Buraya Ekle" butonları doldurulacak -->
+              </div>
+            </aside>
 
-          <!-- Seçili Slayt Düzenleme Formu -->
-          <div id="edit-slide-form-area" class="edit-slide-form-area">
-            <div class="edit-slide-toolbar">
-              <span id="edit-current-slide-badge" class="slide-count-tag">Slayt 1 / 4</span>
-              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
-                <button type="button" id="btn-move-slide-up" class="btn btn-secondary" style="font-size:0.72rem; padding:0.22rem 0.5rem;" title="Slaytı bir önceki sıraya taşı">
-                  &larr; Öncekine Taşı
-                </button>
-                <button type="button" id="btn-move-slide-down" class="btn btn-secondary" style="font-size:0.72rem; padding:0.22rem 0.5rem;" title="Slaytı bir sonraki sıraya taşı">
-                  Sonrakine Taşı &rarr;
-                </button>
-                <button type="button" id="btn-delete-current-slide" class="btn-delete-lecture" style="font-size:0.72rem; padding:0.22rem 0.55rem;" title="Bu slaytı dersten sil">
-                  Slaytı Sil
-                </button>
-              </div>
-            </div>
-
-            <div class="form-grid" style="grid-template-columns: 1fr 1.6fr 0.9fr 1.1fr; margin-top:0.55rem;">
-              <div class="form-field">
-                <label>Üst Etiket (Bölüm)</label>
-                <input type="text" id="edit-slide-kicker" placeholder="Örn: 1. HAFTA • BÖLÜM I" />
-              </div>
-              <div class="form-field">
-                <label>Slayt Başlığı</label>
-                <input type="text" id="edit-slide-title" placeholder="Slayt başlığı..." />
-              </div>
-              <div class="form-field">
-                <label>Varsayılan Görünüm</label>
-                <select id="edit-slide-viewmode">
-                  <option value="web">Web Ders Notu</option>
-                  <option value="ppt">PPT Levhası</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label>Slayt Türü / Simülasyon</label>
-                <select id="edit-slide-simtype">
-                  <option value="none">Standart Konu Slaytı</option>
-                  <option value="gear">Dişli Çark Simülasyonu</option>
-                  <option value="beam">Ankastre Kiriş Simülasyonu</option>
-                  <option value="tensile">Çekme Deneyi Simülasyonu</option>
-                  <option value="crank">Krank-Biyel Simülasyonu</option>
-                </select>
-              </div>
-            </div>
-
-            <div id="edit-slide-standard-fields">
-              <div class="form-field" style="margin-top:0.55rem;">
-                <label>Slayt Giriş / Açıklama Paragrafı (Üst Özet Cümlesi)</label>
-                <input type="text" id="edit-slide-lead" placeholder="Slaydın üst kısmında yer alan açıklama cümlesi..." />
+            <!-- SAĞ TARAF: SEÇİLİ SLAYT CANLI ÖNİZLEMESİ VE DÜZENLEME FORMU -->
+            <div id="edit-slide-form-area" class="edit-slide-form-area">
+              <div class="edit-slide-toolbar">
+                <span id="edit-current-slide-badge" class="slide-count-tag">Slayt 1 / 4</span>
+                <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                  <button type="button" id="btn-move-slide-up" class="btn btn-secondary" style="font-size:0.72rem; padding:0.22rem 0.5rem;" title="Slaytı bir üst sıraya taşı">
+                    &uarr; Yukarı Taşı
+                  </button>
+                  <button type="button" id="btn-move-slide-down" class="btn btn-secondary" style="font-size:0.72rem; padding:0.22rem 0.5rem;" title="Slaytı bir alt sıraya taşı">
+                    &darr; Aşağı Taşı
+                  </button>
+                  <button type="button" id="btn-delete-current-slide" class="btn-delete-lecture" style="font-size:0.72rem; padding:0.22rem 0.55rem;" title="Bu slaytı dersten sil">
+                    Slaytı Sil
+                  </button>
+                </div>
               </div>
 
-              <div class="form-grid" style="grid-template-columns: 1.35fr 0.65fr; margin-top:0.55rem; align-items: start;">
+              <!-- SEÇİLİ SLAYT CANLI GÖRSEL ÖNİZLEME KUTUSU -->
+              <div class="edit-live-preview-wrap">
+                <div class="edit-live-preview-header">
+                  <span>Seçili Slayt Önizlemesi</span>
+                  <small id="edit-live-preview-type-label">Web &amp; PPT Levha Görünümü</small>
+                </div>
+                <div id="edit-live-preview-stage" class="edit-live-preview-stage">
+                  <!-- JS ile anlık slayt önizlemesi -->
+                </div>
+              </div>
+
+              <div class="form-grid" style="grid-template-columns: 1fr 1.6fr 0.9fr 1.1fr; margin-top:0.65rem;">
                 <div class="form-field">
-                  <label>Slayt Maddeleri (Her satır bir madde olur — hem Web hem PPT Levha görünümünü günceller)</label>
-                  <textarea id="edit-slide-bullets" rows="4" placeholder="Her satıra bir slayt maddesi yazınız..."></textarea>
+                  <label>Üst Etiket (Bölüm)</label>
+                  <input type="text" id="edit-slide-kicker" placeholder="Örn: 1. HAFTA • BÖLÜM I" />
+                </div>
+                <div class="form-field">
+                  <label>Slayt Başlığı</label>
+                  <input type="text" id="edit-slide-title" placeholder="Slayt başlığı..." />
+                </div>
+                <div class="form-field">
+                  <label>Varsayılan Görünüm</label>
+                  <select id="edit-slide-viewmode">
+                    <option value="web">Web Ders Notu</option>
+                    <option value="ppt">PPT Levhası</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Slayt Türü / Simülasyon</label>
+                  <select id="edit-slide-simtype">
+                    <option value="none">Standart Konu Slaytı</option>
+                    <option value="gear">Dişli Çark Simülasyonu</option>
+                    <option value="beam">Ankastre Kiriş Simülasyonu</option>
+                    <option value="tensile">Çekme Deneyi Simülasyonu</option>
+                    <option value="crank">Krank-Biyel Simülasyonu</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="edit-slide-standard-fields">
+                <div class="form-field" style="margin-top:0.55rem;">
+                  <label>Slayt Giriş / Açıklama Paragrafı (Üst Özet Cümlesi)</label>
+                  <input type="text" id="edit-slide-lead" placeholder="Slaydın üst kısmında yer alan açıklama cümlesi..." />
                 </div>
 
-                <div>
+                <div class="form-grid" style="grid-template-columns: 1.35fr 0.65fr; margin-top:0.55rem; align-items: start;">
                   <div class="form-field">
-                    <label>Formül Kutusu (İsteğe Bağlı)</label>
-                    <input type="text" id="edit-slide-formula" placeholder="Örn: P = T · ω" />
+                    <label>Slayt Maddeleri (Her satır bir madde olur — hem Web hem PPT Levha görünümünü günceller)</label>
+                    <textarea id="edit-slide-bullets" rows="4" placeholder="Her satıra bir slayt maddesi yazınız..."></textarea>
                   </div>
-                  <div class="form-field" style="margin-top:0.4rem;">
-                    <label>Formül Alt Açıklaması</label>
-                    <input type="text" id="edit-slide-formula-sub" placeholder="Örn: P: Güç [W] | T: Moment [N·m]" />
-                  </div>
-                  <div class="form-field" style="margin-top:0.45rem;">
-                    <label>Slayt Görseli (PNG/JPG)</label>
-                    <div style="display:flex; gap:0.35rem; align-items:center; flex-wrap:wrap;">
-                      <label class="btn btn-secondary" style="cursor:pointer; margin:0; font-size:0.72rem; padding:0.25rem 0.55rem;">
-                        Görsel Seç
-                        <input type="file" id="inp-edit-slide-img" accept="image/*" class="hidden" />
-                      </label>
-                      <button type="button" id="btn-edit-remove-slide-img" class="btn-clear-rating hidden">Görseli Kaldır</button>
-                      <span id="edit-slide-img-status" style="font-size:0.7rem; color:#6e6256;">Görsel yok</span>
+
+                  <div>
+                    <div class="form-field">
+                      <label>Formül Kutusu (İsteğe Bağlı)</label>
+                      <input type="text" id="edit-slide-formula" placeholder="Örn: P = T · ω" />
+                    </div>
+                    <div class="form-field" style="margin-top:0.4rem;">
+                      <label>Formül Alt Açıklaması</label>
+                      <input type="text" id="edit-slide-formula-sub" placeholder="Örn: P: Güç [W] | T: Moment [N·m]" />
+                    </div>
+                    <div class="form-field" style="margin-top:0.45rem;">
+                      <label>Slayt Görseli (PNG/JPG)</label>
+                      <div style="display:flex; gap:0.35rem; align-items:center; flex-wrap:wrap;">
+                        <label class="btn btn-secondary" style="cursor:pointer; margin:0; font-size:0.72rem; padding:0.25rem 0.55rem;">
+                          Görsel Seç
+                          <input type="file" id="inp-edit-slide-img" accept="image/*" class="hidden" />
+                        </label>
+                        <button type="button" id="btn-edit-remove-slide-img" class="btn-clear-rating hidden">Görseli Kaldır</button>
+                        <span id="edit-slide-img-status" style="font-size:0.7rem; color:#6e6256;">Görsel yok</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <details class="advanced-html-details" style="margin-top:0.55rem;">
-                <summary>Gelişmiş: Slayt Web HTML Kodunu Doğrudan Düzenle</summary>
-                <div class="form-field" style="margin-top:0.4rem;">
-                  <textarea id="edit-slide-raw-html" rows="5" style="font-family: 'JetBrains Mono', monospace; font-size:0.76rem;"></textarea>
-                </div>
-              </details>
+                <details class="advanced-html-details" style="margin-top:0.55rem;">
+                  <summary>Gelişmiş: Slayt Web HTML Kodunu Doğrudan Düzenle</summary>
+                  <div class="form-field" style="margin-top:0.4rem;">
+                    <textarea id="edit-slide-raw-html" rows="5" style="font-family: 'JetBrains Mono', monospace; font-size:0.76rem;"></textarea>
+                  </div>
+                </details>
+              </div>
             </div>
           </div>
         </div>
@@ -625,6 +647,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

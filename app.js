@@ -1976,6 +1976,69 @@ function updateSlideImageStatusUI(imageUrl) {
   }
 }
 
+let pendingImageInsertIndex = null;
+
+function updateEditLivePreview() {
+  const stage = document.getElementById("edit-live-preview-stage");
+  const typeLabel = document.getElementById("edit-live-preview-type-label");
+  if (!stage || !editingLectureDraft || !editingLectureDraft.slides[editingSlideIndex]) return;
+
+  const slide = editingLectureDraft.slides[editingSlideIndex];
+  const weekVal = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
+  const kicker = document.getElementById("edit-slide-kicker").value.trim() || slide.kicker || weekVal.toUpperCase();
+  const title = document.getElementById("edit-slide-title").value.trim() || slide.title || `Slayt ${editingSlideIndex + 1}`;
+  const simType = document.getElementById("edit-slide-simtype").value;
+  const bulletsRaw = document.getElementById("edit-slide-bullets").value;
+  const bulletLines = bulletsRaw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  let previewSlideObj;
+  if (simType !== "none") {
+    const simTemplate = getSimulationSlideObject(simType, weekVal.toUpperCase());
+    previewSlideObj = {
+      kicker,
+      title,
+      pptSummaryBullets: simTemplate.pptSummaryBullets
+    };
+    if (typeLabel) typeLabel.textContent = `Teknik Simülasyon Slaytı (${simType.toUpperCase()})`;
+  } else {
+    const activeImg =
+      slide._imageChanged !== undefined
+        ? slide._currentImageUrl
+        : slide.pptImageUrl || (slide.extractedImages && slide.extractedImages[0]) || "";
+    previewSlideObj = {
+      kicker,
+      title,
+      pptImageUrl: slide.defaultViewMode === "ppt" && activeImg ? activeImg : undefined,
+      extractedImages: activeImg ? [activeImg] : [],
+      pptSummaryBullets: bulletLines.length > 0 ? bulletLines : slide.pptSummaryBullets
+    };
+    if (typeLabel) {
+      typeLabel.textContent = activeImg
+        ? "Görselli Slayt Önizlemesi"
+        : "Slayt Levha Önizlemesi (Canlı)";
+    }
+  }
+
+  const renderedVisual = buildPptExactVisualHtml(
+    previewSlideObj,
+    editingSlideIndex,
+    editingLectureDraft.slides.length,
+    weekVal
+  );
+  stage.innerHTML = renderedVisual;
+
+  const activeThumbCard = document.querySelector("#edit-slide-tabs .edit-thumb-card.active");
+  if (activeThumbCard) {
+    const thumbPrev = activeThumbCard.querySelector(".edit-thumb-preview");
+    const thumbTitle = activeThumbCard.querySelector(".edit-thumb-title");
+    if (thumbPrev) thumbPrev.innerHTML = renderedVisual;
+    if (thumbTitle) thumbTitle.textContent = title;
+  }
+}
+
 function loadSlideIntoEditForm(slideIdx) {
   if (!editingLectureDraft || !editingLectureDraft.slides.length) return;
   editingSlideIndex = Math.max(0, Math.min(slideIdx, editingLectureDraft.slides.length - 1));
@@ -1985,7 +2048,12 @@ function loadSlideIntoEditForm(slideIdx) {
   editingSlideRawHtmlTouched = false;
 
   document.getElementById("edit-current-slide-badge").textContent =
-    `Slayt ${editingSlideIndex + 1} / ${editingLectureDraft.slides.length}`;
+    `Seçili: Slayt ${editingSlideIndex + 1} / ${editingLectureDraft.slides.length}`;
+  const sidebarBadge = document.getElementById("edit-sidebar-total-badge");
+  if (sidebarBadge) {
+    sidebarBadge.textContent = `${editingLectureDraft.slides.length} Slayt`;
+  }
+
   document.getElementById("btn-move-slide-up").disabled = editingSlideIndex === 0;
   document.getElementById("btn-move-slide-down").disabled =
     editingSlideIndex === editingLectureDraft.slides.length - 1;
@@ -2011,6 +2079,45 @@ function loadSlideIntoEditForm(slideIdx) {
   }
 
   renderEditSlideTabs();
+  updateEditLivePreview();
+}
+
+function createInsertBetweenBar(insertPos, totalSlides) {
+  const bar = document.createElement("div");
+  bar.className = "edit-insert-between";
+  let posLabel = `+ ${insertPos} ile ${insertPos + 1} Arasına:`;
+  if (insertPos === 0) {
+    posLabel = "+ En Başa Ekle:";
+  } else if (insertPos === totalSlides) {
+    posLabel = "+ En Sona Ekle:";
+  }
+
+  bar.innerHTML = `
+    <span class="edit-insert-label">${posLabel}</span>
+    <div class="edit-insert-btns">
+      <button type="button" class="btn-insert-here" data-ins-type="slide" data-ins-pos="${insertPos}" title="Bu araya yeni konu/metin slaytı ekle">+Konu</button>
+      <button type="button" class="btn-insert-here" data-ins-type="sim" data-ins-pos="${insertPos}" title="Bu araya teknik simülasyon slaytı ekle">+Sim</button>
+      <button type="button" class="btn-insert-here" data-ins-type="img" data-ins-pos="${insertPos}" title="Bu araya görsel (PNG/JPG) slayt ekle">+Görsel</button>
+    </div>
+  `;
+
+  bar.querySelectorAll(".btn-insert-here").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const pos = parseInt(btn.dataset.insPos, 10);
+      const type = btn.dataset.insType;
+      if (type === "slide") {
+        insertContentSlideAt(pos);
+      } else if (type === "sim") {
+        insertSimSlideAt(pos);
+      } else if (type === "img") {
+        pendingImageInsertIndex = pos;
+        document.getElementById("inp-edit-add-images").click();
+      }
+    });
+  });
+
+  return bar;
 }
 
 function renderEditSlideTabs() {
@@ -2018,18 +2125,42 @@ function renderEditSlideTabs() {
   if (!tabsContainer || !editingLectureDraft) return;
   tabsContainer.innerHTML = "";
 
+  const total = editingLectureDraft.slides.length;
+  const weekVal = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
+
+  // 0. pozisyona (En Başa) ekleme çubuğu
+  tabsContainer.appendChild(createInsertBetweenBar(0, total));
+
   editingLectureDraft.slides.forEach((s, idx) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = `edit-slide-tab ${idx === editingSlideIndex ? "active" : ""}`;
-    const shortTitle = (s.title || `Slayt ${idx + 1}`).slice(0, 26);
-    btn.textContent = `${idx + 1}. ${shortTitle}${(s.title || "").length > 26 ? "…" : ""}`;
-    btn.addEventListener("click", () => {
+    const card = document.createElement("div");
+    card.className = `edit-thumb-card ${idx === editingSlideIndex ? "active" : ""}`;
+
+    const simType = detectSlideSimType(s);
+    const hasImg = Boolean(s.pptImageUrl || (s.extractedImages && s.extractedImages.length > 0));
+    const typeTagText =
+      simType !== "none" ? `Simülasyon (${simType})` : hasImg ? "Görsel Slayt" : "Konu Slaytı";
+
+    const thumbVisualHtml = buildPptExactVisualHtml(s, idx, total, weekVal);
+
+    card.innerHTML = `
+      <div class="edit-thumb-top">
+        <span class="edit-thumb-num">${idx + 1}. Slayt</span>
+        <span class="edit-thumb-type-tag">${typeTagText}</span>
+      </div>
+      <div class="edit-thumb-preview">${thumbVisualHtml}</div>
+      <div class="edit-thumb-title">${escapeXml(s.title || `Slayt ${idx + 1}`)}</div>
+    `;
+
+    card.addEventListener("click", () => {
       if (idx === editingSlideIndex) return;
       commitCurrentSlideFormToDraft();
       loadSlideIntoEditForm(idx);
     });
-    tabsContainer.appendChild(btn);
+
+    tabsContainer.appendChild(card);
+
+    // Bu slayt ile bir sonraki slayt arasına (idx + 1) ekleme çubuğu
+    tabsContainer.appendChild(createInsertBetweenBar(idx + 1, total));
   });
 }
 
@@ -2239,6 +2370,16 @@ document.getElementById("edit-slide-simtype").addEventListener("change", (e) => 
   if (standardFieldsBox) {
     standardFieldsBox.classList.toggle("hidden", simVal !== "none");
   }
+  updateEditLivePreview();
+});
+
+["edit-slide-kicker", "edit-slide-title", "edit-slide-bullets", "edit-lec-week"].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener("input", () => {
+      updateEditLivePreview();
+    });
+  }
 });
 
 document.getElementById("edit-slide-raw-html").addEventListener("input", () => {
@@ -2254,6 +2395,7 @@ document.getElementById("inp-edit-slide-img").addEventListener("change", async (
     slide._currentImageUrl = dataUrl;
     slide._imageChanged = true;
     updateSlideImageStatusUI(dataUrl);
+    updateEditLivePreview();
   } catch (err) {
     alert("Görsel yüklenemedi: " + err.message);
   }
@@ -2266,14 +2408,15 @@ document.getElementById("btn-edit-remove-slide-img").addEventListener("click", (
   slide._imageChanged = true;
   document.getElementById("inp-edit-slide-img").value = "";
   updateSlideImageStatusUI("");
+  updateEditLivePreview();
 });
 
-// Yeni Slayt Ekle
-document.getElementById("btn-edit-add-slide").addEventListener("click", () => {
+function insertContentSlideAt(insertPos) {
   if (!editingLectureDraft) return;
   commitCurrentSlideFormToDraft();
   const weekLabel = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
-  const newSlideNum = editingLectureDraft.slides.length + 1;
+  const targetPos = Math.max(0, Math.min(insertPos, editingLectureDraft.slides.length));
+  const newSlideNum = targetPos + 1;
   const newSlide = {
     kicker: `${weekLabel.toUpperCase()} • BÖLÜM ${newSlideNum}`,
     title: `Yeni Slayt Başlığı (${newSlideNum})`,
@@ -2290,21 +2433,33 @@ document.getElementById("btn-edit-add-slide").addEventListener("click", () => {
       </ul>
     `
   };
-  editingLectureDraft.slides.push(newSlide);
-  loadSlideIntoEditForm(editingLectureDraft.slides.length - 1);
-});
+  editingLectureDraft.slides.splice(targetPos, 0, newSlide);
+  loadSlideIntoEditForm(targetPos);
+}
 
-// Simülasyon Slaytı Ekle
-document.getElementById("btn-edit-add-sim-slide").addEventListener("click", () => {
+function insertSimSlideAt(insertPos) {
   if (!editingLectureDraft) return;
   commitCurrentSlideFormToDraft();
   const weekLabel = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
+  const targetPos = Math.max(0, Math.min(insertPos, editingLectureDraft.slides.length));
   const simSlide = getSimulationSlideObject("gear", weekLabel.toUpperCase());
-  editingLectureDraft.slides.push(simSlide);
-  loadSlideIntoEditForm(editingLectureDraft.slides.length - 1);
+  editingLectureDraft.slides.splice(targetPos, 0, simSlide);
+  loadSlideIntoEditForm(targetPos);
+}
+
+// Seçili Slayttan Hemen Sonraya Yeni Slayt Ekle
+document.getElementById("btn-edit-add-slide").addEventListener("click", () => {
+  if (!editingLectureDraft) return;
+  insertContentSlideAt(editingSlideIndex + 1);
 });
 
-// Çoklu Görsel Slayt Ekle (PNG/JPG)
+// Seçili Slayttan Hemen Sonraya Simülasyon Slaytı Ekle
+document.getElementById("btn-edit-add-sim-slide").addEventListener("click", () => {
+  if (!editingLectureDraft) return;
+  insertSimSlideAt(editingSlideIndex + 1);
+});
+
+// Çoklu Görsel Slayt Ekle (PNG/JPG) — Seçilen araya veya seçili slayttan sonraya
 document.getElementById("inp-edit-add-images").addEventListener("change", async (e) => {
   const files = Array.from(e.target.files || []);
   if (!files.length || !editingLectureDraft) return;
@@ -2312,10 +2467,17 @@ document.getElementById("inp-edit-add-images").addEventListener("change", async 
   const weekLabel = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
   const lecTitle = document.getElementById("edit-lec-title").value.trim() || editingLectureDraft.title || "Sunum";
 
+  const basePos =
+    typeof pendingImageInsertIndex === "number"
+      ? Math.max(0, Math.min(pendingImageInsertIndex, editingLectureDraft.slides.length))
+      : editingSlideIndex + 1;
+  pendingImageInsertIndex = null;
+
+  const newImgSlides = [];
   for (let i = 0; i < files.length; i++) {
     const dataUrl = await readFileAsDataURL(files[i]);
-    const slNum = editingLectureDraft.slides.length + 1;
-    editingLectureDraft.slides.push({
+    const slNum = basePos + i + 1;
+    newImgSlides.push({
       kicker: `${weekLabel.toUpperCase()} • SLAYT ${slNum}`,
       title: `${lecTitle} — Slayt ${slNum}`,
       defaultViewMode: "ppt",
@@ -2330,8 +2492,9 @@ document.getElementById("inp-edit-add-images").addEventListener("change", async 
       `
     });
   }
+  editingLectureDraft.slides.splice(basePos, 0, ...newImgSlides);
   e.target.value = "";
-  loadSlideIntoEditForm(editingLectureDraft.slides.length - 1);
+  loadSlideIntoEditForm(basePos);
 });
 
 // Slayt Sırası Değiştirme & Silme
