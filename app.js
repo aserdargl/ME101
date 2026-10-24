@@ -522,84 +522,13 @@ function escapeXml(unsafe) {
 // YÖNTEM 2: BİREBİR POWERPOINT GÖRSEL LEVHASI ÜRETİCİ (KLASİK AKADEMİK TEMA)
 // ============================================================================
 function buildPptExactVisualHtml(slide, slideIdx, totalSlides, lectureWeek) {
-  if (slide.pptImageUrl) {
-    return `
-      <div class="ppt-exact-frame">
-        <img src="${slide.pptImageUrl}" alt="${escapeXml(slide.title)}" />
-        <span class="ppt-frame-badge">Orijinal PowerPoint Slayt Görseli (Yöntem II)</span>
-      </div>
-    `;
-  }
-
-  const bullets = slide.pptSummaryBullets || [
-    "MEE 101 — Makine Mühendisliğine Giriş Ders Notu",
-    "Üstteki butondan Web Görünümü ile PPT Levha Görünümü arasında geçiş yapabilirsiniz."
-  ];
-
-  const bulletSvgItems = bullets
-    .slice(0, 6)
-    .map((b, i) => {
-      const y = 250 + i * 68;
-      const text = b.length > 78 ? b.slice(0, 75) + "..." : b;
-      return `
-        <g transform="translate(85, ${y})">
-          <rect x="0" y="-20" width="8" height="24" fill="#5c3d28" />
-          <text x="24" y="0" fill="#241c15" font-family="Inter, sans-serif" font-size="24" font-weight="500">${escapeXml(text)}</text>
-        </g>
-      `;
-    })
-    .join("");
-
-  const embeddedImg =
-    slide.extractedImages && slide.extractedImages.length > 0
-      ? `<image href="${slide.extractedImages[0]}" x="820" y="210" width="380" height="360" preserveAspectRatio="xMidYMid contain" />`
-      : `
-        <g transform="translate(940, 320)">
-          <rect x="0" y="0" width="220" height="180" fill="#f5f2eb" stroke="#bfaf9c" stroke-width="2" />
-          <line x1="0" y1="45" x2="220" y2="45" stroke="#d8cfc2" />
-          <text x="110" y="30" text-anchor="middle" fill="#5c3d28" font-family="JetBrains Mono, monospace" font-size="16" font-weight="700">MEE 101</text>
-          <text x="110" y="105" text-anchor="middle" fill="#3b2818" font-family="Source Serif 4, Georgia, serif" font-size="22" font-weight="700">Teknik Şema</text>
-          <text x="110" y="135" text-anchor="middle" fill="#6e6256" font-family="Inter, sans-serif" font-size="14">Slayt ${slideIdx + 1}</text>
-        </g>
-      `;
-
-  return `
-    <div class="ppt-exact-frame">
-      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
-        <rect width="1280" height="720" fill="#fdfcfa" />
-        <!-- Üst Akademik Başlık Bandı -->
-        <rect x="0" y="0" width="1280" height="145" fill="#3b2818" />
-        <rect x="0" y="145" width="1280" height="6" fill="#8c5a3c" />
-        <text x="75" y="55" fill="#d8c3a5" font-family="JetBrains Mono, monospace" font-size="17" font-weight="600">${escapeXml(slide.kicker || lectureWeek)}</text>
-        <text x="75" y="108" fill="#ffffff" font-family="Source Serif 4, Georgia, serif" font-size="34" font-weight="700">${escapeXml(slide.title)}</text>
-
-        <!-- Maddeler -->
-        ${bulletSvgItems}
-
-        <!-- Sağ Teknik Kutu / Görsel -->
-        ${embeddedImg}
-
-        <!-- Alt Bilgi Çubuğu -->
-        <line x1="60" y1="650" x2="1220" y2="650" stroke="#d8cfc2" stroke-width="2" />
-        <text x="60" y="685" fill="#6e6256" font-family="Inter, sans-serif" font-size="17">MEE 101 — Makine Mühendisliğine Giriş | PowerPoint Slayt Levhası</text>
-        <text x="1220" y="685" text-anchor="end" fill="#3b2818" font-family="JetBrains Mono, monospace" font-size="17" font-weight="700">${slideIdx + 1} / ${totalSlides}</text>
-      </svg>
-      <span class="ppt-frame-badge">PPT Levha Görünümü (Yöntem II)</span>
-    </div>
-  `;
+  return SlideVisual.render(slide, slideIdx, totalSlides, lectureWeek);
 }
 
 // ============================================================================
 // 1. ÖĞRETİM ÜYESİ YETKİLENDİRME, ÖĞRENCİ LİSTESİ (OBS) VE PUANLAMA SİSTEMİ
 // ============================================================================
-// Eski önbellek anahtarlarını temizle
-try {
-  localStorage.removeItem("me101_lecture_ratings_v1");
-  localStorage.removeItem("me101_lecture_ratings_v2");
-  localStorage.removeItem("me101_student_votes_v3");
-} catch {
-  // ignore
-}
+// Legacy records are retained for recovery; startup never clears stored data.
 
 const RATING_STORAGE_KEY = "me101_student_votes_v4";
 const CUSTOM_LECTURES_KEY = "me101_custom_lectures_v1";
@@ -693,6 +622,7 @@ function parseRosterText(rawText) {
 }
 
 function updateAdminUI() {
+  LecturePublishing.setLocalAdmin(isAdminAuthenticated);
   const adminToolbar = document.getElementById("admin-toolbar");
   const adminSectionActions = document.getElementById("admin-section-actions");
   const adminToggleBtn = document.getElementById("btn-admin-toggle");
@@ -742,11 +672,19 @@ function updateStudentUI() {
 }
 
 function saveAllLecturesToStorage() {
+  const snapshot = structuredClone(LECTURES);
+  let legacySaved = false;
   try {
-    localStorage.setItem(ALL_LECTURES_STORAGE_KEY, JSON.stringify(LECTURES));
+    localStorage.setItem(ALL_LECTURES_STORAGE_KEY, JSON.stringify(snapshot));
+    legacySaved = true;
   } catch {
-    // ignore
+    // Large embedded images are saved to IndexedDB below instead.
   }
+  return LectureStorage.save(snapshot).then(saved => {
+    if (!saved && !legacySaved) alert("Notlar bu oturumda açık; ancak yerel kayıt yapılamadı. Sayfayı kapatmadan ders verisini dışa aktarın.");
+    if (saved || legacySaved) LecturePublishing.save();
+    return saved || legacySaved;
+  });
 }
 
 function loadCustomLectures() {
@@ -754,7 +692,7 @@ function loadCustomLectures() {
     const rawAll = localStorage.getItem(ALL_LECTURES_STORAGE_KEY);
     if (rawAll) {
       const parsedAll = JSON.parse(rawAll);
-      if (Array.isArray(parsedAll) && parsedAll.length > 0) {
+      if (Array.isArray(parsedAll)) {
         LECTURES.length = 0;
         parsedAll.forEach((lec) => LECTURES.push(lec));
         return;
@@ -917,8 +855,8 @@ function renderCatalog() {
     card.innerHTML = `
       <div class="lecture-row-top">
         <div class="lecture-title-wrap">
-          <span class="week-tag">${lec.week}</span>
-          <h4>${lec.title}</h4>
+          <span class="week-tag">${escapeXml(lec.week)}</span>
+          <h4>${escapeXml(lec.title)}</h4>
         </div>
         <div class="lecture-meta-right">
           <span class="slide-count-tag">${lec.slides.length} Slayt</span>
@@ -929,7 +867,7 @@ function renderCatalog() {
 
       <div class="lecture-row-bottom">
         <div class="lecture-desc-wrap">
-          <p title="${escapeXml(lec.description)}">${lec.description}</p>
+          <p title="${escapeXml(lec.description)}">${escapeXml(lec.description)}</p>
         </div>
 
         <div class="lecture-controls-right">
@@ -1100,8 +1038,8 @@ function openLecture(lectureId, startInPresentation = false) {
         </button>
         <span class="slide-number-badge">Slayt ${idx + 1} / ${lec.slides.length}</span>
       </div>
-      <div class="slide-kicker">${s.kicker}</div>
-      <h2>${s.title}</h2>
+      <div class="slide-kicker">${escapeXml(s.kicker)}</div>
+      <h2>${escapeXml(s.title)}</h2>
       <div class="slide-body-web ${isPptMode ? "hidden" : ""}">${s.html}</div>
       <div class="slide-body-ppt ${isPptMode ? "" : "hidden"}">${pptVisualHtml}</div>
     `;
@@ -1512,9 +1450,16 @@ function closeAdminLoginModal() {
   adminLoginBackdrop.classList.add("hidden");
 }
 
-function handleAdminLoginSubmit() {
+async function handleAdminLoginSubmit() {
   const val = inpAdminPass.value.trim();
-  if (hashAdminPass(val) === getActiveAdminPassHash()) {
+  let accepted = false;
+  try {
+    accepted = hashAdminPass(val) === getActiveAdminPassHash();
+  } catch (error) {
+    adminLoginError.textContent = error.message;
+  }
+  if (accepted) {
+    inpAdminPass.value = "";
     isAdminAuthenticated = true;
     sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
     closeAdminLoginModal();
@@ -1534,6 +1479,7 @@ function handleAdminLoginSubmit() {
 
 document.getElementById("btn-admin-toggle").addEventListener("click", () => {
   if (isAdminAuthenticated) {
+    LecturePublishing.logout();
     isAdminAuthenticated = false;
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
     closePptxModal();
@@ -1636,99 +1582,7 @@ function handlePptxFileChosen(file) {
 }
 
 async function parsePptxFileToSlides(pptxFile, weekLabel, customTitle) {
-  const zip = await JSZip.loadAsync(pptxFile);
-  const baseTitle = customTitle || pptxFile.name.replace(/\.pptx$/i, "");
-
-  const mediaMap = {};
-  const mediaFiles = Object.keys(zip.files).filter((k) => k.startsWith("ppt/media/"));
-  for (const mediaPath of mediaFiles) {
-    const ext = mediaPath.split(".").pop().toLowerCase();
-    if (["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext)) {
-      const base64 = await zip.file(mediaPath).async("base64");
-      const mime = ext === "svg" ? "image/svg+xml" : `image/${ext === "jpg" ? "jpeg" : ext}`;
-      mediaMap[mediaPath.split("/").pop()] = `data:${mime};base64,${base64}`;
-    }
-  }
-
-  const slideFiles = Object.keys(zip.files)
-    .filter((k) => /^ppt\/slides\/slide\d+\.xml$/.test(k))
-    .sort((a, b) => {
-      const na = parseInt(a.match(/slide(\d+)\.xml/)[1], 10);
-      const nb = parseInt(b.match(/slide(\d+)\.xml/)[1], 10);
-      return na - nb;
-    });
-
-  const parsedSlides = [];
-  const parser = new DOMParser();
-
-  for (let i = 0; i < slideFiles.length; i++) {
-    const slidePath = slideFiles[i];
-    const slideNum = i + 1;
-    const xmlText = await zip.file(slidePath).async("text");
-    const xmlDoc = parser.parseFromString(xmlText, "application/xml");
-
-    const relPath = `ppt/slides/_rels/slide${slideNum}.xml.rels`;
-    const slideImages = [];
-    if (zip.file(relPath)) {
-      const relText = await zip.file(relPath).async("text");
-      const relDoc = parser.parseFromString(relText, "application/xml");
-      const relNodes = Array.from(relDoc.getElementsByTagName("Relationship"));
-      relNodes.forEach((rn) => {
-        const target = rn.getAttribute("Target") || "";
-        const fileName = target.split("/").pop();
-        if (mediaMap[fileName]) {
-          slideImages.push(mediaMap[fileName]);
-        }
-      });
-    }
-
-    const pNodes = Array.from(xmlDoc.getElementsByTagName("a:p"));
-    const lines = [];
-    pNodes.forEach((p) => {
-      const tNodes = Array.from(p.getElementsByTagName("a:t"));
-      const lineStr = tNodes.map((t) => t.textContent).join("").trim();
-      if (lineStr) lines.push(lineStr);
-    });
-
-    const slideTitle = lines.length > 0 ? lines[0] : `${baseTitle} — Bölüm ${slideNum}`;
-    const bulletLines = lines.length > 1 ? lines.slice(1) : ["PowerPoint (.pptx) dosyasından aktarılmış içerik."];
-
-    const bulletsHtml = bulletLines
-      .map(
-        (b, bIdx) => `
-        <li class="fragment">
-          <span class="bullet-marker">${String(bIdx + 1).padStart(2, "0")}</span>
-          <div>${escapeXml(b)}</div>
-        </li>
-      `
-      )
-      .join("");
-
-    const imagesHtml =
-      slideImages.length > 0
-        ? `
-        <div class="info-card fragment" style="text-align:center;">
-          <h4>Slayt Şeması / Görseli</h4>
-          <img src="${slideImages[0]}" style="max-width:100%; max-height:280px; border-radius:4px; margin-top:0.5rem;" alt="Slayt Görseli" />
-        </div>
-      `
-        : "";
-
-    const layoutHtml =
-      slideImages.length > 0
-        ? `<div class="slide-grid-2"><ul class="bullet-list">${bulletsHtml}</ul>${imagesHtml}</div>`
-        : `<ul class="bullet-list">${bulletsHtml}</ul>`;
-
-    parsedSlides.push({
-      kicker: `${weekLabel.toUpperCase()} • BÖLÜM ${slideNum}`,
-      title: slideTitle,
-      pptSummaryBullets: bulletLines,
-      extractedImages: slideImages,
-      html: layoutHtml
-    });
-  }
-
-  return parsedSlides;
+  return PptxImport.parse(pptxFile, weekLabel, customTitle);
 }
 
 btnProcessPptx.addEventListener("click", async () => {
@@ -1806,14 +1660,14 @@ btnProcessPptx.addEventListener("click", async () => {
       parsedSlides.push(getSimulationSlideObject(simType, weekLabel.toUpperCase()));
     }
 
-    const pptxBlobUrl = URL.createObjectURL(selectedPptxFile);
+    const pptxDataUrl = await readFileAsDataURL(selectedPptxFile);
 
     const newLecture = {
       id: `custom-${Date.now()}`,
       week: weekLabel,
       title: customTitle,
       description: customDescInput || `${selectedPptxFile.name} dosyasından aktarılmış ders içeriği.`,
-      pptxUrl: pptxBlobUrl,
+      pptxUrl: pptxDataUrl,
       pptxFileName: selectedPptxFile.name,
       features: ["PPTX'ten Aktarıldı", "Hibrit Slayt Modu"],
       slides: parsedSlides
@@ -1849,13 +1703,13 @@ inpSlideImages.addEventListener("change", (e) => {
   }
 });
 
-btnProcessImages.addEventListener("click", () => {
+btnProcessImages.addEventListener("click", async () => {
   if (selectedSlideImages.length === 0) return;
   const weekLabel = document.getElementById("img-imp-week").value.trim() || "Ek Ders";
   const titleLabel = document.getElementById("img-imp-title").value.trim() || "PowerPoint Görsel Sunumu";
 
-  const imageSlides = selectedSlideImages.map((file, idx) => {
-    const imgUrl = URL.createObjectURL(file);
+  const imageSlides = await Promise.all(selectedSlideImages.map(async (file, idx) => {
+    const imgUrl = await readFileAsDataURL(file);
     return {
       kicker: `${weekLabel.toUpperCase()} • SLAYT ${idx + 1}`,
       title: `${titleLabel} — Slayt ${idx + 1}`,
@@ -1869,7 +1723,7 @@ btnProcessImages.addEventListener("click", () => {
         </div>
       `
     };
-  });
+  }));
 
   const newLec = {
     id: `img-lec-${Date.now()}`,
@@ -1899,7 +1753,16 @@ document.getElementById("btn-export-json").addEventListener("click", () => {
   });
 });
 
-document.getElementById("btn-save-new-admin-pass").addEventListener("click", () => {
+document.getElementById("btn-download-backup").addEventListener("click", () => {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(LECTURES, null, 2)], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `MEE101-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+document.getElementById("btn-save-new-admin-pass").addEventListener("click", async () => {
   if (!isAdminAuthenticated) return;
   const inp = document.getElementById("inp-new-admin-pass");
   const msg = document.getElementById("admin-pass-save-msg");
@@ -2050,8 +1913,11 @@ function updateEditLivePreview() {
     previewSlideObj = {
       kicker,
       title,
-      pptImageUrl: slide.defaultViewMode === "ppt" && activeImg ? activeImg : undefined,
-      extractedImages: activeImg ? [activeImg] : [],
+      pptImageUrl: slide.pptImageUrl || (slide._imageChanged && slide.defaultViewMode === "ppt" ? activeImg : undefined),
+      sourceSlideVisual: slide.sourceSlideVisual,
+      sourceSlideRatio: slide.sourceSlideRatio,
+      sourceSlideEdited: slide.sourceSlideEdited || title !== slide.title || kicker !== slide.kicker || bulletsRaw.trim() !== (editingSlideInitialSnapshot?.bulletsText || "").trim(),
+      extractedImages: slide._imageChanged ? (activeImg ? [activeImg] : []) : (slide.extractedImages || []),
       pptSummaryBullets: bulletLines.length > 0 ? bulletLines : slide.pptSummaryBullets
     };
     if (typeLabel) {
@@ -2214,6 +2080,12 @@ function commitCurrentSlideFormToDraft() {
   const viewMode = document.getElementById("edit-slide-viewmode").value;
   const simType = document.getElementById("edit-slide-simtype").value;
 
+  if (slide.sourceSlideVisual && (title !== snap.title || kicker !== snap.kicker ||
+      document.getElementById("edit-slide-bullets").value.trim() !== snap.bulletsText.trim() ||
+      document.getElementById("edit-slide-lead").value.trim() !== snap.lead ||
+      document.getElementById("edit-slide-formula").value.trim() !== snap.formula ||
+      document.getElementById("edit-slide-formula-sub").value.trim() !== snap.formulaSub || simType !== snap.simType ||
+      editingSlideRawHtmlTouched || slide._imageChanged)) slide.sourceSlideEdited = true;
   slide.kicker = kicker;
   slide.title = title;
   slide.defaultViewMode = viewMode;
@@ -2372,7 +2244,10 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
   document.getElementById("edit-lec-week").value = editingLectureDraft.week || "";
   document.getElementById("edit-lec-title").value = editingLectureDraft.title || "";
   document.getElementById("edit-lec-desc").value = editingLectureDraft.description || "";
-  document.getElementById("edit-lec-pptx-url").value = editingLectureDraft.pptxUrl || "";
+  const sourceUrl = String(editingLectureDraft.pptxUrl || "");
+  document.getElementById("edit-lec-pptx-url").value = /^(data:|blob:)/.test(sourceUrl)
+    ? (editingLectureDraft.pptxFileName ? `pptx/${editingLectureDraft.pptxFileName}` : "")
+    : sourceUrl;
   document.getElementById("edit-pptx-status").textContent = "";
   document.getElementById("edit-save-feedback").textContent = "";
   document.getElementById("inp-edit-pptx-file").value = "";
@@ -2583,15 +2458,19 @@ document.getElementById("inp-edit-pptx-file").addEventListener("change", async (
   statusEl.textContent = "PPTX dosyası çözümleniyor...";
 
   try {
-    const blobUrl = URL.createObjectURL(file);
-    editingLectureDraft.pptxUrl = blobUrl;
+    const dataUrl = await readFileAsDataURL(file);
+    editingLectureDraft.pptxUrl = dataUrl;
     editingLectureDraft.pptxFileName = file.name;
     document.getElementById("edit-lec-pptx-url").value = `pptx/${file.name}`;
 
     if (mode !== "file-only") {
       const parsedSlides = await parsePptxFileToSlides(file, weekLabel, lecTitle);
       if (parsedSlides.length > 0) {
-        if (mode === "replace") {
+        if (mode === "restore-media") {
+          const result = PptxImport.repairMedia(editingLectureDraft.slides, parsedSlides);
+          loadSlideIntoEditForm(editingSlideIndex);
+          statusEl.textContent = `${result.repaired} slaydın görselleri onarıldı; notlar korundu.${result.unmatched.length ? ` ${result.unmatched.length} slayt güvenle eşleştirilemedi ve değiştirilmedi.` : ""}`;
+        } else if (mode === "replace") {
           editingLectureDraft.slides = parsedSlides;
           loadSlideIntoEditForm(0);
           statusEl.innerHTML = `<strong style="color:#2d6a4f;">${file.name}</strong> yüklendi (${parsedSlides.length} slayt ile yenilendi).`;
@@ -2622,7 +2501,9 @@ document.getElementById("btn-save-edit-lecture").addEventListener("click", () =>
     document.getElementById("edit-lec-desc").value.trim() || editingLectureDraft.description;
 
   const manualPptxUrl = document.getElementById("edit-lec-pptx-url").value.trim();
-  if (manualPptxUrl && !String(editingLectureDraft.pptxUrl || "").startsWith("blob:")) {
+  const embeddedSource = /^(blob:|data:)/.test(String(editingLectureDraft.pptxUrl || ""));
+  const embeddedLabel = editingLectureDraft.pptxFileName ? `pptx/${editingLectureDraft.pptxFileName}` : "";
+  if (manualPptxUrl && (!embeddedSource || manualPptxUrl !== embeddedLabel)) {
     editingLectureDraft.pptxUrl = manualPptxUrl;
   }
 
@@ -2673,6 +2554,7 @@ document.getElementById("btn-reset-default-lectures").addEventListener("click", 
   }
   LECTURES.length = 0;
   JSON.parse(JSON.stringify(INITIAL_DEFAULT_LECTURES)).forEach((d) => LECTURES.push(d));
+  saveAllLecturesToStorage();
   closeEditLectureModal();
   renderCatalog();
   if (currentLecture) {
@@ -3375,5 +3257,21 @@ window.addEventListener("resize", () => {
   if (isPresentationMode) resizeDrawingCanvas();
 });
 
-loadCustomLectures();
-renderCatalog();
+/** Opens existing notes first; shared content never silently replaces unsynced notes. */
+async function initializeLectures() {
+  const stored = await LectureStorage.load();
+  if (Array.isArray(stored)) {
+    LECTURES.length = 0;
+    LECTURES.push(...stored);
+  } else loadCustomLectures();
+  const hasLocalData = Array.isArray(stored) || Boolean(localStorage.getItem(ALL_LECTURES_STORAGE_KEY) || localStorage.getItem(CUSTOM_LECTURES_KEY));
+  renderCatalog();
+  await LecturePublishing.initialize({
+    getLectures: () => LECTURES,
+    hasLocalData,
+    applyLectures: lectures => { LECTURES.length = 0; LECTURES.push(...lectures); renderCatalog(); },
+    onAuthenticated: () => { isAdminAuthenticated = true; sessionStorage.setItem(ADMIN_SESSION_KEY, "true"); renderCatalog(); }
+  });
+  if (LectureStorage.warning) window.dispatchEvent(new CustomEvent("lecture-storage-status", { detail: LectureStorage.warning }));
+}
+initializeLectures();

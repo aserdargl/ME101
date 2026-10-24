@@ -5,3 +5,5 @@
 - Run browser tests on a separate local origin with synthetic data. Never create, edit, delete, import, or reset data on the live site for testing.
 - Verify that existing data survives opening, cancelling, saving, and reloading the editor when changing editing behavior. Use isolated test data only.
 - Keep the existing GitHub Pages address and preserve the compact vertical lecture list.
+- Host the site and shared lecture content on GitHub only. Do not introduce Netlify or another hosting/storage service without an explicit user request.
+- Published notes live under `data/`. Fetch the latest remote before source edits; retain these files and never force-push over published content.
