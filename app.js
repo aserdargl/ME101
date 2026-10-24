@@ -1141,6 +1141,7 @@ const registeredRoster = new RegisteredRoster({
   document,
   students: () => FirebaseStudents.isAdmin ? FirebaseStudents.roster : [],
   remove: keys => FirebaseStudents.removeStudents(keys),
+  save: edit => FirebaseStudents.updateStudent(edit),
   reset: no => FirebaseStudents.resetNumber(no),
   clipboard: navigator.clipboard,
   confirm: message => window.confirm(message),

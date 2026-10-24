@@ -55,6 +55,7 @@ window.FirebaseStudents = (() => {
     saveRoster: async students => service ? service.saveRoster(students) : unavailable(),
     removeStudent: async key => service ? service.removeStudent(key) : unavailable(),
     removeStudents: async keys => service ? service.removeStudents(keys) : unavailable(),
+    updateStudent: async edit => service ? service.updateStudent(edit) : unavailable(),
     resetNumber: async no => service ? service.resetNumber(no) : unavailable(),
     reviewApplication: async (uid, action, no, name) => service ? service.reviewApplication(uid, action, no, name) : unavailable()
   };

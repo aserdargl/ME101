@@ -132,6 +132,23 @@
       return this.isAdmin ? { ok: true, removed } : failure("Öğretim üyesi girişi gerekli.");
     }
 
+    /** Updates one existing record without enabling it or overwriting a stale edit. */
+    async updateStudent(edit) {
+      if (!this.isAdmin) return failure("Öğretim üyesi girişi gerekli.");
+      const name = `${edit.firstName.trim()} ${edit.surname.trim()}`.trim();
+      if (!numbers.normalize(edit.no) || !edit.firstName.trim() || name.length > 200) return failure("Geçerli öğrenci numarası ve isim gerekli (ad-soyad en fazla 200 karakter).");
+      const key = student => student.email || student.no;
+      if (this.roster.some(student => key(student) !== key(edit.original) && student.no === edit.no.trim())) return failure("Bu öğrenci numarası listede zaten var.");
+      try {
+        const result = await this.adapter.updateStudent(edit);
+        if (result.ok && this.isAdmin) {
+          this.roster = this.roster.map(student => key(student) === key(edit.original) ? result.student : student);
+          this.onChange(this);
+        }
+        return result;
+      } catch (error) { return failure(this.adapter.errorMessage(error)); }
+    }
+
     async resetNumber(no) {
       if (!this.isAdmin) return failure("Öğretim üyesi girişi gerekli.");
       return this.perform(() => this.adapter.resetNumber(no));

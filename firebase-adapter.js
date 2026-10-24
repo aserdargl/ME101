@@ -76,6 +76,7 @@ window.createFirebaseStudentAdapter = async config => {
       await batch.commit();
     },
     resetNumber: enrollment.reset,
+    updateStudent: createRosterEditClient(auth),
     signOut: () => authSdk.signOut(auth),
     errorMessage(error) {
       const messages = {

@@ -1,5 +1,11 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Hücreleri düzenleyip satırdaki Kaydet düğmesine basınız.": "Edit the cells, then press Save on that row.",
+  "Kaydet": "Save",
+  "Kaydediliyor…": "Saving…",
+  "Öğrenci kaydedildi.": "Student saved.",
+  "Bu öğrenci numarası listede zaten var.": "This student number is already in the roster.",
+  "Geçerli öğrenci numarası ve isim gerekli (ad-soyad en fazla 200 karakter).": "Enter a valid student number and first name (full name up to 200 characters).",
   "Silinen kayıt sayısı:": "Records deleted:",
   "Kayıtlı Öğrenciler": "Registered Students",
   "Kopyala": "Copy",

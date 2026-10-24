@@ -25,7 +25,7 @@ pub async fn main(mut req:Request, env:Env, _ctx:Context) -> Result<Response> {
         return Response::error("Forbidden",403);
     }
     if req.method()==Method::Options { return respond(204,Value::Null,&origin); }
-    if req.path()!="/review" || req.method()!=Method::Post { return respond(404,json!({"error":"Bulunamadı."}),&origin); }
+    if !matches!(req.path().as_str(), "/review" | "/roster-update") || req.method()!=Method::Post { return respond(404,json!({"error":"Bulunamadı."}),&origin); }
     let Some(authorization)=req.headers().get("Authorization")? else { return respond(401,json!({"error":"Yönetici girişi gerekli."}),&origin); };
     let Some(token)=authorization.strip_prefix("Bearer ") else { return respond(401,json!({"error":"Geçersiz oturum."}),&origin); };
     if req.headers().get("Content-Length")?.and_then(|value|value.parse::<usize>().ok()).is_some_and(|size|size>4096) {
@@ -33,15 +33,13 @@ pub async fn main(mut req:Request, env:Env, _ctx:Context) -> Result<Response> {
     }
     let body=req.text().await?;
     if body.len()>4096 { return respond(413,json!({"error":"İstek çok büyük."}),&origin); }
-    let decision:Decision=match serde_json::from_str(&body) {Ok(value)=>value,Err(_)=>return respond(400,json!({"error":"Geçersiz istek."}),&origin)};
-    if !valid_uid(&decision.uid) { return respond(400,json!({"error":"Geçersiz kullanıcı."}),&origin); }
-    match execute(&env,token,decision).await {
+    match execute(&env,token,&req.path(),&body).await {
         Ok((status,value))=>respond(status,value,&origin),
         Err(_)=>respond(503,json!({"error":"İşlem tamamlanamadı. Erişim durumu panelden kontrol edilerek yeniden denenebilir."}),&origin)
     }
 }
 
-async fn execute(env:&Env, token:&str, decision:Decision)->Result<(u16,Value)> {
+async fn execute(env:&Env, token:&str, path:&str, body:&str)->Result<(u16,Value)> {
     let cloud=Cloud::connect(env).await?;
     let Some(actor)=cloud.lookup(json!({"idToken":token}),None).await? else {return Ok((401,json!({"error":"Oturum geçersiz veya süresi dolmuş."})));};
     let uid=actor["localId"].as_str().unwrap_or("");
@@ -49,6 +47,12 @@ async fn execute(env:&Env, token:&str, decision:Decision)->Result<(u16,Value)> {
         || cloud.document("admins",uid).await?.is_none() {
         return Ok((403,json!({"error":"Bu işlem yalnızca yetkili yöneticiye açık."})));
     }
+    if path == "/roster-update" {
+        let edit = match serde_json::from_str(body) { Ok(value) => value, Err(_) => return Ok((400,json!({"error":"Geçersiz istek."}))) };
+        return crate::roster_edit::save(&cloud,edit).await;
+    }
+    let decision:Decision = match serde_json::from_str(body) { Ok(value) => value, Err(_) => return Ok((400,json!({"error":"Geçersiz istek."}))) };
+    if !valid_uid(&decision.uid) { return Ok((400,json!({"error":"Geçersiz kullanıcı."}))); }
     decisions::review(&cloud,uid,decision).await
 }
 

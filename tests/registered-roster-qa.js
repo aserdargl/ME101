@@ -5,6 +5,16 @@ window.addEventListener("DOMContentLoaded", () => {
   const load = () => JSON.parse(localStorage.getItem(key) || JSON.stringify(seed));
   const service = new FirebaseStudentService({
     errorMessage: error => error.message,
+    updateStudent: async edit => {
+      const records = load(), id = student => student.email || student.no;
+      const index = records.findIndex(student => id(student) === id(edit.original));
+      if (index < 0 || records[index].name !== edit.original.name) return { ok: false, error: "Synthetic conflict" };
+      const student = { ...records[index], no: edit.no, name: `${edit.firstName} ${edit.surname}`.trim(),
+        firstName: edit.firstName, surname: edit.surname };
+      if (!student.email) student.nameKey = StudentNumbers.nameKey(student.name);
+      records[index] = student; localStorage.setItem(key, JSON.stringify(records));
+      return { ok: true, student };
+    },
     writeRoster: async (students, removals) => {
       const id = student => student.email || student.no;
       const records = new Map(load().map(student => [id(student), student]));
@@ -18,6 +28,10 @@ window.addEventListener("DOMContentLoaded", () => {
   Object.defineProperty(FirebaseStudents, "isAdmin", { get: () => true });
   Object.defineProperty(FirebaseStudents, "roster", { get: () => service.roster });
   FirebaseStudents.removeStudents = keys => service.removeStudents(keys);
+  FirebaseStudents.updateStudent = async edit => {
+    const result = await service.updateStudent(edit);
+    renderRosterAdminList(); return result;
+  };
   FirebaseStudents.saveText = (text, replace) => {
     const result = StudentNumbers.parse(text);
     return result.ok ? service.saveRoster(result.students, replace) : Promise.resolve(result);

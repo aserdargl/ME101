@@ -191,3 +191,8 @@ body:has(> .course-editor:not(.hidden)) { overflow: hidden; }
 .course-editor .registered-roster-actions button { margin: 2px 8px 2px 0; }
 .course-editor .registered-roster-table tbody tr:has(input:checked) { background: #edf4fa; }
 .course-editor .registered-roster-box button:disabled { opacity: .45; cursor: default; }
+.course-editor .registered-roster-table .roster-cell-editor { width: 100%; min-width: 100px; padding: 6px 7px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: inherit; font: inherit; }
+.course-editor .registered-roster-table .roster-cell-editor:hover { border-color: #cbd5df; background: white; }
+.course-editor .registered-roster-table .roster-cell-editor:focus { border-color: #748ba3; background: white; outline: 1px solid #748ba3; }
+.course-editor .registered-roster-table .roster-cell-editor:disabled { opacity: .6; }
+.course-editor .registered-roster-actions { min-width: 230px; }

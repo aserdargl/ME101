@@ -51,3 +51,38 @@ test("logout during a large deletion stops subsequent batches", async () => {
   assert.equal(result.ok, false);
   assert.equal(result.removed, 450);
 });
+
+test("explicit first names and compound surnames survive display without changing stored full names", () => {
+  const student = { no: "001", name: "Ahmet Serdar Güldibi Kaya", firstName: "Ahmet Serdar", surname: "Güldibi Kaya" };
+  assert.deepEqual(displayColumns(student), ["001", "Ahmet Serdar", "Güldibi Kaya"]);
+});
+
+test("row updates preserve unrelated and disabled records and refuse duplicate numbers before writing", async () => {
+  let calls = 0;
+  const original = { no: "001", name: "Ali Kaya", enabled: false };
+  const other = { no: "002", name: "Other Student", enabled: true };
+  const edited = { ...original, no: "003", name: "Ali Ak", firstName: "Ali", surname: "Ak" };
+  const service = new FirebaseStudentService({ updateStudent: async () => { calls++; return { ok: true, student: edited }; } });
+  service.roster = [original, other];
+  const edit = { original, no: "003", firstName: "Ali", surname: "Ak" };
+  assert.equal((await service.updateStudent(edit)).ok, false);
+  service.isAdmin = true;
+  assert.equal((await service.updateStudent({ ...edit, no: "002" })).ok, false);
+  assert.equal(calls, 0);
+  assert.equal((await service.updateStudent(edit)).ok, true);
+  assert.deepEqual(service.roster, [edited, other]);
+  assert.deepEqual(original, { no: "001", name: "Ali Kaya", enabled: false });
+});
+
+test("failed edits leave the saved roster and row draft intact", async () => {
+  const original = { no: "001", name: "Ali Kaya", enabled: true };
+  const service = new FirebaseStudentService({ updateStudent: async () => ({ ok: false, error: "conflict" }) });
+  service.isAdmin = true; service.roster = [original];
+  const drafts = new Map([["001", { original, values: ["001", "Ali", "Ak"] }]]);
+  const view = { drafts, busy: false, selected: new Set(), text: value => value, render() {}, changed() {}, feedback: {}, save: edit => service.updateStudent(edit) };
+  await RegisteredRoster.prototype.saveStudent.call(view, "001");
+  assert.deepEqual(service.roster, [original]);
+  assert.equal(drafts.get("001").values[2], "Ak");
+  assert.equal(view.busy, false);
+  assert.equal(view.feedback.textContent, "conflict");
+});

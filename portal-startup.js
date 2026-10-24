@@ -3,6 +3,12 @@
 /* portal-translations.js */
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Hücreleri düzenleyip satırdaki Kaydet düğmesine basınız.": "Edit the cells, then press Save on that row.",
+  "Kaydet": "Save",
+  "Kaydediliyor…": "Saving…",
+  "Öğrenci kaydedildi.": "Student saved.",
+  "Bu öğrenci numarası listede zaten var.": "This student number is already in the roster.",
+  "Geçerli öğrenci numarası ve isim gerekli (ad-soyad en fazla 200 karakter).": "Enter a valid student number and first name (full name up to 200 characters).",
   "Silinen kayıt sayısı:": "Records deleted:",
   "Kayıtlı Öğrenciler": "Registered Students",
   "Kopyala": "Copy",
@@ -1577,6 +1583,23 @@ window.PptxPreview = (() => {
       return this.isAdmin ? { ok: true, removed } : failure("Öğretim üyesi girişi gerekli.");
     }
 
+    /** Updates one existing record without enabling it or overwriting a stale edit. */
+    async updateStudent(edit) {
+      if (!this.isAdmin) return failure("Öğretim üyesi girişi gerekli.");
+      const name = `${edit.firstName.trim()} ${edit.surname.trim()}`.trim();
+      if (!numbers.normalize(edit.no) || !edit.firstName.trim() || name.length > 200) return failure("Geçerli öğrenci numarası ve isim gerekli (ad-soyad en fazla 200 karakter).");
+      const key = student => student.email || student.no;
+      if (this.roster.some(student => key(student) !== key(edit.original) && student.no === edit.no.trim())) return failure("Bu öğrenci numarası listede zaten var.");
+      try {
+        const result = await this.adapter.updateStudent(edit);
+        if (result.ok && this.isAdmin) {
+          this.roster = this.roster.map(student => key(student) === key(edit.original) ? result.student : student);
+          this.onChange(this);
+        }
+        return result;
+      } catch (error) { return failure(this.adapter.errorMessage(error)); }
+    }
+
     async resetNumber(no) {
       if (!this.isAdmin) return failure("Öğretim üyesi girişi gerekli.");
       return this.perform(() => this.adapter.resetNumber(no));
@@ -1746,6 +1769,22 @@ window.createApprovalClient = auth => async (uid, action, no, name) => {
 };
 ;
 
+/* roster-edit-client.js */
+/** Sends one optimistic roster edit through the existing administrator service. */
+window.createRosterEditClient = auth => async edit => {
+  const base = window.MEE101_APPROVAL_URL;
+  if (!base || !auth.currentUser) return { ok: false, error: "Öğretim üyesi girişi gerekli." };
+  const target = new URL("roster-update", base.endsWith("/") ? base : `${base}/`);
+  const local = ["127.0.0.1", "localhost"].includes(location.hostname);
+  if (target.protocol !== "https:" && !(local && target.hostname === "127.0.0.1")) return { ok: false, error: "Geçersiz hizmet adresi." };
+  const token = await auth.currentUser.getIdToken(true);
+  const response = await fetch(target, { method: "POST", credentials: "omit",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(edit) });
+  const result = await response.json();
+  return response.ok && result.ok ? result : { ok: false, error: result.error || "Öğrenci kaydedilemedi." };
+};
+;
+
 /* firebase-adapter.js */
 /** Official browser SDK handles password exchange and session-token refresh. */
 window.createFirebaseStudentAdapter = async config => {
@@ -1825,6 +1864,7 @@ window.createFirebaseStudentAdapter = async config => {
       await batch.commit();
     },
     resetNumber: enrollment.reset,
+    updateStudent: createRosterEditClient(auth),
     signOut: () => authSdk.signOut(auth),
     errorMessage(error) {
       const messages = {
@@ -1903,6 +1943,7 @@ window.FirebaseStudents = (() => {
     saveRoster: async students => service ? service.saveRoster(students) : unavailable(),
     removeStudent: async key => service ? service.removeStudent(key) : unavailable(),
     removeStudents: async keys => service ? service.removeStudents(keys) : unavailable(),
+    updateStudent: async edit => service ? service.updateStudent(edit) : unavailable(),
     resetNumber: async no => service ? service.resetNumber(no) : unavailable(),
     reviewApplication: async (uid, action, no, name) => service ? service.reviewApplication(uid, action, no, name) : unavailable()
   };
@@ -2115,6 +2156,7 @@ window.renderApprovalApplications = () => {
 
   /** Splits legacy full names for display only; stored names remain unchanged. */
   function displayColumns(student) {
+    if (typeof student.firstName === "string" && typeof student.surname === "string") return [student.no || "", student.firstName, student.surname];
     const parts = String(student.name || "").trim().split(/\s+/);
     const surname = parts.length > 1 ? parts.pop() : "";
     return [student.no || "", parts.join(" "), surname];
@@ -2122,12 +2164,14 @@ window.renderApprovalApplications = () => {
 
   /** Renders private roster actions using injected storage and clipboard dependencies. */
   class RegisteredRoster {
-    constructor({ document, students, remove, reset, clipboard, confirm, notify, changed, text }) {
-      Object.assign(this, { document, students, remove, reset, clipboard, confirm, notify, changed, text });
+    constructor({ document, students, remove, save, reset, clipboard, confirm, notify, changed, text }) {
+      Object.assign(this, { document, students, remove, save, reset, clipboard, confirm, notify, changed, text });
       this.selected = new Set();
+      this.drafts = new Map();
       this.busy = false;
       this.container = document.getElementById("roster-items-container");
       this.feedback = document.getElementById("roster-list-feedback");
+      this.feedback.textContent = this.text("Hücreleri düzenleyip satırdaki Kaydet düğmesine basınız.");
       document.getElementById("btn-roster-delete-selected").onclick = () => this.delete(this.students().filter(student => this.selected.has(keyOf(student))));
       document.getElementById("btn-roster-delete-all").onclick = () => this.delete(this.students());
       document.querySelectorAll("[data-language-toggle]").forEach(button => button.addEventListener("click", () => this.render()));
@@ -2152,6 +2196,7 @@ window.renderApprovalApplications = () => {
       const students = this.students();
       const current = new Set(students.map(keyOf));
       this.selected = new Set([...this.selected].filter(key => current.has(key)));
+      this.drafts.forEach((_, key) => { if (!current.has(key)) this.drafts.delete(key); });
       this.document.getElementById("roster-count-badge").textContent = String(students.length);
       this.container.replaceChildren();
       const table = this.element("table", "", "registered-roster-table");
@@ -2200,16 +2245,54 @@ window.renderApprovalApplications = () => {
       checkbox.setAttribute("aria-label", `${this.text("Öğrenciyi seç")} ${student.no || student.email}`);
       select.append(checkbox);
       row.append(select);
-      displayColumns(student).forEach(value => {
-        const cell = this.element("td", value); cell.setAttribute("data-roster-value", ""); row.append(cell);
+      const values = this.drafts.get(key)?.values || displayColumns(student);
+      const save = this.button("Kaydet", () => this.saveStudent(key));
+      const cancel = this.button("Vazgeç", () => { this.drafts.delete(key); this.render(); });
+      save.disabled = cancel.disabled = this.busy || !this.drafts.has(key);
+      values.forEach((value, column) => {
+        const cell = this.element("td"); cell.setAttribute("data-roster-value", "");
+        cell.append(this.editor(student, value, column, save, cancel)); row.append(cell);
       });
       const actions = this.element("td", "", "registered-roster-actions");
       if (student.email) {
         const email = this.element("small", student.email); email.setAttribute("data-roster-value", ""); actions.append(email);
       }
       if (!student.enabled) actions.append(this.element("small", this.text("Engelli")));
+      actions.append(save, cancel);
       if (!student.email) actions.append(this.button("Hesap Bağını Sıfırla", () => this.resetStudent(student.no)));
       actions.append(this.button("Sil", () => this.delete([student]))); row.append(actions); return row;
+    }
+
+    editor(student, value, column, save, cancel) {
+      const input = this.element("input", "", "roster-cell-editor");
+      input.type = "text"; input.value = value; input.disabled = this.busy;
+      input.maxLength = column === 0 ? 32 : 200;
+      if (column === 0) input.inputMode = "numeric";
+      input.setAttribute("aria-label", `${this.text(COLUMNS[column])} ${student.no || student.email}`);
+      input.addEventListener("input", () => {
+        const key = keyOf(student), draft = this.drafts.get(key) || { original: { ...student }, values: displayColumns(student) };
+        draft.values[column] = input.value;
+        this.drafts.set(key, draft); save.disabled = cancel.disabled = false;
+      });
+      return input;
+    }
+
+    /** Saves only the requested row; failures retain the editable draft. */
+    async saveStudent(key) {
+      const draft = this.drafts.get(key);
+      if (this.busy || !draft) return;
+      const { no, name, enabled, email, firstName, surname } = draft.original;
+      const edit = { original: { no, name, enabled, email, firstName, surname },
+        no: draft.values[0].trim(), firstName: draft.values[1].trim(), surname: draft.values[2].trim() };
+      this.busy = true; this.feedback.textContent = this.text("Kaydediliyor…"); this.render();
+      try {
+        const result = await this.save(edit);
+        if (result.ok) {
+          this.drafts.delete(key);
+          if (this.selected.delete(key)) this.selected.add(keyOf(result.student));
+        }
+        this.feedback.textContent = result.ok ? this.text("Öğrenci kaydedildi.") : this.text(result.error);
+      } finally { this.busy = false; this.render(); this.changed(); }
     }
 
     updateSelection() {
@@ -2225,7 +2308,7 @@ window.renderApprovalApplications = () => {
     /** Copies exactly one displayed column, retaining blank cells and leading zeroes. */
     async copy(column) {
       try {
-        await this.clipboard.writeText(this.students().map(student => displayColumns(student)[column]).join("\n"));
+        await this.clipboard.writeText(this.students().map(student => (this.drafts?.get(keyOf(student))?.values || displayColumns(student))[column]).join("\n"));
         this.feedback.textContent = this.text("Sütun kopyalandı.");
       } catch { this.feedback.textContent = this.text("Kopyalanamadı. Sütundaki metni seçip kopyalayınız."); }
     }
@@ -3400,6 +3483,7 @@ const registeredRoster = new RegisteredRoster({
   document,
   students: () => FirebaseStudents.isAdmin ? FirebaseStudents.roster : [],
   remove: keys => FirebaseStudents.removeStudents(keys),
+  save: edit => FirebaseStudents.updateStudent(edit),
   reset: no => FirebaseStudents.resetNumber(no),
   clipboard: navigator.clipboard,
   confirm: message => window.confirm(message),
