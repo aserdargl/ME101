@@ -5,6 +5,14 @@
 .student-registration-details { margin: 12px 0; padding: 10px; border: 1px solid #cbd1d8; border-radius: 7px; }
 .student-registration-details summary { cursor: pointer; font-size: 12px; font-weight: 600; }
 .student-registration-details .form-field { margin-top: 10px; }
+.approval-section { margin: 14px 0 20px; padding: 12px; border: 1px solid #d6b77d; border-radius: 8px; }
+.approval-section h4 { margin: 0 0 8px; font-size: 13px; }
+.approval-card { padding: 12px 0; border-top: 1px solid #ddd; font-size: 12px; overflow-wrap: anywhere; }
+.approval-card small { display: block; margin: 5px 0; color: #795512; }
+.approval-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.approval-fields label { font-size: 11px; }
+.approval-fields input { display: block; width: 100%; min-width: 0; padding: 6px; border: 1px solid #cbd1d8; border-radius: 5px; }
+@media (max-width: 600px) { .approval-fields { grid-template-columns: 1fr; } }
 .btn, .tool-btn, .btn-insert-here, .btn-edit-lecture,
 .btn-delete-lecture, .btn-clear-rating, .btn-slide-mode-switch {
   cursor: pointer;
@@ -25,12 +33,12 @@
 .btn-primary:focus-visible, .btn-secondary:focus-visible { outline-color: #225c83; }
 .btn-outline:hover:not(:disabled), .btn-admin-lock:hover:not(:disabled),
 .btn-edit-lecture:hover, .btn-slide-mode-switch:hover { background: #cbdfea; border-color: #739ab7; color: #173e59; }
-.btn-delete-lecture, .btn-clear-rating, #btn-delete-edit-slide,
+.approval-reject-button, .btn-delete-lecture, .btn-clear-rating, #btn-delete-edit-slide,
 .course-editor #btn-reset-default-lectures, #btn-clear-all-ratings,
 #btn-section-clear-all-ratings, .tool-btn-danger {
   background: #f8e1df; border: 1px solid #dfaaa5; color: #94352e;
 }
-.btn-delete-lecture:hover, .btn-clear-rating:hover,
+.approval-reject-button:hover, .btn-delete-lecture:hover, .btn-clear-rating:hover,
 .course-editor #btn-reset-default-lectures:hover { background: #efc5c1; color: #7e2923; }
 .course-editor .btn-insert-here {
   background: #225c83; border: 1px solid #225c83; border-radius: 5px; color: #fff; padding: 5px 7px;

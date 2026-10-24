@@ -2,7 +2,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function verified() {
-      return request.auth != null && request.auth.token.email_verified == true;
+      return request.auth != null && request.auth.token.email_verified == true && notRejected(request.auth.uid);
+    }
+    function notRejected(uid) {
+      return (!exists(/databases/$(database)/documents/applications/$(uid))
+        || get(/databases/$(database)/documents/applications/$(uid)).data.status != 'rejected')
+        && !exists(/databases/$(database)/documents/rejectedEmails/$(request.auth.token.email.lower()));
     }
     function admin() {
       return verified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
@@ -48,6 +53,7 @@ service cloud.firestore {
       allow get: if own(uid) || admin();
       allow list, delete: if admin();
       allow create, update: if own(uid)
+        && notRejected(uid)
         && request.resource.data.keys().hasOnly(['no', 'nameKey', 'email'])
         && request.resource.data.email == request.auth.token.email.lower()
         && activeNumber(request.resource.data.no)
@@ -68,12 +74,32 @@ service cloud.firestore {
       allow get: if (verified() && own(uid)) || admin();
       allow list, delete: if admin();
       allow create: if verified() && own(uid)
+        && !exists(/databases/$(database)/documents/applications/$(uid))
         && request.resource.data.keys().hasOnly(['no', 'nameKey', 'email'])
         && request.resource.data.email == request.auth.token.email.lower()
         && activeNumber(request.resource.data.no)
         && request.resource.data.nameKey == get(/databases/$(database)/documents/studentNumbers/$(request.resource.data.no)).data.nameKey
         && getAfter(/databases/$(database)/documents/numberClaims/$(request.resource.data.no)).data.uid == uid;
       allow update: if false;
+    }
+    match /applications/{uid} {
+      allow get: if own(uid) || admin();
+      allow list: if admin();
+      allow create: if own(uid) && notRejected(uid)
+        && !exists(/databases/$(database)/documents/admins/$(uid))
+        && !exists(/databases/$(database)/documents/enrollments/$(uid))
+        && request.resource.data.keys().hasOnly(['no', 'name', 'nameKey', 'email', 'status', 'createdAt'])
+        && request.resource.data.email == request.auth.token.email.lower()
+        && request.resource.data.no is string && request.resource.data.no.matches('^[0-9]{1,32}$')
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 200
+        && request.resource.data.nameKey is string && request.resource.data.nameKey.size() > 0 && request.resource.data.nameKey.size() <= 200
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+      // Only the server service account may approve, reject, or record deletion results.
+      allow update, delete: if false;
+    }
+    match /rejectedEmails/{email} {
+      allow read, write: if false;
     }
     match /{document=**} {
       allow read, write: if false;

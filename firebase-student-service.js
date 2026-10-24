@@ -17,6 +17,7 @@
       this.profile = null;
       this.isAdmin = false;
       this.roster = [];
+      this.applications = [];
       this.generation = 0;
       this.accessResolved = false;
       this.unsubscribe = () => {};
@@ -32,6 +33,7 @@
       this.profile = null;
       this.isAdmin = false;
       this.roster = [];
+      this.applications = [];
       this.accessResolved = false;
       this.onChange(this);
       if (!user?.emailVerified) { this.accessResolved = true; return; }
@@ -41,11 +43,17 @@
         this.isAdmin = isAdmin;
         if (isAdmin) {
           this.accessResolved = true;
-          this.unsubscribe = this.adapter.watchRoster(students => {
+          const stopRoster = this.adapter.watchRoster(students => {
             if (generation !== this.generation) return;
             this.roster = students;
             this.onChange(this);
           }, () => this.invalidate(generation));
+          const stopApplications = this.adapter.watchApplications(applications => {
+            if (generation !== this.generation) return;
+            this.applications = applications;
+            this.onChange(this);
+          }, () => this.invalidate(generation));
+          this.unsubscribe = () => { stopRoster(); stopApplications(); };
         } else {
           this.unsubscribe = this.adapter.watchStudent(normalizeEmail(user.email), student => {
             if (generation !== this.generation) return;
@@ -63,6 +71,7 @@
       this.profile = null;
       this.isAdmin = false;
       this.roster = [];
+      this.applications = [];
       this.accessResolved = true;
       this.onChange(this);
     }
@@ -102,6 +111,12 @@
     async resetNumber(no) {
       if (!this.isAdmin) return failure("Firebase yönetici girişi gerekli.");
       return this.perform(() => this.adapter.resetNumber(no));
+    }
+
+    async reviewApplication(uid, action, no, name) {
+      if (!this.isAdmin) return failure("Firebase yönetici girişi gerekli.");
+      try { return { ...await this.adapter.reviewApplication(uid, action, no, name), ok: true }; }
+      catch (error) { return failure(this.adapter.errorMessage(error)); }
     }
 
     async perform(action) {

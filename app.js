@@ -350,7 +350,7 @@ function findStudentInRoster(studentNoInput) {
   const cleanNo = String(studentNoInput || "").trim();
   if (!cleanNo) return null;
   const student = FirebaseStudents.profile;
-  return student && String(student.no || student.email).toLowerCase() === cleanNo.toLowerCase() ? student : null;
+  return student && String(student.accessKey || student.no || student.email).toLowerCase() === cleanNo.toLowerCase() ? student : null;
 }
 
 function updateAdminUI() {
@@ -397,6 +397,7 @@ function updateStudentUI() {
     studentLabel.textContent = stu.name
       ? `Öğrenci: ${stu.no} (${stu.name}) • Çıkış`
       : `Öğrenci: ${stu.no} (Çıkış)`;
+    if (stu.approvalStatus === "pending") studentLabel.textContent += " · Onay bekliyor";
   } else {
     studentBtn.classList.remove("logged-in");
     studentLabel.textContent = "Öğrenci Girişi";
@@ -498,7 +499,7 @@ function setStudentVote(lectureId, studentNo, starValue) {
       all[lectureId] = {};
     }
     // Aynı öğrenci aynı derse tekrar oy verirse eski oyunu günceller (mükerrer oy engellenir)
-    all[lectureId][stu.no] = starValue;
+    all[lectureId][stu.accessKey || stu.no] = starValue;
     localStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(all));
     return true;
   } catch {
@@ -717,6 +718,10 @@ function renderCatalog() {
 // 2. DERS AÇMA
 // ============================================================================
 function openLecture(lectureId, startInPresentation = false) {
+  if (window.MEE101_FIREBASE_CONFIG && !isAdminAuthenticated && !activeStudentNo) {
+    openStudentLoginModal({ type: "lecture", lecId: lectureId, startInPresentation });
+    return;
+  }
   const lec = LECTURES.find((l) => l.id === lectureId);
   if (!lec) return;
   currentLecture = lec;
@@ -1057,7 +1062,7 @@ async function handleStudentLoginSubmit() {
     return;
   }
   const matchedStu = FirebaseStudents.profile;
-  activeStudentNo = matchedStu ? matchedStu.no || matchedStu.email : null;
+  activeStudentNo = matchedStu ? matchedStu.accessKey || matchedStu.no || matchedStu.email : null;
   const actionToRun = pendingStudentAction;
   closeStudentLoginModal();
   renderCatalog();
@@ -1068,6 +1073,8 @@ async function handleStudentLoginSubmit() {
       renderCatalog();
     } else if (actionToRun.type === "download") {
       triggerDirectFileDownload(actionToRun.href, actionToRun.fileName);
+    } else if (actionToRun.type === "lecture") {
+      openLecture(actionToRun.lecId, actionToRun.startInPresentation);
     }
   }
 }
@@ -1123,6 +1130,7 @@ document.getElementById("btn-student-resend-verification").addEventListener("cli
 
 // --- ÖĞRETİM ÜYESİ: ÖĞRENCİ NUMARASI LİSTESİ (OBS) YÖNETİMİ ---
 function renderRosterAdminList() {
+  renderApprovalApplications();
   const roster = FirebaseStudents.isAdmin ? FirebaseStudents.roster : [];
   const countBadge = document.getElementById("roster-count-badge");
   const container = document.getElementById("roster-items-container");
@@ -3031,7 +3039,8 @@ window.addEventListener("resize", () => {
 /** Opens existing notes first; shared content never silently replaces unsynced notes. */
 async function initializeLectures() {
   FirebaseStudents.initialize(state => {
-    activeStudentNo = state.profile ? state.profile.no || state.profile.email : null;
+    const hadStudentAccess = Boolean(activeStudentNo);
+    activeStudentNo = state.profile ? state.profile.accessKey || state.profile.no || state.profile.email : null;
     if (state.isAdmin) {
       isAdminAuthenticated = true;
       firebaseAdminSession = true;
@@ -3039,6 +3048,7 @@ async function initializeLectures() {
       isAdminAuthenticated = false;
       firebaseAdminSession = false;
     }
+    if (hadStudentAccess && !activeStudentNo && !isAdminAuthenticated) goHome();
     renderCatalog();
     renderRosterAdminList();
   });

@@ -1,0 +1,26 @@
+name = "lecturenotes-approval"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-10-24"
+workers_dev = true
+
+[build]
+command = "worker-build --release"
+
+[vars]
+FIREBASE_PROJECT = "lecturenotes-b97ad"
+FIREBASE_API_KEY = "AIzaSyCgr3kG_bsU-pKV6DSb2oQ1oi0B2bj2K9E"
+ALLOWED_ORIGIN = "https://aserdargl.github.io"
+
+[triggers]
+crons = ["*/10 * * * *"]
+
+[observability]
+enabled = false
+
+[env.test]
+name = "lecturenotes-approval-test"
+[env.test.vars]
+FIREBASE_PROJECT = "demo-lecturenotes"
+FIREBASE_API_KEY = "demo-key"
+ALLOWED_ORIGIN = "http://127.0.0.1:4197"
+EMULATOR = "true"

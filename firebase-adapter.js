@@ -22,6 +22,12 @@ window.createFirebaseStudentAdapter = async config => {
     },
     async isAdmin(uid) { return (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", uid))).exists(); },
     watchRoster: enrollment.watchRoster,
+    watchApplications(onData, onError) {
+      return dbSdk.onSnapshot(dbSdk.collection(db, "applications"), { includeMetadataChanges: true }, snapshot => {
+        if (!snapshot.metadata.fromCache) onData(snapshot.docs.map(document => ({ ...document.data(), uid: document.id })));
+      }, onError);
+    },
+    reviewApplication: createApprovalClient(auth),
     watchStudent(email, onData, onError) {
       return enrollment.watch(auth.currentUser, onData, onError);
     },
@@ -66,6 +72,8 @@ window.createFirebaseStudentAdapter = async config => {
     errorMessage(error) {
       const messages = {
         "enrollment/mismatch": "Öğrenci numarası ve ad-soyad eşleşmedi, kayıt kapalı veya numara başka bir hesaba bağlı. Bilgilerinizi kontrol edin; gerekirse öğretim üyesine başvurun.",
+        "enrollment/rejected": "Başvurunuz yönetici tarafından reddedildi. Erişiminiz kapatıldı.",
+        "approval/unavailable": "Onay hizmeti henüz hazır değil veya yönetici oturumu kapalı.",
         "auth/unverified-email": "Önce e-postanızdaki doğrulama bağlantısını açınız; ardından tekrar giriş yapınız.",
         "auth/sign-in-required": "Önce e-posta ve parolanızla giriş yapmayı deneyiniz; ardından doğrulamayı yeniden gönderiniz.",
         "auth/email-already-in-use": "Hesap oluşturulamadı. Mevcut hesabınızla giriş yapın veya parolanızı sıfırlayın.",
@@ -74,7 +82,7 @@ window.createFirebaseStudentAdapter = async config => {
         "auth/network-request-failed": "Bağlantı kurulamadı. İnternet bağlantınızı kontrol ediniz.",
         "permission-denied": "Bu işlem için yetkiniz yok. Yönetici kaydınızı kontrol ediniz."
       };
-      return messages[error.code] || "İşlem tamamlanamadı. E-posta, parola ve Firebase yapılandırmasını kontrol ediniz.";
+      return (error.code === "approval/failed" && error.publicMessage) || messages[error.code] || "İşlem tamamlanamadı. E-posta, parola ve Firebase yapılandırmasını kontrol ediniz.";
     }
   };
 };

@@ -1,7 +1,7 @@
 const { test, before, after } = require("node:test");
 const fs = require("node:fs");
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
-const { doc, collection, setDoc, getDoc, getDocs, deleteDoc, writeBatch } = require("firebase/firestore");
+const { doc, collection, setDoc, getDoc, getDocs, deleteDoc, writeBatch, serverTimestamp } = require("firebase/firestore");
 const assert = require("node:assert/strict");
 let environment;
 const record = { email: "student@example.test", no: "123", name: "Synthetic Student", enabled: true };
@@ -96,4 +96,32 @@ test("only administrators can reset an existing number/account binding", async (
   batch.delete(doc(db, "enrollments", "first"));
   await assertSucceeds(batch.commit());
   await assertSucceeds(enroll(user("replacement", "replacement@example.test"), "replacement", "replacement@example.test", "00123"));
+});
+
+test("mismatched applications may be submitted but cannot self-approve, change or delete decisions", async () => {
+  const db = user("applicant", "applicant@example.test", false);
+  const reference = doc(db, "applications", "applicant");
+  const application = { no: "88888", name: "Unmatched Name", nameKey: "unmatched name", email: "applicant@example.test", status: "pending", createdAt: serverTimestamp() };
+  await assertSucceeds(setDoc(reference, application));
+  await assertSucceeds(getDoc(reference));
+  await assertFails(setDoc(reference, { ...application, status: "approved" }));
+  await assertFails(deleteDoc(reference));
+  await assertFails(getDocs(collection(db, "applications")));
+  await assertFails(getDoc(doc(user("other", "other@example.test"), "applications", "applicant")));
+  await assertFails(setDoc(doc(user("owner", "owner@example.test"), "applications", "applicant"), { ...application, status: "approved" }));
+});
+
+test("rejected accounts and replacement UIDs for the same email cannot regain access", async () => {
+  await environment.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), "applications", "rejected"), { status: "rejected", email: "rejected@example.test" });
+    await setDoc(doc(context.firestore(), "rejectedEmails", "rejected@example.test"), { uid: "rejected" });
+    await setDoc(doc(context.firestore(), "students", "rejected@example.test"), { ...record, email: "rejected@example.test" });
+  });
+  await assertSucceeds(getDoc(doc(user("rejected", "rejected@example.test"), "applications", "rejected")));
+  await assertFails(getDoc(doc(user("rejected", "rejected@example.test"), "students", "rejected@example.test")));
+  const db = user("replacement-rejected", "rejected@example.test");
+  await assertFails(setDoc(doc(db, "applications", "replacement-rejected"), {
+    no: "00999", name: "Name", nameKey: "name", email: "rejected@example.test", status: "pending", createdAt: serverTimestamp()
+  }));
+  await assertFails(enroll(db, "replacement-rejected", "rejected@example.test", "00999"));
 });

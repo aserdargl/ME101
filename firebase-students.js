@@ -46,12 +46,14 @@ window.FirebaseStudents = (() => {
     get profile() { return service?.profile || null; },
     get isAdmin() { return service?.isAdmin === true; },
     get roster() { return service?.isAdmin ? service.roster : []; },
+    get applications() { return service?.isAdmin ? service.applications : []; },
     register: async (email, password, number, name) => { await ready; return service ? service.register(email, password, number, name) : unavailable(); },
     resetPassword: async email => { await ready; return service ? service.resetPassword(email) : unavailable(); },
     resendVerification: async () => service ? service.perform(() => service.adapter.resendVerification()) : unavailable(),
     signOut: async () => service ? service.signOut() : { ok: true },
     saveRoster: async students => service ? service.saveRoster(students) : unavailable(),
     removeStudent: async key => service ? service.removeStudent(key) : unavailable(),
-    resetNumber: async no => service ? service.resetNumber(no) : unavailable()
+    resetNumber: async no => service ? service.resetNumber(no) : unavailable(),
+    reviewApplication: async (uid, action, no, name) => service ? service.reviewApplication(uid, action, no, name) : unavailable()
   };
 })();

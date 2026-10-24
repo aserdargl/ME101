@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="modern.css?v=2" />
   <link rel="stylesheet" href="editor.css?v=1" />
   <link rel="stylesheet" href="content.css?v=1" />
-  <link rel="stylesheet" href="portal-ui.css?v=5" />
+  <link rel="stylesheet" href="portal-ui.css?v=6" />
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -262,7 +262,7 @@
       </div>
       <div class="modal-body">
         <p id="student-login-prompt-desc" class="modal-desc">
-          Mevcut hesabınızla giriş yapınız. İlk kayıtta öğrenci numaranız ve ad-soyadınız ders listesiyle eşleşmelidir. İstediğiniz e-posta adresini kullanabilir, doğruladıktan sonra giriş yapabilirsiniz.
+          Mevcut hesabınızla giriş yapınız. İlk kayıtta öğrenci numaranızı ve ad-soyadınızı giriniz. Eşleşmeyen kayıtlar yönetici onayına gönderilir; e-postanızı doğruladıktan sonra karar verilene kadar geçici erişiminiz olur. Ret durumunda erişim kapanır ve hesap silinir.
         </p>
         <details id="student-registration-details" class="student-registration-details">
           <summary>İlk Kayıt · Öğrenci Bilgileri</summary>
@@ -483,6 +483,11 @@
           <p class="modal-desc">
             Her satıra <strong>öğrenci numarası;ad soyad</strong> giriniz veya Excel'den bu iki sütunu yapıştırınız. Öğrenciler eşleşen bilgilerle istedikleri e-postayı kullanarak kayıt olur. Her numara tek hesaba bağlanır. Liste gizli tutulur; mevcut eski e-posta kayıtları korunur.
           </p>
+          <section class="approval-section">
+            <h4>Onay Bekleyen ve Silinmeyi Bekleyen Başvurular (<span id="approval-pending-count">0</span>)</h4>
+            <p id="approval-feedback" role="status"></p>
+            <div id="approval-applications"></div>
+          </section>
 
           <div class="form-grid" style="grid-template-columns: 1.15fr 0.85fr; align-items: start;">
             <div class="form-field">
@@ -747,12 +752,14 @@
   <script src="github-repository.js?v=1"></script>
   <script src="lecture-publishing.js?v=2"></script>
   <script src="legacy-content.js?v=1"></script>
-  <script src="firebase-config.js?v=1"></script>
+  <script src="firebase-config.js?v=2"></script>
   <script src="student-numbers.js?v=1"></script>
-  <script src="firebase-student-service.js?v=2"></script>
-  <script src="firebase-enrollment.js?v=1"></script>
-  <script src="firebase-adapter.js?v=2"></script>
-  <script src="firebase-students.js?v=2"></script>
-  <script src="app.js?v=17"></script>
+  <script src="firebase-student-service.js?v=3"></script>
+  <script src="firebase-enrollment.js?v=2"></script>
+  <script src="approval-client.js?v=1"></script>
+  <script src="firebase-adapter.js?v=3"></script>
+  <script src="firebase-students.js?v=3"></script>
+  <script src="approval-ui.js?v=1"></script>
+  <script src="app.js?v=18"></script>
 </body>
 </html>

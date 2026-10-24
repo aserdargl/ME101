@@ -6,3 +6,7 @@ dist/
 .jtmp/
 *-debug.log
 .firebase/
+approval-worker/target/
+approval-worker/build/
+approval-worker/.wrangler/
+approval-worker/.dev.vars*

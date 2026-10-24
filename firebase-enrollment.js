@@ -8,17 +8,34 @@ window.createNumberEnrollment = ({ db, sdk }) => {
     const no = StudentNumbers.normalize(number);
     const key = StudentNumbers.nameKey(name);
     if (!no || !key) throw mismatch();
+    const existing = await sdk.getDocFromServer(ref("applications", user.uid));
+    if (existing.exists()) {
+      if (existing.data().status === "rejected") throw { code: "enrollment/rejected" };
+      return;
+    }
     try {
       await sdk.setDoc(ref("registrationRequests", user.uid), { no, nameKey: key, email: emailOf(user) });
     } catch (error) {
-      if (error.code === "permission-denied") throw mismatch();
+      if (error.code === "permission-denied") {
+        await sdk.setDoc(ref("applications", user.uid), { no, name: name.trim().replace(/\s+/g, " "), nameKey: key,
+          email: emailOf(user), status: "pending", createdAt: sdk.serverTimestamp() });
+        return;
+      }
       throw error;
     }
   }
 
   async function complete(user, number, name) {
+    const application = await sdk.getDocFromServer(ref("applications", user.uid));
+    if (application.exists()) {
+      if (application.data().status === "rejected") throw { code: "enrollment/rejected" };
+      return;
+    }
     if ((await sdk.getDocFromServer(ref("enrollments", user.uid))).exists()) return;
-    if (number || name) await prepare(user, number, name);
+    if (number || name) {
+      await prepare(user, number, name);
+      if ((await sdk.getDocFromServer(ref("applications", user.uid))).exists()) return;
+    }
     const request = await sdk.getDocFromServer(ref("registrationRequests", user.uid));
     if (!request.exists()) return;
     const data = request.data();
@@ -32,7 +49,7 @@ window.createNumberEnrollment = ({ db, sdk }) => {
     }
   }
 
-  function watch(user, onData, onError) {
+  function watchExisting(user, onData, onError) {
     let stopNumber = () => {};
     let closed = false;
     const stopEnrollment = sdk.onSnapshot(ref("enrollments", user.uid), { includeMetadataChanges: true }, snapshot => {
@@ -52,6 +69,25 @@ window.createNumberEnrollment = ({ db, sdk }) => {
       }, onError);
     }, onError);
     return () => { closed = true; stopNumber(); stopEnrollment(); };
+  }
+
+  function watch(user, onData, onError) {
+    let stopExisting = () => {};
+    const stopApplication = sdk.onSnapshot(ref("applications", user.uid), { includeMetadataChanges: true }, snapshot => {
+      stopExisting();
+      if (snapshot.metadata.fromCache) { onData(null); return; }
+      if (!snapshot.exists()) { stopExisting = watchExisting(user, onData, onError); return; }
+      const application = snapshot.data();
+      if (application.status === "rejected") { onData(null); return; }
+      const profile = { no: application.approvedNo || application.no, name: application.approvedName || application.name,
+        email: emailOf(user), enabled: true, approvalStatus: application.status, accessKey: user.uid };
+      if (application.status === "pending") { onData(profile); return; }
+      if (application.status !== "approved") { onData(null); return; }
+      stopExisting = sdk.onSnapshot(ref("studentNumbers", profile.no), { includeMetadataChanges: true }, roster => {
+        onData(!roster.metadata.fromCache && roster.exists() && roster.data().enabled === true ? profile : null);
+      }, onError);
+    }, onError);
+    return () => { stopApplication(); stopExisting(); };
   }
 
   function watchRoster(onData, onError) {

@@ -23,7 +23,7 @@ http.createServer(async (req, res) => {
   if (url.pathname === "/firebase-config.js") {
     res.setHeader("Content-Type", "text/javascript; charset=utf-8");
     return res.end(process.env.MEE101_QA_FIREBASE === "1"
-      ? 'window.MEE101_FIREBASE_EMULATORS=true;window.MEE101_FIREBASE_CONFIG={apiKey:"demo-key",projectId:"demo-lecturenotes",authDomain:"demo-lecturenotes.firebaseapp.com",appId:"1:123:web:demo"};'
+      ? 'window.MEE101_FIREBASE_EMULATORS=true;window.MEE101_APPROVAL_URL="http://127.0.0.1:8787/";window.MEE101_FIREBASE_CONFIG={apiKey:"demo-key",projectId:"demo-lecturenotes",authDomain:"demo-lecturenotes.firebaseapp.com",appId:"1:123:web:demo"};'
       : 'window.MEE101_FIREBASE_CONFIG=null;');
   }
   if (baselineApp && url.pathname === "/app.js") { res.setHeader("Content-Type", "text/javascript; charset=utf-8"); return res.end(baselineApp); }
