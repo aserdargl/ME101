@@ -469,11 +469,20 @@ const LECTURES = [
 // ============================================================================
 // UYGULAMA DURUMU (STATE)
 // ============================================================================
+const PREFERRED_VIEW_MODE_KEY = "mee101_preferred_view_mode_v1";
 let currentLecture = null;
 let isPresentationMode = false;
 let currentSlideIndex = 0;
 let animationFrameId = null;
-let allSlidesInPptVisualMode = false;
+let preferredSlideViewMode = (function () {
+  try {
+    const saved = localStorage.getItem(PREFERRED_VIEW_MODE_KEY);
+    return saved === "ppt" || saved === "web" ? saved : null;
+  } catch {
+    return null;
+  }
+})();
+let allSlidesInPptVisualMode = preferredSlideViewMode === "ppt";
 
 let gearAngle1 = 0;
 let gearAngle2 = 0;
@@ -1041,7 +1050,7 @@ function openLecture(lectureId, startInPresentation = false) {
   if (!lec) return;
   currentLecture = lec;
   currentSlideIndex = 0;
-  allSlidesInPptVisualMode = false;
+  allSlidesInPptVisualMode = preferredSlideViewMode === "ppt";
 
   catalogView.classList.add("hidden");
   lectureView.classList.remove("hidden");
@@ -1075,10 +1084,11 @@ function openLecture(lectureId, startInPresentation = false) {
     const slideEl = document.createElement("section");
     slideEl.className = "slide";
     slideEl.dataset.index = idx;
-    slideEl.dataset.viewMode = s.defaultViewMode || "web";
+    const effectiveMode = preferredSlideViewMode || s.defaultViewMode || "web";
+    slideEl.dataset.viewMode = effectiveMode;
 
     const pptVisualHtml = buildPptExactVisualHtml(s, idx, lec.slides.length, lec.week);
-    const isPptMode = slideEl.dataset.viewMode === "ppt";
+    const isPptMode = effectiveMode === "ppt";
 
     slideEl.innerHTML = `
       <div class="slide-top-controls interactive-zone">
@@ -1095,6 +1105,13 @@ function openLecture(lectureId, startInPresentation = false) {
     `;
     slidesContainer.appendChild(slideEl);
   });
+
+  const toggleAllBtn = document.getElementById("btn-toggle-all-slide-modes");
+  if (toggleAllBtn) {
+    toggleAllBtn.textContent = allSlidesInPptVisualMode
+      ? "Tümünü Web Görünümüne Al"
+      : "Tümünü PPT Levha Görünümüne Al";
+  }
 
   document.querySelectorAll(".btn-edit-this-slide").forEach((btn) => {
     btn.addEventListener("click", (e) => {
@@ -1123,17 +1140,15 @@ function openLecture(lectureId, startInPresentation = false) {
   }
 }
 
-function toggleSingleSlideViewMode(slideIdx) {
-  const slideEl = document.querySelector(`.slide[data-index="${slideIdx}"]`);
+function setSlideElementViewMode(slideEl, mode) {
   if (!slideEl) return;
   const webBody = slideEl.querySelector(".slide-body-web");
   const pptBody = slideEl.querySelector(".slide-body-ppt");
   const switchBtn = slideEl.querySelector(".btn-slide-mode-switch");
 
-  const nextMode = slideEl.dataset.viewMode === "web" ? "ppt" : "web";
-  slideEl.dataset.viewMode = nextMode;
+  slideEl.dataset.viewMode = mode;
 
-  if (nextMode === "ppt") {
+  if (mode === "ppt") {
     webBody.classList.add("hidden");
     pptBody.classList.remove("hidden");
     switchBtn.classList.add("ppt-visual-active");
@@ -1144,21 +1159,43 @@ function toggleSingleSlideViewMode(slideIdx) {
     switchBtn.classList.remove("ppt-visual-active");
     switchBtn.textContent = "PPT Levha Görünümü";
   }
+}
+
+function applyPersistentSlideViewMode(targetMode) {
+  const mode = targetMode === "ppt" ? "ppt" : "web";
+  preferredSlideViewMode = mode;
+  allSlidesInPptVisualMode = mode === "ppt";
+  try {
+    localStorage.setItem(PREFERRED_VIEW_MODE_KEY, mode);
+  } catch {
+    // ignore
+  }
+
+  document.querySelectorAll(".slide").forEach((slideEl) => {
+    setSlideElementViewMode(slideEl, mode);
+  });
+
+  const toggleAllBtn = document.getElementById("btn-toggle-all-slide-modes");
+  if (toggleAllBtn) {
+    toggleAllBtn.textContent = allSlidesInPptVisualMode
+      ? "Tümünü Web Görünümüne Al"
+      : "Tümünü PPT Levha Görünümüne Al";
+  }
+
   updatePresentationHUD();
 }
 
+function toggleSingleSlideViewMode(slideIdx) {
+  const slideEl = document.querySelector(`.slide[data-index="${slideIdx}"]`);
+  if (!slideEl) return;
+  const nextMode = slideEl.dataset.viewMode === "web" ? "ppt" : "web";
+  // Seçilen görünüm (PPT veya Web) sonraki slaytlara geçildiğinde de kalıcı olur
+  applyPersistentSlideViewMode(nextMode);
+}
+
 document.getElementById("btn-toggle-all-slide-modes").addEventListener("click", () => {
-  allSlidesInPptVisualMode = !allSlidesInPptVisualMode;
-  const targetMode = allSlidesInPptVisualMode ? "ppt" : "web";
-  document.querySelectorAll(".slide").forEach((slideEl) => {
-    const idx = parseInt(slideEl.dataset.index, 10);
-    if (slideEl.dataset.viewMode !== targetMode) {
-      toggleSingleSlideViewMode(idx);
-    }
-  });
-  document.getElementById("btn-toggle-all-slide-modes").textContent = allSlidesInPptVisualMode
-    ? "Tümünü Web Görünümüne Al"
-    : "Tümünü PPT Levha Görünümüne Al";
+  const targetMode = allSlidesInPptVisualMode ? "web" : "ppt";
+  applyPersistentSlideViewMode(targetMode);
 });
 
 function goHome() {
