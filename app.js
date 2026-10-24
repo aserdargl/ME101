@@ -1028,6 +1028,9 @@ function openStudentLoginModal(actionAfterLogin = null) {
   pendingStudentAction = actionAfterLogin;
   inpStudentNo.value = "";
   document.getElementById("inp-student-password").value = "";
+  document.getElementById("student-registration-details").open = false;
+  document.getElementById("inp-student-number").value = "";
+  document.getElementById("inp-student-name").value = "";
   studentLoginError.classList.add("hidden");
   studentLoginBackdrop.classList.remove("hidden");
   setTimeout(() => inpStudentNo.focus(), 50);
@@ -1044,7 +1047,8 @@ async function handleStudentLoginSubmit() {
   button.disabled = true;
   studentLoginError.classList.add("hidden");
   const passwordInput = document.getElementById("inp-student-password");
-  const result = await FirebaseStudents.signIn(inpStudentNo.value, passwordInput.value);
+  const result = await FirebaseStudents.signIn(inpStudentNo.value, passwordInput.value,
+    document.getElementById("inp-student-number").value, document.getElementById("inp-student-name").value);
   passwordInput.value = "";
   button.disabled = false;
   if (!result.ok) {
@@ -1088,8 +1092,19 @@ document.getElementById("inp-student-password").addEventListener("keydown", even
   if (event.key === "Enter") handleStudentLoginSubmit();
 });
 document.getElementById("btn-student-register").addEventListener("click", async () => {
+  const number = document.getElementById("inp-student-number");
+  const name = document.getElementById("inp-student-name");
+  if (!number.value.trim() || !name.value.trim()) {
+    document.getElementById("student-registration-details").open = true;
+    number.focus();
+    return;
+  }
+  const button = document.getElementById("btn-student-register");
+  if (button.disabled) return;
+  button.disabled = true;
   const input = document.getElementById("inp-student-password");
-  const result = await FirebaseStudents.register(inpStudentNo.value, input.value);
+  const result = await FirebaseStudents.register(inpStudentNo.value, input.value, number.value, name.value);
+  button.disabled = false;
   input.value = "";
   studentLoginError.textContent = result.ok ? "Doğrulama e-postası gönderildi. Bağlantıyı açtıktan sonra giriş yapınız." : result.error;
   studentLoginError.classList.remove("hidden");
@@ -1127,8 +1142,9 @@ function renderRosterAdminList() {
     row.innerHTML = `
       <span class="roster-item-no">${escapeXml(stu.no || stu.email)}</span>
       <span class="roster-item-name">${escapeXml(stu.name || "—")}</span>
-      <span class="roster-item-email">${escapeXml(stu.email)}${stu.enabled ? "" : " · Engelli"}</span>
-      <button type="button" class="btn-clear-rating" data-remove-stu="${escapeXml(stu.email)}" title="Bu öğrencinin giriş iznini kaldır">&times; Sil</button>
+      <span class="roster-item-email">${escapeXml(stu.email || "Numara ile kayıt")}${stu.enabled ? "" : " · Engelli"}</span>
+      ${stu.email ? "" : `<button type="button" class="btn btn-outline" data-reset-number="${escapeXml(stu.no)}" title="Bu numaranın önceki hesabıyla bağlantısını kaldır">Hesap Bağını Sıfırla</button>`}
+      <button type="button" class="btn-clear-rating" data-remove-stu="${escapeXml(stu.email || stu.no)}" title="Bu öğrencinin giriş iznini kaldır">&times; Sil</button>
     `;
     container.appendChild(row);
   });
@@ -1140,6 +1156,13 @@ function renderRosterAdminList() {
       if (!result.ok) alert(result.error);
       renderRosterAdminList();
       renderCatalog();
+    });
+  });
+  container.querySelectorAll("[data-reset-number]").forEach(button => {
+    button.addEventListener("click", async () => {
+      if (!confirm("Bu numaranın mevcut hesap bağlantısı kaldırılacak; öğrenci yeniden kayıt yapabilecek. Devam edilsin mi?")) return;
+      const result = await FirebaseStudents.resetNumber(button.dataset.resetNumber);
+      if (!result.ok) alert(result.error);
     });
   });
 }

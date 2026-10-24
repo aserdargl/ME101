@@ -22,5 +22,9 @@ async function putDocument(path, fields) {
       name: { stringValue: "Synthetic Student" }, enabled: { booleanValue: enabled }
     });
   }
+  await putDocument("studentNumbers/001234", {
+    no: { stringValue: "001234" }, name: { stringValue: "Ahmet Yılmaz" },
+    nameKey: { stringValue: "ahmet yılmaz" }, enabled: { booleanValue: true }
+  });
   process.stdout.write("Synthetic emulator accounts ready\n");
 })().catch(error => { process.stderr.write(error.message); process.exitCode = 1; });

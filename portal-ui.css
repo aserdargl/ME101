@@ -2,6 +2,9 @@
 .firebase-auth-actions, .roster-sync-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
 .roster-sync-bar { justify-content: space-between; font-size: 12px; }
 .roster-item-email { font-size: 11px; overflow-wrap: anywhere; }
+.student-registration-details { margin: 12px 0; padding: 10px; border: 1px solid #cbd1d8; border-radius: 7px; }
+.student-registration-details summary { cursor: pointer; font-size: 12px; font-weight: 600; }
+.student-registration-details .form-field { margin-top: 10px; }
 .btn, .tool-btn, .btn-insert-here, .btn-edit-lecture,
 .btn-delete-lecture, .btn-clear-rating, .btn-slide-mode-switch {
   cursor: pointer;

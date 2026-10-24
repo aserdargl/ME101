@@ -5,8 +5,8 @@ const { FirebaseStudentService, parseRoster } = require("../firebase-student-ser
 test("roster imports validate every row before sending names or numbers anywhere", () => {
   assert.equal(parseRoster("20261001 - Local Name").ok, false);
   assert.equal(parseRoster("valid@example.test;1;Student\ninvalid").ok, false);
-  const result = parseRoster("Student@Example.Test;123;Özgün İsim");
-  assert.deepEqual(result.students, [{ email: "student@example.test", no: "123", name: "Özgün İsim", enabled: true }]);
+  const result = parseRoster("00123;Özgün İsim");
+  assert.deepEqual(result.students, [{ no: "00123", name: "Özgün İsim", nameKey: "özgün isim", enabled: true }]);
 });
 
 test("unverified accounts never read the private roster", async () => {
@@ -45,9 +45,9 @@ test("append preserves other students; replacement is explicit and atomic", asyn
   const writes = [];
   const service = new FirebaseStudentService({ writeRoster: async (...args) => writes.push(args) });
   service.isAdmin = true;
-  service.roster = [{ email: "keep@example.test" }];
-  await service.saveRoster([{ email: "new@example.test" }]);
+  service.roster = [{ no: "001" }, { email: "keep@example.test" }];
+  await service.saveRoster([{ no: "002" }]);
   assert.deepEqual(writes[0][1], []);
-  await service.saveRoster([{ email: "new@example.test" }], true);
-  assert.deepEqual(writes[1][1], [{ email: "keep@example.test" }]);
+  await service.saveRoster([{ no: "002" }], true);
+  assert.deepEqual(writes[1][1], [{ no: "001" }]);
 });

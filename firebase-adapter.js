@@ -13,29 +13,39 @@ window.createFirebaseStudentAdapter = async config => {
   }
   await authSdk.setPersistence(auth, authSdk.browserSessionPersistence);
   const reference = email => dbSdk.doc(db, "students", email);
+  const enrollment = createNumberEnrollment({ db, sdk: dbSdk });
   return {
+    getUser: () => auth.currentUser,
     async start(onUser) {
       authSdk.onAuthStateChanged(auth, onUser);
       await auth.authStateReady();
     },
     async isAdmin(uid) { return (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", uid))).exists(); },
-    watchRoster(onData, onError) {
-      return dbSdk.onSnapshot(dbSdk.collection(db, "students"), { includeMetadataChanges: true }, snapshot => {
-        if (!snapshot.metadata.fromCache) onData(snapshot.docs.map(document => document.data()));
-      }, onError);
-    },
+    watchRoster: enrollment.watchRoster,
     watchStudent(email, onData, onError) {
-      return dbSdk.onSnapshot(reference(email), { includeMetadataChanges: true }, snapshot => {
-        // Never grant access based on an offline or previously cached record.
-        onData(!snapshot.metadata.fromCache && snapshot.exists() ? snapshot.data() : null);
-      }, onError);
+      return enrollment.watch(auth.currentUser, onData, onError);
     },
-    async signIn(email, password) {
+    async signIn(email, password, number, name) {
       const { user } = await authSdk.signInWithEmailAndPassword(auth, email, password);
       if (!user.emailVerified) throw { code: "auth/unverified-email" };
+      const isAdmin = (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", user.uid))).exists();
+      if (!isAdmin) await enrollment.complete(user, number, name);
     },
-    async register(email, password) {
-      const { user } = await authSdk.createUserWithEmailAndPassword(auth, email, password);
+    async register(email, password, number, name) {
+      let user, created = false;
+      try {
+        ({ user } = await authSdk.createUserWithEmailAndPassword(auth, email, password));
+        created = true;
+      } catch (error) {
+        if (error.code !== "auth/email-already-in-use") throw error;
+        ({ user } = await authSdk.signInWithEmailAndPassword(auth, email, password));
+      }
+      try { await enrollment.prepare(user, number, name); }
+      catch (error) {
+        if (created) { try { await authSdk.deleteUser(user); } catch { /* No enrollment or course permission was granted. */ } }
+        await authSdk.signOut(auth);
+        throw error;
+      }
       await authSdk.sendEmailVerification(user, { url: new URL("./", location.href).href });
       await authSdk.signOut(auth);
     },
@@ -46,13 +56,16 @@ window.createFirebaseStudentAdapter = async config => {
     },
     async writeRoster(students, removals) {
       const batch = dbSdk.writeBatch(db);
-      students.forEach(student => batch.set(reference(student.email), student));
-      removals.forEach(student => batch.delete(reference(student.email)));
+      const rosterRef = student => student.email ? reference(student.email) : dbSdk.doc(db, "studentNumbers", student.no);
+      students.forEach(student => batch.set(rosterRef(student), student));
+      removals.forEach(student => batch.delete(rosterRef(student)));
       await batch.commit();
     },
+    resetNumber: enrollment.reset,
     signOut: () => authSdk.signOut(auth),
     errorMessage(error) {
       const messages = {
+        "enrollment/mismatch": "Öğrenci numarası ve ad-soyad eşleşmedi, kayıt kapalı veya numara başka bir hesaba bağlı. Bilgilerinizi kontrol edin; gerekirse öğretim üyesine başvurun.",
         "auth/unverified-email": "Önce e-postanızdaki doğrulama bağlantısını açınız; ardından tekrar giriş yapınız.",
         "auth/sign-in-required": "Önce e-posta ve parolanızla giriş yapmayı deneyiniz; ardından doğrulamayı yeniden gönderiniz.",
         "auth/email-already-in-use": "Hesap oluşturulamadı. Mevcut hesabınızla giriş yapın veya parolanızı sıfırlayın.",

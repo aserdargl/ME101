@@ -22,10 +22,10 @@ window.FirebaseStudents = (() => {
     return ready;
   }
 
-  async function signIn(email, password) {
+  async function signIn(email, password, number, name) {
     await ready;
     if (!service) return unavailable();
-    const result = await service.signIn(email, password);
+    const result = await service.signIn(email, password, number, name);
     if (!result.ok) return result;
     const deadline = Date.now() + 10000;
     while (!service.accessResolved && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 50));
@@ -46,11 +46,12 @@ window.FirebaseStudents = (() => {
     get profile() { return service?.profile || null; },
     get isAdmin() { return service?.isAdmin === true; },
     get roster() { return service?.isAdmin ? service.roster : []; },
-    register: async (email, password) => { await ready; return service ? service.register(email, password) : unavailable(); },
+    register: async (email, password, number, name) => { await ready; return service ? service.register(email, password, number, name) : unavailable(); },
     resetPassword: async email => { await ready; return service ? service.resetPassword(email) : unavailable(); },
     resendVerification: async () => service ? service.perform(() => service.adapter.resendVerification()) : unavailable(),
     signOut: async () => service ? service.signOut() : { ok: true },
     saveRoster: async students => service ? service.saveRoster(students) : unavailable(),
-    removeStudent: async email => service ? service.removeStudent(email) : unavailable()
+    removeStudent: async key => service ? service.removeStudent(key) : unavailable(),
+    resetNumber: async no => service ? service.resetNumber(no) : unavailable()
   };
 })();

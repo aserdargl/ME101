@@ -1,5 +1,10 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "İlk Kayıt · Öğrenci Bilgileri": "First Registration · Student Details",
+  "Ad Soyad": "Full Name",
+  "Öğrenci Listesi · numara;ad soyad": "Student Roster · number;full name",
+  "Hesap Bağını Sıfırla": "Reset Account Link",
+  "Numara ile kayıt": "Number-based enrollment",
   "Doğrulamayı Yeniden Gönder": "Resend Verification",
   "Ders listesinde tanımlı e-posta adresiniz ve parolanızla giriş yapınız. İlk kullanımda hesap oluşturup e-postanızı doğrulayınız.": "Sign in with the email address on the course roster and your password. Create an account and verify your email before your first sign-in.",
   "Gizli ortak liste · Firebase bağlantısı etkin.": "Private shared roster · Firebase connected.",

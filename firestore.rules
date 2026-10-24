@@ -7,6 +7,11 @@ service cloud.firestore {
     function admin() {
       return verified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
+    function activeNumber(no) {
+      return no is string && no.matches('^[0-9]{1,32}$')
+        && get(/databases/$(database)/documents/studentNumbers/$(no)).data.enabled == true;
+    }
+    function own(uid) { return request.auth != null && request.auth.uid == uid; }
     match /admins/{uid} {
       allow get: if verified() && request.auth.uid == uid;
       allow list, write: if false;
@@ -25,6 +30,50 @@ service cloud.firestore {
         && request.resource.data.name is string && request.resource.data.name.size() <= 200
         && request.resource.data.enabled is bool;
       allow delete: if admin();
+    }
+    match /studentNumbers/{no} {
+      allow get: if admin() || (verified()
+        && get(/databases/$(database)/documents/enrollments/$(request.auth.uid)).data.no == no);
+      allow list: if admin();
+      allow create, update: if admin()
+        && request.resource.data.keys().hasOnly(['no', 'name', 'nameKey', 'enabled'])
+        && request.resource.data.no == no && no.matches('^[0-9]{1,32}$')
+        && request.resource.data.name is string && request.resource.data.name.size() <= 200
+        && request.resource.data.nameKey is string && request.resource.data.nameKey.size() > 0
+        && request.resource.data.nameKey.size() <= 200
+        && request.resource.data.enabled is bool;
+      allow delete: if admin();
+    }
+    match /registrationRequests/{uid} {
+      allow get: if own(uid) || admin();
+      allow list, delete: if admin();
+      allow create, update: if own(uid)
+        && request.resource.data.keys().hasOnly(['no', 'nameKey', 'email'])
+        && request.resource.data.email == request.auth.token.email.lower()
+        && activeNumber(request.resource.data.no)
+        && request.resource.data.nameKey == get(/databases/$(database)/documents/studentNumbers/$(request.resource.data.no)).data.nameKey
+        && (!exists(/databases/$(database)/documents/numberClaims/$(request.resource.data.no))
+          || get(/databases/$(database)/documents/numberClaims/$(request.resource.data.no)).data.uid == uid);
+    }
+    match /numberClaims/{no} {
+      allow get: if admin() || (verified() && resource.data.uid == request.auth.uid);
+      allow list, delete: if admin();
+      allow create: if verified() && activeNumber(no)
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/enrollments/$(request.auth.uid)).data.no == no;
+      allow update: if false;
+    }
+    match /enrollments/{uid} {
+      allow get: if (verified() && own(uid)) || admin();
+      allow list, delete: if admin();
+      allow create: if verified() && own(uid)
+        && request.resource.data.keys().hasOnly(['no', 'nameKey', 'email'])
+        && request.resource.data.email == request.auth.token.email.lower()
+        && activeNumber(request.resource.data.no)
+        && request.resource.data.nameKey == get(/databases/$(database)/documents/studentNumbers/$(request.resource.data.no)).data.nameKey
+        && getAfter(/databases/$(database)/documents/numberClaims/$(request.resource.data.no)).data.uid == uid;
+      allow update: if false;
     }
     match /{document=**} {
       allow read, write: if false;

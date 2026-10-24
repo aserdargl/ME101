@@ -1,7 +1,8 @@
 const { test, before, after } = require("node:test");
 const fs = require("node:fs");
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
-const { doc, collection, setDoc, getDoc, getDocs, deleteDoc } = require("firebase/firestore");
+const { doc, collection, setDoc, getDoc, getDocs, deleteDoc, writeBatch } = require("firebase/firestore");
+const assert = require("node:assert/strict");
 let environment;
 const record = { email: "student@example.test", no: "123", name: "Synthetic Student", enabled: true };
 
@@ -12,6 +13,9 @@ before(async () => {
   await environment.withSecurityRulesDisabled(async context => {
     await setDoc(doc(context.firestore(), "admins", "owner"), { role: "owner" });
     await setDoc(doc(context.firestore(), "students", record.email), record);
+    for (const no of ["00123", "00456", "00789", "00999"]) await setDoc(doc(context.firestore(), "studentNumbers", no), {
+      no, name: "Ahmet Yılmaz", nameKey: "ahmet yılmaz", enabled: true
+    });
   });
 });
 after(async () => { await environment?.cleanup(); });
@@ -41,4 +45,55 @@ test("only a verified administrator may list, add, disable and remove students",
   await assertSucceeds(deleteDoc(doc(db, "students", "other@example.test")));
   await assertFails(setDoc(doc(db, "admins", "new-owner"), { role: "owner" }));
   await assertFails(setDoc(doc(db, "students", record.email), { ...record, password: "never store passwords here" }));
+});
+
+function enroll(db, uid, email, no, nameKey = "ahmet yılmaz") {
+  const batch = writeBatch(db);
+  batch.set(doc(db, "numberClaims", no), { uid });
+  batch.set(doc(db, "enrollments", uid), { no, email, nameKey });
+  return batch.commit();
+}
+
+test("number lists and names remain private even for signed-in but unenrolled accounts", async () => {
+  const db = user("unenrolled", "new@example.test");
+  await assertFails(getDoc(doc(db, "studentNumbers", "00123")));
+  await assertFails(getDocs(collection(db, "studentNumbers")));
+  await assertFails(getDocs(collection(db, "numberClaims")));
+});
+
+test("registration requests require an exact number/name match but reserve no number", async () => {
+  const db = user("pending", "pending@example.test", false);
+  const reference = doc(db, "registrationRequests", "pending");
+  await assertFails(setDoc(reference, { no: "99999", nameKey: "ahmet yılmaz", email: "pending@example.test" }));
+  await assertFails(setDoc(reference, { no: "00123", nameKey: "başka isim", email: "pending@example.test" }));
+  await assertSucceeds(setDoc(reference, { no: "00123", nameKey: "ahmet yılmaz", email: "pending@example.test" }));
+  await assertFails(enroll(db, "pending", "pending@example.test", "00123"));
+});
+
+test("verified enrollment is atomic, name-checked and bound to exactly one account", async () => {
+  const db = user("first", "first@example.test");
+  await assertFails(enroll(db, "first", "first@example.test", "00123", "wrong name"));
+  await assertFails(setDoc(doc(db, "enrollments", "first"), { no: "00123", email: "first@example.test", nameKey: "ahmet yılmaz" }));
+  await assertSucceeds(enroll(db, "first", "first@example.test", "00123"));
+  await assertSucceeds(getDoc(doc(db, "studentNumbers", "00123")));
+  await assertFails(enroll(user("second", "second@example.test"), "second", "second@example.test", "00123"));
+  await assertFails(enroll(db, "first", "first@example.test", "00456"));
+});
+
+test("two simultaneous registrations cannot claim the same number", async () => {
+  const results = await Promise.allSettled([
+    enroll(user("race-a", "race-a@example.test"), "race-a", "race-a@example.test", "00789"),
+    enroll(user("race-b", "race-b@example.test"), "race-b", "race-b@example.test", "00789")
+  ]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+});
+
+test("only administrators can reset an existing number/account binding", async () => {
+  const db = user("owner", "owner@example.test");
+  await assertFails(deleteDoc(doc(user("first", "first@example.test"), "numberClaims", "00123")));
+  const batch = writeBatch(db);
+  batch.delete(doc(db, "numberClaims", "00123"));
+  batch.delete(doc(db, "enrollments", "first"));
+  await assertSucceeds(batch.commit());
+  await assertSucceeds(enroll(user("replacement", "replacement@example.test"), "replacement", "replacement@example.test", "00123"));
 });
