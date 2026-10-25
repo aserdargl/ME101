@@ -770,6 +770,7 @@ function openLecture(lectureId, startInPresentation = false) {
       const index = Number(body.closest(".slide").dataset.index);
       body.innerHTML = buildPptExactVisualHtml(lec.slides[index], index, lec.slides.length, lec.week);
     });
+    slidesContainer.querySelectorAll('.slide').forEach(slide => setSlideElementViewMode(slide, slide.dataset.viewMode));
   });
   lec.slides.forEach((s, idx) => {
     const slideEl = document.createElement("section");
@@ -779,8 +780,9 @@ function openLecture(lectureId, startInPresentation = false) {
     slideEl.dataset.viewMode = effectiveMode;
 
     const isPptMode = effectiveMode === "ppt";
+    const visibility = SlideVisual.contentVisibility(s, effectiveMode);
     // Simulation controls must exist for setup even when the PPT view is selected.
-    const needsWebBody = !isPptMode || detectSlideSimType(s) !== "none";
+    const needsWebBody = visibility.web || detectSlideSimType(s) !== "none";
 
     slideEl.innerHTML = `
       <div class="slide-top-controls interactive-zone">
@@ -792,8 +794,8 @@ function openLecture(lectureId, startInPresentation = false) {
       </div>
       <div class="slide-kicker">${escapeXml(s.kicker)}</div>
       <h2>${escapeXml(s.title)}</h2>
-      <div class="slide-body-web ${isPptMode ? "hidden" : ""}" data-rendered="${needsWebBody}">${needsWebBody ? s.html : ""}</div>
-      <div class="slide-body-ppt ${isPptMode ? "" : "hidden"}" data-rendered="${isPptMode}">${isPptMode ? buildPptExactVisualHtml(s, idx, lec.slides.length, lec.week) : ""}</div>
+      <div class="slide-body-ppt ${visibility.ppt ? "" : "hidden"}" data-rendered="${visibility.ppt}">${visibility.ppt ? buildPptExactVisualHtml(s, idx, lec.slides.length, lec.week) : ""}</div>
+      <div class="slide-body-web ${visibility.web ? "" : "hidden"}" data-rendered="${needsWebBody}">${needsWebBody ? s.html || "" : ""}</div>
     `;
     slidesContainer.appendChild(slideEl);
   });
@@ -837,26 +839,26 @@ function setSlideElementViewMode(slideEl, mode) {
   const webBody = slideEl.querySelector(".slide-body-web");
   const pptBody = slideEl.querySelector(".slide-body-ppt");
   const switchBtn = slideEl.querySelector(".btn-slide-mode-switch");
-  const body = mode === "ppt" ? pptBody : webBody;
-  if (body.dataset.rendered !== "true") {
-    const index = Number(slideEl.dataset.index);
-    const slide = currentLecture.slides[index];
-    body.innerHTML = mode === "ppt"
-      ? buildPptExactVisualHtml(slide, index, currentLecture.slides.length, currentLecture.week)
-      : slide.html;
-    body.dataset.rendered = "true";
+  const index = Number(slideEl.dataset.index);
+  const slide = currentLecture.slides[index];
+  const visibility = SlideVisual.contentVisibility(slide, mode);
+  for (const [body, visible, html] of [
+    [webBody, visibility.web, () => slide.html || ""],
+    [pptBody, visibility.ppt, () => buildPptExactVisualHtml(slide, index, currentLecture.slides.length, currentLecture.week)]
+  ]) {
+    if (visible && body.dataset.rendered !== "true") {
+      body.innerHTML = html();
+      body.dataset.rendered = "true";
+    }
+    body.classList.toggle("hidden", !visible);
   }
 
   slideEl.dataset.viewMode = mode;
 
   if (mode === "ppt") {
-    webBody.classList.add("hidden");
-    pptBody.classList.remove("hidden");
     switchBtn.classList.add("ppt-visual-active");
     switchBtn.textContent = "Web Görünümüne Geç";
   } else {
-    pptBody.classList.add("hidden");
-    webBody.classList.remove("hidden");
     switchBtn.classList.remove("ppt-visual-active");
     switchBtn.textContent = "PPT Levha Görünümü";
   }

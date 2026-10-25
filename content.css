@@ -45,9 +45,15 @@
 #github-login-backdrop { z-index: 600; }
 body.presentation-mode .cloud-status { display: none; }
 body.presentation-mode .slide:has(.slide-body-ppt:not(.hidden) .ppt-source-frame) { padding: 14px; border-top-width: 1px; justify-content: flex-start; }
-body.presentation-mode .slide:has(.slide-body-ppt:not(.hidden) .ppt-source-frame) > .slide-kicker,
-body.presentation-mode .slide:has(.slide-body-ppt:not(.hidden) .ppt-source-frame) > h2 { display: none; }
-body.presentation-mode .slide-body-ppt { min-height: 0; overflow: auto; }
+/* Start at the title even when complete notes exceed the presentation height. */
+body.presentation-mode .slide { justify-content: flex-start; }
+body.presentation-mode .slide > * { flex-shrink: 0; }
+.slide-body-web { min-width: 0; overflow-wrap: anywhere; }
+.slide-body-ppt:not(.hidden) + .slide-body-web:not(.hidden) { margin-top: 20px; }
+.slide-body-web img, .slide-body-web video, .slide-body-web iframe { max-width: 100%; }
+.slide-body-web table, .slide-body-web pre { display: block; max-width: 100%; overflow-x: auto; }
+body.presentation-mode .slide[data-view-mode="ppt"] .slide-body-web .fragment { opacity: 1; transform: none; pointer-events: auto; }
+body.presentation-mode .slide-body-ppt { min-height: 0; }
 body.presentation-mode .ppt-source-frame { max-height: calc(100dvh - 130px); border: 0; }
 body.presentation-mode .ppt-source-frame img { max-height: calc(100dvh - 130px); }
 @media (max-width: 700px) {
