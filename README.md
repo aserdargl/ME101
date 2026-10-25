@@ -83,3 +83,7 @@ Kullanıcı canlı açılış ölçümü istediğinde `node tests/live-startup.c
 ## Slayt görünümü
 
 **Slayt / Notlar** menüsü PDF sayfasını ve varsa ek web açıklamalarını gösterir. PDF sayfasındaki başlık yeniden eklenmez. Sunum, tam ekran, lazer ve kalem araçları aynı slayt sırası üzerinde çalışır.
+
+## Çalışan HTML slaytları
+
+Düzenleyicide sayfaların arasındaki **+HTML** düğmesine basın. Tam HTML/CSS/JavaScript kodunu **HTML / CSS / JavaScript Sayfası** alanına yapıştırın, **Önizlemeyi Çalıştır** ile deneyin ve dersi kaydedin. HTML sayfası PDF sayfalarıyla aynı sırada ilerler. Kod ayrı bir iframe içinde çalışır; portalın kayıtlarına ve yönetici oturumuna erişmez. Küçük önizlemeler kodu çalıştırmaz. PDF dosyasının kendisi değiştirilmez; ek sayfa ders kaydında saklanır.

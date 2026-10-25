@@ -3,6 +3,11 @@
 /* portal-translations.js */
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "HTML Sayfası": "HTML Page",
+  "Bu araya çalışan HTML sayfası ekle": "Insert an interactive HTML page here",
+  "HTML / CSS / JavaScript Sayfası": "HTML / CSS / JavaScript Page",
+  "Tam HTML sayfanızı buraya yapıştırın. Kod, sunumda ayrı bir sayfa olarak çalışır.": "Paste your complete HTML page here. It runs as a separate page in the presentation.",
+  "Önizlemeyi Çalıştır": "Run Preview",
   "Slayt": "Slide",
   "Notlar": "Notes",
   "PDF İndir": "Download PDF",
@@ -781,12 +786,63 @@ window.PdfSlides = (() => {
 })();
 ;
 
+/* html-slides.js */
+(function (root) {
+  const escape = value => String(value || "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+  const STARTER = `<!doctype html>
+<html lang="tr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etkileşimli örnek</title>
+<style>
+  body { margin: 0; padding: 24px; font: 18px system-ui; color: #243447; }
+  button { padding: 10px 18px; cursor: pointer; }
+</style>
+<h1>Etkileşimli örnek</h1>
+<button id="calculate">Hesapla</button>
+<p id="result">Sonuç burada görünecek.</p>
+<script>
+  document.getElementById("calculate").addEventListener("click", () => {
+    document.getElementById("result").textContent = "Sonuç: " + (6 * 7);
+  });
+</script>
+</html>`;
+
+  /** A dedicated field keeps executable pages separate from existing lecture notes. */
+  function isHtmlSlide(slide) { return typeof slide?.htmlDocument === "string"; }
+
+  function create(week) {
+    return { title: "HTML Sayfası", kicker: week, defaultViewMode: "web", html: "", htmlDocument: STARTER, pptSummaryBullets: [] };
+  }
+
+  /** Scripts run in an opaque-origin frame without access to portal storage or controls. */
+  function render(slide) {
+    return `<div class="html-slide-frame interactive-zone"><iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="${escape(slide.title || "HTML")}" srcdoc="${escape(slide.htmlDocument)}"></iframe></div>`;
+  }
+
+  function thumbnail(slide) {
+    return `<div class="html-slide-thumbnail"><strong>&lt;/&gt; HTML</strong><span>${escape(slide.title)}</span></div>`;
+  }
+
+  /** Reuses a running preview while unrelated title fields change. */
+  function preview(stage, source, title) {
+    const frame = stage.querySelector(".html-slide-frame iframe");
+    if (frame && frame.srcdoc === source) { frame.title = title; return; }
+    stage.innerHTML = render({ htmlDocument: source, title });
+  }
+
+  root.HtmlSlides = { isHtmlSlide, create, render, thumbnail, preview };
+  if (typeof module !== "undefined") module.exports = root.HtmlSlides;
+})(typeof window !== "undefined" ? window : globalThis);
+;
+
 /* slide-visual.js */
 (function (root) {
   const escape = value => String(value || "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 
   /** Image mode shows one complete slide; Web and PPT retain the original notes. */
   function contentVisibility(slide, mode) {
+    if (root.HtmlSlides?.isHtmlSlide(slide)) return { web: false, ppt: true };
     const hasNotes = Boolean(String(slide.html || "").trim());
     if (slide.pdf) return { web: mode === "web" && hasNotes, ppt: true };
     const hasOriginal = Boolean(slide.pptImageUrl || (!slide.sourceSlideEdited && slide.sourceSlideVisual) || slide.pdf);
@@ -798,6 +854,7 @@ window.PdfSlides = (() => {
 
   /** Uses original slide geometry when available; never invents a technical image. */
   function render(slide, slideIndex, totalSlides, week) {
+    if (root.HtmlSlides?.isHtmlSlide(slide)) return root.HtmlSlides.render(slide);
     if (slide.pdf) return root.PdfSlides.render(slide);
     const original = slide.pptImageUrl || (!slide.sourceSlideEdited && slide.sourceSlideVisual);
     if (original) return `<div class="ppt-exact-frame ppt-source-frame" style="aspect-ratio:${escape(slide.sourceSlideRatio || "auto")}"><img src="${escape(original)}" alt="${escape(slide.title)}"/></div>${slide.sourceWarnings?.length ? `<p class="ppt-import-warning">${slide.sourceWarnings.map(escape).join("<br/>")}</p>` : ""}`;
@@ -4682,6 +4739,15 @@ function updateEditLivePreview() {
   if (!stage || !editingLectureDraft || !editingLectureDraft.slides[editingSlideIndex]) return;
 
   const slide = editingLectureDraft.slides[editingSlideIndex];
+  if (HtmlSlides.isHtmlSlide(slide)) {
+    const title = document.getElementById("edit-slide-title").value.trim() || slide.title;
+    editPreviewMarkup.delete(stage);
+    HtmlSlides.preview(stage, document.getElementById("edit-html-document").value, title);
+    if (typeLabel) typeLabel.textContent = "HTML / CSS / JavaScript";
+    const thumbnail = document.querySelector("#edit-slide-tabs .edit-thumb-card.active .edit-thumb-preview");
+    if (thumbnail) thumbnail.innerHTML = HtmlSlides.thumbnail({ title });
+    return;
+  }
   const weekVal = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
   const kicker = document.getElementById("edit-slide-kicker").value.trim() || slide.kicker || weekVal.toUpperCase();
   const title = document.getElementById("edit-slide-title").value.trim() || slide.title || `Slayt ${editingSlideIndex + 1}`;
@@ -4765,7 +4831,7 @@ function loadSlideIntoEditForm(slideIdx, rebuildTabs = true) {
   document.getElementById("edit-slide-title").value = fields.title;
   document.getElementById("edit-slide-viewmode").value = fields.viewMode;
   document.getElementById("edit-slide-simtype").value = fields.simType;
-  document.getElementById("edit-slide-simtype").disabled = Boolean(slide.pdf);
+  document.getElementById("edit-slide-simtype").disabled = Boolean(slide.pdf) || HtmlSlides.isHtmlSlide(slide);
   document.getElementById("inp-edit-slide-img").disabled = Boolean(slide.pdf);
 
   document.getElementById("edit-slide-lead").value = fields.lead;
@@ -4778,9 +4844,11 @@ function loadSlideIntoEditForm(slideIdx, rebuildTabs = true) {
   slide._imageChanged = false;
   updateSlideImageStatusUI(fields.imageUrl);
 
+  document.getElementById("edit-html-slide-fields").classList.toggle("hidden", !HtmlSlides.isHtmlSlide(slide));
+  document.getElementById("edit-html-document").value = slide.htmlDocument || "";
   const standardFieldsBox = document.getElementById("edit-slide-standard-fields");
   if (standardFieldsBox) {
-    standardFieldsBox.classList.toggle("hidden", fields.simType !== "none");
+    standardFieldsBox.classList.toggle("hidden", fields.simType !== "none" || HtmlSlides.isHtmlSlide(slide));
   }
 
   if (rebuildTabs) renderEditSlideTabs();
@@ -4804,6 +4872,7 @@ function createInsertBetweenBar(insertPos, totalSlides) {
     <span class="edit-insert-label">${posLabel}</span>
     <div class="edit-insert-btns">
       <button type="button" class="btn-insert-here" data-ins-type="pdf" data-ins-pos="${insertPos}" title="Bu araya PDF sayfaları ekle">+PDF</button>
+      <button type="button" class="btn-insert-here" data-ins-type="html" data-ins-pos="${insertPos}" title="Bu araya çalışan HTML sayfası ekle">+HTML</button>
       <button type="button" class="btn-insert-here" data-ins-type="slide" data-ins-pos="${insertPos}" title="Bu araya yeni konu/metin slaytı ekle">+Konu</button>
       <button type="button" class="btn-insert-here" data-ins-type="sim" data-ins-pos="${insertPos}" title="Bu araya teknik simülasyon slaytı ekle">+Sim</button>
       <button type="button" class="btn-insert-here" data-ins-type="img" data-ins-pos="${insertPos}" title="Bu araya görsel (PNG/JPG) slayt ekle">+Görsel</button>
@@ -4818,6 +4887,8 @@ function createInsertBetweenBar(insertPos, totalSlides) {
       if (type === "pdf") {
         pendingPdfInsertIndex = pos;
         document.getElementById("inp-edit-pdf-file").click();
+      } else if (type === "html") {
+        insertHtmlSlideAt(pos);
       } else if (type === "slide") {
         insertContentSlideAt(pos);
       } else if (type === "sim") {
@@ -4847,7 +4918,7 @@ function renderEditSlideTabs() {
       if (!entry.isIntersecting || !editingLectureDraft || !entry.target.isConnected) return;
       const index = Number(entry.target.dataset.slideIndex);
       if (index !== editingSlideIndex) {
-        entry.target.innerHTML = buildPptExactVisualHtml(editingLectureDraft.slides[index], index, total, weekVal);
+        entry.target.innerHTML = HtmlSlides.isHtmlSlide(editingLectureDraft.slides[index]) ? HtmlSlides.thumbnail(editingLectureDraft.slides[index]) : buildPptExactVisualHtml(editingLectureDraft.slides[index], index, total, weekVal);
       }
       editThumbnailObserver.unobserve(entry.target);
     });
@@ -4863,7 +4934,7 @@ function renderEditSlideTabs() {
     const simType = detectSlideSimType(s);
     const hasImg = Boolean(s.pptImageUrl || (s.extractedImages && s.extractedImages.length > 0));
     const typeTagText =
-      simType !== "none" ? `Simülasyon (${simType})` : hasImg ? "Görsel Slayt" : "Konu Slaytı";
+      HtmlSlides.isHtmlSlide(s) ? "HTML Sayfası" : s.pdf ? "PDF Sayfası" : simType !== "none" ? `Simülasyon (${simType})` : hasImg ? "Görsel Slayt" : "Konu Slaytı";
 
     card.innerHTML = `
       <div class="edit-thumb-top">
@@ -4891,6 +4962,12 @@ function renderEditSlideTabs() {
 function commitCurrentSlideFormToDraft() {
   if (!editingLectureDraft || !editingLectureDraft.slides[editingSlideIndex]) return;
   const slide = editingLectureDraft.slides[editingSlideIndex];
+  if (HtmlSlides.isHtmlSlide(slide)) {
+    slide.htmlDocument = document.getElementById("edit-html-document").value;
+    slide.title = document.getElementById("edit-slide-title").value.trim() || slide.title;
+    slide.kicker = document.getElementById("edit-slide-kicker").value.trim() || slide.kicker;
+    return;
+  }
   const snap = editingSlideInitialSnapshot || extractSlideEditableFields(slide);
   const unchangedFields = [
     ["edit-slide-kicker", snap.kicker], ["edit-slide-title", snap.title],
@@ -5158,6 +5235,21 @@ document.getElementById("btn-edit-remove-slide-img").addEventListener("click", (
   updateSlideImageStatusUI("");
   updateEditLivePreview();
 });
+
+document.getElementById("btn-run-html-preview").addEventListener("click", () => {
+  const stage = document.getElementById("edit-live-preview-stage");
+  stage.replaceChildren();
+  updateEditLivePreview();
+});
+
+/** Inserts an editable, executable page into the same sequence as PDF pages. */
+function insertHtmlSlideAt(insertPos) {
+  if (!editingLectureDraft) return;
+  commitCurrentSlideFormToDraft();
+  const position = Math.max(0, Math.min(insertPos, editingLectureDraft.slides.length));
+  editingLectureDraft.slides.splice(position, 0, HtmlSlides.create(editingLectureDraft.week || "Ders"));
+  loadSlideIntoEditForm(position);
+}
 
 function insertContentSlideAt(insertPos) {
   if (!editingLectureDraft) return;

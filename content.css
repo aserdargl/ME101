@@ -108,3 +108,13 @@ body.presentation-mode :is(.toolbar-left, .toolbar-center, .toolbar-right) { fle
 .pdf-page > [role="status"] { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; }
 .slide[data-view-mode="pdf"]:has(.slide-body-ppt:not(.hidden) .ppt-source-frame) .slide-content > :is(.slide-kicker, h2) { display: none; }
 .edit-live-preview-stage .pdf-page { max-width: 100%; }
+
+.html-slide-frame { width: 100%; aspect-ratio: 16 / 9; background: white; min-width: 0; }
+.html-slide-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+.html-slide-thumbnail { display: grid; place-content: center; gap: 5px; height: 100%; text-align: center; padding: 8px; background: #edf4f0; color: #3b6650; }
+.html-slide-thumbnail span { font-size: 9px; overflow-wrap: anywhere; }
+.html-source-editor { font: 12px/1.5 Consolas, monospace; min-height: 220px; tab-size: 2; resize: vertical; }
+.edit-live-preview-stage:has(.html-slide-frame) { display: block; }
+body.presentation-mode .html-slide-frame { min-height: 0; }
+
+.course-editor .edit-insert-btns { flex-wrap: wrap; gap: 4px; }

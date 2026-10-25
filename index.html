@@ -17,10 +17,10 @@
   <link rel="stylesheet" href="style.css?v=11" />
   <link rel="stylesheet" href="modern.css?v=2" />
   <link rel="stylesheet" href="editor.css?v=registered-roster-5" />
-  <link rel="stylesheet" href="content.css?v=pdf-slides-1" />
+  <link rel="stylesheet" href="content.css?v=html-slides-1" />
   <link rel="stylesheet" href="portal-ui.css?v=7" />
   <script defer src="firebase-config.js?v=2"></script>
-  <script defer src="portal-startup.js?v=44b7646d2ee6"></script>
+  <script defer src="portal-startup.js?v=91f00d4fb0f1"></script>
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -683,6 +683,14 @@
                 </div>
               </div>
 
+              <div id="edit-html-slide-fields" class="hidden">
+                <div class="form-field" style="margin-top:0.55rem;">
+                  <label for="edit-html-document">HTML / CSS / JavaScript Sayfası</label>
+                  <textarea id="edit-html-document" class="html-source-editor" rows="12" spellcheck="false" aria-describedby="html-slide-help"></textarea>
+                  <small id="html-slide-help">Tam HTML sayfanızı buraya yapıştırın. Kod, sunumda ayrı bir sayfa olarak çalışır.</small>
+                </div>
+                <button type="button" id="btn-run-html-preview" class="btn btn-secondary">Önizlemeyi Çalıştır</button>
+              </div>
               <div id="edit-slide-standard-fields">
                 <div class="form-field" style="margin-top:0.55rem;">
                   <label for="edit-slide-lead">Slayt Giriş / Açıklama Paragrafı (Üst Özet Cümlesi)</label>

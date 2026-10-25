@@ -11,7 +11,7 @@ test("GitHub round trip preserves original PDF bytes, mixed slide order, notes a
   const page = number => ({ title: `Page ${number}`, html: "", pdf: { source, page: number, width: 960, height: 540, fileName: "Synthetic.pdf" } });
   const lectures = [
     { id: "legacy", custom: { keep: true }, pptxUrl: "pptx/original.pptx", slides: [{ html: "<p>Original notes</p>", pptImageUrl: "original.png" }] },
-    { id: "pdf", pdfUrl: source, pdfFileName: "Synthetic.pdf", slides: [page(1), { title: "Extra", html: "<p>Araya eklenen açıklama</p>" }, page(2)] }
+    { id: "pdf", pdfUrl: source, pdfFileName: "Synthetic.pdf", slides: [page(1), { title: "Extra", html: "<p>Araya eklenen açıklama</p>", htmlDocument: "<button>Calculate</button><script>document.title=42</script>" }, page(2)] }
   ];
   const server = fakeGitHub();
   const repository = new GitHubLectureRepository({ owner: "aserdargl", repository: "ME101", fetch: server.fetch,

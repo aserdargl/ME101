@@ -1,5 +1,10 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "HTML Sayfası": "HTML Page",
+  "Bu araya çalışan HTML sayfası ekle": "Insert an interactive HTML page here",
+  "HTML / CSS / JavaScript Sayfası": "HTML / CSS / JavaScript Page",
+  "Tam HTML sayfanızı buraya yapıştırın. Kod, sunumda ayrı bir sayfa olarak çalışır.": "Paste your complete HTML page here. It runs as a separate page in the presentation.",
+  "Önizlemeyi Çalıştır": "Run Preview",
   "Slayt": "Slide",
   "Notlar": "Notes",
   "PDF İndir": "Download PDF",
