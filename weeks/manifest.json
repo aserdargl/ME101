@@ -1,45 +1,4 @@
 {
   "version": 1,
-  "files": [
-    {
-      "id": "week-file-3713a0232b29f8a6f80ca91c004db33d79afd145a8b5f5a30612a6a59f809899",
-      "week": 1,
-      "name": "1.Week.pdf",
-      "path": "weeks/files/7790c3b669c5fa9ea4cc17ec086ae3d3dacab1d50c2b6090d541685de4681f99.pdf",
-      "sha256": "7790c3b669c5fa9ea4cc17ec086ae3d3dacab1d50c2b6090d541685de4681f99",
-      "size": 8041963
-    },
-    {
-      "id": "week-file-05f952713354217b4cbe32f8572f3e0315834f4822dd5c2f95c984e8b1dab3f0",
-      "week": 2,
-      "name": "2.Week.pdf",
-      "path": "weeks/files/de37b4b75d1e9e14066ed2dc2d287a61fe1ae67129bf26a6585cae1012532e7e.pdf",
-      "sha256": "de37b4b75d1e9e14066ed2dc2d287a61fe1ae67129bf26a6585cae1012532e7e",
-      "size": 2687029
-    },
-    {
-      "id": "week-file-c90f2ed4971f2e051ad26237c19ab88ea76cc92b6568bcdc3cdc12d54e928dce",
-      "week": 3,
-      "name": "3.Week.pdf",
-      "path": "weeks/files/4939cee8e03b4a1b78bbc664d0981238ac8d0e55a7208a1251fe4f670005fa9f.pdf",
-      "sha256": "4939cee8e03b4a1b78bbc664d0981238ac8d0e55a7208a1251fe4f670005fa9f",
-      "size": 3187794
-    },
-    {
-      "id": "week-file-e3df5849fe44389b6ed9a1ff4d13dae60ce921ebcc3aeec55b5fdd5dc41002a4",
-      "week": 4,
-      "name": "4.Week.pdf",
-      "path": "weeks/files/0dbc6a1845dd10048607818aeadc982ed24e95f9dc4937a79fe0fb23545593ea.pdf",
-      "sha256": "0dbc6a1845dd10048607818aeadc982ed24e95f9dc4937a79fe0fb23545593ea",
-      "size": 6887236
-    },
-    {
-      "id": "week-file-b708d73a647fc39d3b023faddb659bb742d250e7ab2af855927cbc34e48a71f3",
-      "week": 6,
-      "name": "6. Week.pdf",
-      "path": "weeks/files/c994228113c7ceb48ee32987fa77e25d6175a69c840a0cadaea6a95371d9ea77.pdf",
-      "sha256": "c994228113c7ceb48ee32987fa77e25d6175a69c840a0cadaea6a95371d9ea77",
-      "size": 600422
-    }
-  ]
+  "files": []
 }
