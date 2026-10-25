@@ -3644,7 +3644,8 @@ function saveCustomLectureToStorage(newLec) {
 function deleteCustomLectureFromStorage(lecId) {
   if (!isAdminAuthenticated) return;
   const targetLec = LECTURES.find((l) => l.id === lecId);
-  const label = targetLec ? `${targetLec.week} (${targetLec.title})` : lecId;
+  if (!targetLec) return;
+  const label = `${targetLec.week} (${targetLec.title})`;
   if (!confirm(`"${label}" dersini silmek istediğinize emin misiniz?`)) {
     return;
   }
@@ -3879,7 +3880,7 @@ function renderCatalog() {
   });
 
   // Dersi silme butonu (Yalnızca Öğretim Üyesi)
-  document.querySelectorAll(".btn-delete-lecture").forEach((btn) => {
+  lectureGrid.querySelectorAll("[data-del-lec]").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       if (!isAdminAuthenticated) return;
