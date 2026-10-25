@@ -789,10 +789,12 @@ function openLecture(lectureId, startInPresentation = false) {
         <select class="btn-slide-mode-switch slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="image">Resim</option><option value="web">Web</option><option value="ppt">PPT</option></select>
         <span class="slide-number-badge">Slayt ${idx + 1} / ${lec.slides.length}</span>
       </div>
+      <div class="slide-content">
       <div class="slide-kicker">${escapeXml(s.kicker)}</div>
       <h2>${escapeXml(s.title)}</h2>
       <div class="slide-body-ppt ${visibility.ppt ? "" : "hidden"}" data-rendered="${visibility.ppt}">${visibility.ppt ? buildPptExactVisualHtml(s, idx, lec.slides.length, lec.week) : ""}</div>
       <div class="slide-body-web ${visibility.web ? "" : "hidden"}" data-rendered="${needsWebBody}">${needsWebBody ? s.html || "" : ""}</div>
+      </div>
     `;
     slidesContainer.appendChild(slideEl);
     PptxDisplay.setImageMode(slideEl, effectiveMode);
@@ -860,6 +862,7 @@ function applyPersistentSlideViewMode(targetMode) {
 
   syncSlideViewSelectors();
   updatePresentationHUD();
+  PresentationFit.schedule();
 }
 
 function syncSlideViewSelectors() {
@@ -931,6 +934,7 @@ function updateActiveSlide() {
 
   clearCanvas();
   updatePresentationHUD();
+  PresentationFit.schedule();
 }
 
 function updatePresentationHUD() {
@@ -3013,7 +3017,8 @@ slidesViewport.addEventListener("click", (e) => {
 
 window.addEventListener("keydown", (e) => {
   if (!isPresentationMode) return;
-  if (e.target.closest("select, input, textarea, button, a, [contenteditable]")) return;
+  if (e.target.closest("select, input, textarea, [contenteditable]")) return;
+  if (e.key === " " && e.target.closest("button, a")) return;
 
   if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) {
     e.preventDefault();

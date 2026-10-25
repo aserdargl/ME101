@@ -61,6 +61,12 @@ const origin = 'http://127.0.0.1:4196';
     assert.equal(await page.locator('#btn-pres-view-mode').inputValue(), 'image');
     assert.equal(await page.locator('.slide.active-slide').getAttribute('data-view-mode'), 'image');
     await page.locator('.slide.active-slide img[src^="data:image/png"]').waitFor({ state: 'visible' });
+    const nativeFit = await page.locator('.slide.active-slide').evaluate(slide => {
+      const image = slide.querySelector('[data-pptx-render]').shadowRoot.querySelector('img[src^="data:image/png"]');
+      const rect = image.getBoundingClientRect(), parent = slide.getBoundingClientRect();
+      return slide.scrollHeight <= slide.clientHeight + 1 && rect.bottom <= parent.bottom + 1 && rect.top >= parent.top;
+    });
+    assert.equal(nativeFit, true, 'converted PPTX must fit the presentation card');
     assert.equal(await page.locator('#step-indicator').isVisible(), false);
     await page.locator('#btn-next-slide').click();
     assert.equal(await page.evaluate(() => currentSlideIndex), 1);

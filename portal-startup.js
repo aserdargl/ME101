@@ -407,7 +407,7 @@ window.PORTAL_ENGLISH = {
   const attributes = ["title", "placeholder", "aria-label"];
   const protectedContent = [
     "script", "style", "[contenteditable]", "[data-language-toggle]",
-    ".slide-kicker", ".slide > h2",
+    ".slide-kicker", ".slide > h2", ".slide-content > h2",
     ".slide-body-web", ".slide-body-ppt", ".edit-thumb-preview", ".edit-thumb-title",
     ".edit-live-preview-stage",
     ".roster-item", "[data-roster-value]"
@@ -3306,6 +3306,64 @@ window.PresentationFullscreen = (() => {
 })();
 ;
 
+/* presentation-fit.js */
+/** Fits complete slide content within the space above the presentation controls. */
+window.PresentationFit = (() => {
+  const CONTROL_GAP = 12;
+  const toolbar = document.getElementById("presentation-toolbar");
+  const viewport = document.getElementById("slides-viewport");
+  let scheduled = false;
+  let observedContent;
+
+  function fit() {
+    scheduled = false;
+    if (!document.body.classList.contains("presentation-mode")) return;
+    const slide = document.querySelector(".slide.active-slide");
+    const content = slide?.querySelector(".slide-content");
+    if (!content) return;
+    document.body.style.setProperty("--presentation-toolbar-height", `${toolbar.offsetHeight}px`);
+    const style = getComputedStyle(slide);
+    const paddingLeft = parseFloat(style.paddingLeft);
+    const paddingBottom = parseFloat(style.paddingBottom);
+    const width = Math.max(1, slide.clientWidth - paddingLeft - parseFloat(style.paddingRight));
+    content.style.setProperty("--presentation-content-width", `${width}px`);
+    const controls = slide.querySelector(".slide-top-controls");
+    const top = Math.max(parseFloat(style.paddingTop), controls.offsetTop + controls.offsetHeight + CONTROL_GAP);
+    const height = Math.max(1, slide.clientHeight - top - paddingBottom);
+    const naturalWidth = Math.max(width, content.scrollWidth);
+    const naturalHeight = Math.max(1, content.scrollHeight, content.offsetHeight);
+    const scale = Math.min(1, width / naturalWidth, height / naturalHeight);
+    content.style.setProperty("--presentation-scale", String(scale));
+    content.style.setProperty("--presentation-content-left", `${paddingLeft + (width - naturalWidth * scale) / 2}px`);
+    content.style.setProperty("--presentation-content-top", `${top + (height - naturalHeight * scale) / 2}px`);
+    if (observedContent !== content) {
+      if (observedContent) resize.unobserve(observedContent);
+      observedContent = content;
+      resize.observe(content);
+    }
+  }
+
+  function schedule() {
+    if (!scheduled) { scheduled = true; requestAnimationFrame(fit); }
+  }
+
+  const resize = new ResizeObserver(schedule);
+  resize.observe(toolbar);
+  resize.observe(viewport);
+  new MutationObserver(schedule).observe(document.getElementById("lecture-view"), {
+    subtree: true, childList: true, attributes: true, attributeFilter: ["class", "data-view-mode"]
+  });
+  new MutationObserver(schedule).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  document.addEventListener("load", schedule, true);
+  document.addEventListener("fullscreenchange", schedule);
+  window.addEventListener("resize", schedule);
+  window.visualViewport?.addEventListener("resize", schedule);
+  document.fonts.ready.then(schedule);
+
+  return { schedule };
+})();
+;
+
 /* app.js */
 // ============================================================================
 // MEE 101 — MAKİNE MÜHENDİSLİĞİNE GİRİŞ | AKADEMİK DERS VE SUNUM MOTORU
@@ -4098,10 +4156,12 @@ function openLecture(lectureId, startInPresentation = false) {
         <select class="btn-slide-mode-switch slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="image">Resim</option><option value="web">Web</option><option value="ppt">PPT</option></select>
         <span class="slide-number-badge">Slayt ${idx + 1} / ${lec.slides.length}</span>
       </div>
+      <div class="slide-content">
       <div class="slide-kicker">${escapeXml(s.kicker)}</div>
       <h2>${escapeXml(s.title)}</h2>
       <div class="slide-body-ppt ${visibility.ppt ? "" : "hidden"}" data-rendered="${visibility.ppt}">${visibility.ppt ? buildPptExactVisualHtml(s, idx, lec.slides.length, lec.week) : ""}</div>
       <div class="slide-body-web ${visibility.web ? "" : "hidden"}" data-rendered="${needsWebBody}">${needsWebBody ? s.html || "" : ""}</div>
+      </div>
     `;
     slidesContainer.appendChild(slideEl);
     PptxDisplay.setImageMode(slideEl, effectiveMode);
@@ -4169,6 +4229,7 @@ function applyPersistentSlideViewMode(targetMode) {
 
   syncSlideViewSelectors();
   updatePresentationHUD();
+  PresentationFit.schedule();
 }
 
 function syncSlideViewSelectors() {
@@ -4240,6 +4301,7 @@ function updateActiveSlide() {
 
   clearCanvas();
   updatePresentationHUD();
+  PresentationFit.schedule();
 }
 
 function updatePresentationHUD() {
@@ -6322,7 +6384,8 @@ slidesViewport.addEventListener("click", (e) => {
 
 window.addEventListener("keydown", (e) => {
   if (!isPresentationMode) return;
-  if (e.target.closest("select, input, textarea, button, a, [contenteditable]")) return;
+  if (e.target.closest("select, input, textarea, [contenteditable]")) return;
+  if (e.key === " " && e.target.closest("button, a")) return;
 
   if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) {
     e.preventDefault();

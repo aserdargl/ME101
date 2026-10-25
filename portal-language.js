@@ -5,7 +5,7 @@
   const attributes = ["title", "placeholder", "aria-label"];
   const protectedContent = [
     "script", "style", "[contenteditable]", "[data-language-toggle]",
-    ".slide-kicker", ".slide > h2",
+    ".slide-kicker", ".slide > h2", ".slide-content > h2",
     ".slide-body-web", ".slide-body-ppt", ".edit-thumb-preview", ".edit-thumb-title",
     ".edit-live-preview-stage",
     ".roster-item", "[data-roster-value]"

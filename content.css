@@ -54,8 +54,8 @@ body.presentation-mode .slide > * { flex-shrink: 0; }
 .slide-body-web table, .slide-body-web pre { display: block; max-width: 100%; overflow-x: auto; }
 body.presentation-mode .slide[data-view-mode="ppt"] .slide-body-web .fragment { opacity: 1; transform: none; pointer-events: auto; }
 body.presentation-mode .slide-body-ppt { min-height: 0; }
-body.presentation-mode .ppt-source-frame { max-height: calc(100dvh - 130px); border: 0; }
-body.presentation-mode .ppt-source-frame img { max-height: calc(100dvh - 130px); }
+body.presentation-mode .ppt-source-frame { max-height: none; border: 0; }
+body.presentation-mode .ppt-source-frame img { max-height: none; }
 @media (max-width: 700px) {
   .ppt-generated-body.has-images { grid-template-columns: minmax(0, 1fr); }
   .ppt-generated-visual { padding: 16px; }
@@ -72,3 +72,29 @@ body.presentation-expanded .slides-container { max-width: none; max-height: none
 .presentation-fullscreen-notice { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 450; width: max-content; max-width: calc(100vw - 24px); padding: 8px 12px; border-radius: 6px; background: #30251e; color: #fff; font-size: 13px; }
 .presentation-fullscreen-notice a { color: #fff; text-decoration: underline; }
 .presentation-fullscreen-notice[hidden] { display: none; }
+
+/* Keep complete content measurable; scaling applies only during presentation. */
+.slide-content { display: flow-root; min-width: 0; }
+body.presentation-mode .lecture-view {
+  position: fixed; inset: 0; width: 100%; height: 100dvh;
+}
+body.presentation-mode .slides-viewport {
+  position: absolute; inset: 0 0 var(--presentation-toolbar-height, 54px);
+  width: 100%; height: auto; min-height: 0;
+}
+body.presentation-mode .slide { overflow: hidden; }
+body.presentation-mode .slide-content {
+  position: absolute;
+  width: var(--presentation-content-width, 100%);
+  left: var(--presentation-content-left, 0px);
+  top: var(--presentation-content-top, 0px);
+  transform: scale(var(--presentation-scale, 1));
+  transform-origin: top left;
+}
+body.presentation-mode .slide-content .ppt-source-frame,
+body.presentation-mode .slide-content .ppt-source-frame img { max-height: none; }
+body.presentation-mode .slide h2 { padding-right: 0; padding-top: 0; }
+body.presentation-mode .presentation-toolbar {
+  height: auto; min-height: 54px; flex-wrap: wrap; gap: 8px; padding: 8px 12px;
+}
+body.presentation-mode :is(.toolbar-left, .toolbar-center, .toolbar-right) { flex-wrap: wrap; min-width: 0; }
