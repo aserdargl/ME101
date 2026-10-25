@@ -3,6 +3,36 @@
 /* portal-translations.js */
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Slayt": "Slide",
+  "Notlar": "Notes",
+  "PDF İndir": "Download PDF",
+  "Kaynak İndir": "Download Source",
+  "PDF Sunum": "PDF Presentation",
+  "PDF Sunumları": "PDF Presentations",
+  "PDF (.pdf) dosyasını indir": "Download PDF (.pdf)",
+  "Kaynak dosyayı indir": "Download source file",
+  "PDF İndirme Yolu / Dosyası": "PDF Download URL / File",
+  "Yeni .PDF Dosyası ile Güncelle (İsteğe Bağlı)": "Update with a PDF File (Optional)",
+  ".PDF Seç ve Aktar": "Select and Import PDF",
+  "Tüm Slaytları PDF ile Değiştir": "Replace All Slides with PDF",
+  "PDF Sayfalarını Sona Ekle": "Append PDF Pages",
+  "Seçili Slayttan Sonra Ekle": "Insert After Selected Slide",
+  "Dosyayı Kaldır": "Remove File",
+  "PDF Sayfası": "PDF Page",
+  "Ek Slayt": "Additional Slide",
+  "PDF önizlemesi": "PDF preview",
+  "Lütfen PDF dosyası seçin.": "Please select a PDF file.",
+  "Bu araya PDF sayfaları ekle": "Insert PDF pages here",
+  "PDF açılıyor…": "Opening PDF…",
+  "PDF Açılıyor...": "Opening PDF…",
+  "PDF seçtiğinizde önizleme burada görünür.": "Select a PDF to preview its pages.",
+  "PDF seçtiğinizde önizleme burada görünür. Sayfaların arasına +Konu, +Görsel, +Sim veya +PDF ekleyebilirsiniz.": "Select a PDF to preview. Insert text, images, simulations or another PDF between its pages.",
+  "PDF sayfaları ve ek slaytlar sırayla gösterilir. Notlar görünümüyle ek açıklamaları açabilirsiniz.": "PDF pages and additional slides appear in sequence. Choose Notes to show extra explanations.",
+  "İsteğe Bağlı: .PDF Dosyasını Buraya Sürükleyin veya Seçmek İçin Tıklayın": "Optional: Drop a PDF File Here or Click to Select",
+  "Yeni bir haftalık ders eklemek için bilgileri girin. İsterseniz doğrudan": "Enter lesson details. You can upload a",
+  "dosyası yükleyebilir veya slayt maddelerini aşağıya yazabilirsiniz.": "file or enter slide notes below.",
+  "PDF seçmezseniz buraya yazdığınız satırlar slayt maddesi olur...": "If no PDF is selected, these lines become slide notes...",
+
   "Kayıt tamamlanamadı; düzenlemeleriniz açık tutuluyor.": "Save could not finish; your edits remain open.",
   "Resim": "Image",
   "Görünüm": "View",
@@ -585,593 +615,170 @@ document.getElementById("catalog-search-form").addEventListener("submit", (event
 });
 ;
 
-/* slide-image.js */
-/* Creates display-only PNGs; lecture content and uploaded files remain untouched. */
-window.SlideImage = (() => {
-  const MAX_WIDTH = 1920;
-  const MAX_CACHED_IMAGES = 12;
-  const images = new Map();
-
-  function cachedCapture(host, state) {
-    const key = host.dataset.imageKey;
-    if (!key) return capture(state.handle.element, state.presentation.width, state.presentation.height);
-    if (images.has(key)) {
-      const existing = images.get(key);
-      images.delete(key);
-      images.set(key, existing);
-      return existing;
-    }
-    const pending = capture(state.handle.element, state.presentation.width, state.presentation.height);
-    images.set(key, pending);
-    pending.catch(() => { if (images.get(key) === pending) images.delete(key); });
-    while (images.size > MAX_CACHED_IMAGES) images.delete(images.keys().next().value);
-    return pending;
-  }
-
-  async function embedResource(url) {
-    return dataUrl(await (await fetch(url)).blob());
-  }
-
-  function dataUrl(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  async function cloneVisual(source) {
-    if (source.nodeType !== Node.ELEMENT_NODE) return source.cloneNode();
-    if (source.tagName === "CANVAS") {
-      const image = new Image();
-      image.src = source.toDataURL("image/png");
-      image.style.cssText = source.style.cssText;
-      return image;
-    }
-    const clone = source.cloneNode(false);
-    const style = getComputedStyle(source);
-    for (const property of style) {
-      let value = style.getPropertyValue(property);
-      const resources = [...value.matchAll(/url\(["']?(blob:[^"')]+)["']?\)/g)];
-      for (const match of resources) value = value.replace(match[1], await embedResource(match[1]));
-      clone.style.setProperty(property, value);
-    }
-    if (source instanceof HTMLImageElement) {
-      await source.decode();
-      clone.src = await embedResource(source.currentSrc || source.src);
-      clone.removeAttribute("srcset");
-    }
-    for (const attribute of source.attributes) {
-      if (attribute.value.startsWith("blob:")) clone.setAttributeNS(attribute.namespaceURI, attribute.name, await embedResource(attribute.value));
-    }
-    for (const child of source.childNodes) clone.append(await cloneVisual(child));
-    return clone;
-  }
-
-  /** Captures a mounted PPT slide at its native ratio, independently of viewport size. */
-  async function capture(element, width, height) {
-    await document.fonts.ready;
-    const clone = await cloneVisual(element);
-    Object.assign(clone.style, { transform: "none", position: "relative", left: "0", top: "0" });
-    const markup = new XMLSerializer().serializeToString(clone);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="100%" height="100%">${markup}</foreignObject></svg>`;
-    const image = new Image();
-    image.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-    await image.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.min(MAX_WIDTH, Math.ceil(width * 2));
-    canvas.height = Math.round(canvas.width * height / width);
-    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/png");
-  }
-
-  /** Leaves the existing PPT rendering visible if image conversion is unavailable. */
-  async function replace(host, state) {
-    if (state.image || host.dataset.imagePending) return;
-    host.dataset.imagePending = "true";
-    try {
-      const src = await cachedCapture(host, state);
-      if (!host.isConnected || host.dataset.displayMode !== "image") return;
-      const image = new Image();
-      image.alt = host.getAttribute("aria-label") || "Slayt";
-      image.src = src;
-      Object.assign(image.style, { width: "100%", height: "100%", objectFit: "contain" });
-      state.handle.element.style.visibility = "hidden";
-      host.shadowRoot.append(image);
-      state.image = image;
-      host.dataset.imageReady = "true";
-    } catch {
-      host.dataset.imageError = "true";
-      host.title = "Resim oluşturulamadı; özgün slayt görünümü gösteriliyor.";
-    } finally { delete host.dataset.imagePending; }
-  }
-
-  function setMode(host, state, mode) {
-    host.dataset.displayMode = mode;
-    if (state.image) state.image.hidden = mode !== "image";
-    state.handle.element.style.visibility = mode === "image" && state.image ? "hidden" : "visible";
-    if (mode === "image") replace(host, state);
-  }
-
-  return { capture, setMode };
-})();
-;
-
-/* pptx-display.js */
-/* Reads the uploaded PPTX for display; never rewrites lecture notes or settings. */
-window.PptxDisplay = (() => {
-  const MAX_CACHED_DECKS = 2;
-  const bindings = new WeakMap();
-  const targets = new Map();
-  const decks = new Map();
+/* pdf-slides.js */
+/** Keeps original PDF bytes and stable page references; never exports page images. */
+window.PdfSlides = (() => {
+  const MAX_DOCUMENTS = 2;
+  const MAX_RENDER_PIXELS = 4000000;
+  const documents = new Map();
   const sources = new Map();
-  const mounted = new Map();
+  const tokens = new Map();
+  const parsing = new Set();
+  const active = new Map();
+  let nextToken = 0;
   let library;
-  let scheduled = false;
 
-  function renderer() {
-    library ||= import("./vendor/pptx-renderer/renderer-1.4.0.js?v=office-math-1");
+  async function api() {
+    library ||= import("./vendor/pdfjs/pdf.mjs").then(pdf => {
+      pdf.GlobalWorkerOptions.workerSrc = new URL("./vendor/pdfjs/pdf.worker.mjs", location.href).href;
+      return pdf;
+    });
     return library;
   }
 
-  async function load(input) {
-    const bytes = typeof input.arrayBuffer === "function" ? await input.arrayBuffer() : input;
-    const fingerprint = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), byte => byte.toString(16).padStart(2, "0")).join("");
-    if (!decks.has(fingerprint)) {
-      const promise = renderer().then(async api => {
-        const files = await api.parseZipLazyMedia(bytes, api.RECOMMENDED_ZIP_LIMITS);
-        return api.buildPresentation(files, { lazySlides: true });
-      });
-      decks.set(fingerprint, promise);
-      promise.catch(() => decks.delete(fingerprint));
-      while (decks.size > MAX_CACHED_DECKS) decks.delete(decks.keys().next().value);
+  async function open(source) {
+    if (!documents.has(source)) {
+      const pending = (async () => {
+        const pdf = await api();
+        const response = await fetch(source);
+        if (!response.ok) throw new Error("PDF dosyası okunamadı.");
+        return pdf.getDocument({ data: new Uint8Array(await response.arrayBuffer()),
+          cMapUrl: new URL("./vendor/pdfjs/cmaps/", location.href).href, cMapPacked: true,
+          standardFontDataUrl: new URL("./vendor/pdfjs/standard_fonts/", location.href).href,
+          wasmUrl: new URL("./vendor/pdfjs/wasm/", location.href).href,
+          isEvalSupported: false }).promise;
+      })();
+      documents.set(source, pending);
+      pending.catch(() => { if (documents.get(source) === pending) documents.delete(source); });
     }
-    return { fingerprint, presentation: await decks.get(fingerprint) };
+    const pending = documents.get(source);
+    documents.delete(source);
+    documents.set(source, pending);
+    return pending;
   }
 
-  function bind(slides, deck) {
-    let changed = false;
-    const paths = new Map(deck.presentation.slides.map((slide, index) => [slide.slidePath, index]));
-    const titles = deck.presentation.slides.map(slide => {
-      const xml = new DOMParser().parseFromString(slide.sourceXml || "<slide/>", "application/xml");
-      const paragraphs = Array.from(xml.getElementsByTagName("*")).filter(node => node.localName === "p");
-      return paragraphs.map(paragraph => Array.from(paragraph.getElementsByTagName("*")).filter(node => node.localName === "t").map(node => node.textContent).join("").trim()).find(Boolean) || "";
-    });
-    for (const slide of slides) {
-      let index = paths.get(slide.sourceSlidePath);
-      const title = String(slide.title || "").trim();
-      if (!slide.sourceSlidePath && title && titles.filter(item => item === title).length === 1 &&
-          slides.filter(item => String(item.title || "").trim() === title).length === 1) index = titles.indexOf(title);
-      if (index === undefined || slide.pptImageUrl) continue;
-      const previousToken = bindings.get(slide);
-      const previous = targets.get(previousToken);
-      const reusable = previous?.fingerprint === deck.fingerprint && previous.index === index;
-      const token = reusable ? previousToken : crypto.randomUUID();
-      changed ||= !reusable;
-      bindings.set(slide, token);
-      targets.set(token, { fingerprint: deck.fingerprint, index, width: deck.presentation.width, height: deck.presentation.height });
-    }
-    return changed;
-  }
-
-  /** Prepares any uploaded deck without generating or publishing slide images. */
-  async function prepareUpload(file, slides) {
-    if (!slides.some(slide => !slide.pptImageUrl)) return;
-    bind(slides, await load(file));
-  }
-
-  /** Reopens the saved original deck while retaining every existing note verbatim. */
-  async function prepareLecture(lecture) {
-    if (!lecture.pptxUrl || !lecture.slides.some(slide => !slide.pptImageUrl)) return false;
-    const availableDecks = new Set(decks.keys());
-    try {
-      if (!sources.has(lecture.pptxUrl)) {
-        const pending = fetch(lecture.pptxUrl).then(response => {
-          if (!response.ok) throw new Error("Özgün PPTX okunamadı.");
-          return response.arrayBuffer();
-        }).then(load);
-        sources.set(lecture.pptxUrl, pending);
-        pending.catch(() => sources.delete(lecture.pptxUrl));
-        while (sources.size > MAX_CACHED_DECKS) sources.delete(sources.keys().next().value);
+  function releaseUnusedDocuments() {
+    const used = new Set([...parsing, ...[...active.values()].map(state => state.source)]);
+    for (const [source, pending] of documents) {
+      if (documents.size <= MAX_DOCUMENTS) break;
+      if (!used.has(source)) {
+        documents.delete(source);
+        pending.then(pdf => pdf.destroy()).catch(() => {});
       }
-      const deck = await sources.get(lecture.pptxUrl);
-      const restored = !decks.has(deck.fingerprint);
-      if (restored) decks.set(deck.fingerprint, Promise.resolve(deck.presentation));
-      return bind(lecture.slides, deck) || restored || !availableDecks.has(deck.fingerprint);
-    } catch { return false; }
+    }
   }
 
-  /** Returns a temporary UI target; it is never included in saved slide HTML. */
-  function visualFor(slide) {
-    const token = bindings.get(slide);
-    const target = targets.get(token);
-    return target ? { token, ratio: `${target.width}/${target.height}` } : null;
-  }
-
-  /** Shares existing display bindings with a fresh editor draft without re-reading the deck. */
-  function inheritBindings(originals, copies) {
-    originals.forEach((slide, index) => {
-      const token = bindings.get(slide);
-      if (token && copies[index]) bindings.set(copies[index], token);
+  /** Imports immutable page references; repeated sources share one stored string. */
+  async function parse(file, week, title) {
+    if (!/\.pdf$/i.test(file.name || "")) throw new Error("Lütfen PDF dosyası seçin.");
+    if (new TextDecoder().decode(await file.slice(0, 1024).arrayBuffer()).indexOf("%PDF-") < 0) {
+      throw new Error("Seçilen dosya geçerli bir PDF değil.");
+    }
+    const source = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("PDF dosyası okunamadı."));
+      reader.readAsDataURL(file);
     });
-  }
-
-  const resize = new ResizeObserver(entries => entries.forEach(({ target }) => fit(target)));
-  function fit(host) {
-    const state = mounted.get(host);
-    if (!state) return;
-    const { width, height } = state.presentation;
-    const scale = Math.min(host.clientWidth / width, host.clientHeight / height);
-    Object.assign(state.handle.element.style, { position: "absolute", transformOrigin: "top left", transform: `scale(${scale})`,
-      left: `${(host.clientWidth - width * scale) / 2}px`, top: `${(host.clientHeight - height * scale) / 2}px` });
-  }
-
-  async function mount(host) {
-    if (mounted.has(host) || host.dataset.mounting) return;
-    const target = targets.get(host.dataset.pptxRender);
-    if (!target || !decks.has(target.fingerprint)) return;
-    host.dataset.mounting = "true";
+    parsing.add(source);
     try {
-      const [api, presentation] = await Promise.all([renderer(), decks.get(target.fingerprint)]);
-      if (!host.isConnected) return;
-      const handle = api.renderSlide(presentation, presentation.slides[target.index], { externalMedia: "block", pdfjs: false });
-      host.dataset.imageKey = `${target.fingerprint}:${target.index}`;
-      const shadow = host.attachShadow({ mode: "open" });
-      host.textContent = "";
-      shadow.append(handle.element);
-      mounted.set(host, { handle, presentation });
-      resize.observe(host);
-      fit(host);
-      await handle.ready;
-      fit(host);
-      host.dataset.rendered = "true";
-      SlideImage.setMode(host, mounted.get(host), host.dataset.displayMode || "ppt");
-    } catch {
-      host.textContent = "Slayt görüntülenemedi. Özgün PPTX’i indirerek açabilirsiniz.";
-    } finally { delete host.dataset.mounting; }
+      const pdf = await open(source);
+      const slides = [];
+      for (let number = 1; number <= pdf.numPages; number++) {
+        const page = await pdf.getPage(number);
+        const { width, height } = page.getViewport({ scale: 1 });
+        slides.push({ title: `${title || file.name.replace(/\.pdf$/i, "")} — ${number}`,
+          kicker: week, defaultViewMode: "pdf", html: "", pptSummaryBullets: [],
+          pdf: { source, page: number, width, height, fileName: file.name } });
+      }
+      return slides;
+    } catch (error) {
+      throw new Error(error.name === "PasswordException" ? "Parola korumalı PDF yerine parolasız bir kopya yükleyin." : "PDF açılamadı. Dosyayı kontrol edin.");
+    } finally { parsing.delete(source); releaseUnusedDocuments(); }
   }
 
+  function render(slide) {
+    const { source, page, width, height } = slide.pdf;
+    if (!sources.has(source)) {
+      const token = String(++nextToken);
+      sources.set(source, token);
+      tokens.set(token, source);
+    }
+    const token = sources.get(source);
+    return `<div class="pdf-page ppt-source-frame" style="aspect-ratio:${Number(width) || 16}/${Number(height) || 9}" data-pdf-source="${token}" data-pdf-page="${Number(page)}" role="img" aria-label="PDF · ${Number(page)}"><span role="status">PDF yükleniyor…</span></div>`;
+  }
+
+  async function paint(host, state) {
+    if (state.busy || !host.isConnected || !host.clientWidth) return;
+    state.busy = true;
+    try {
+      const pdfDocument = await open(state.source);
+      const page = await pdfDocument.getPage(Number(host.dataset.pdfPage));
+      if (!host.isConnected || active.get(host) !== state) return;
+      const natural = page.getViewport({ scale: 1 });
+      const density = Math.min(window.devicePixelRatio || 1, 2);
+      const scale = Math.min(host.clientWidth * density / natural.width,
+        Math.sqrt(MAX_RENDER_PIXELS / (natural.width * natural.height)));
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      state.task = page.render({ canvasContext: canvas.getContext("2d"), viewport });
+      await state.task.promise;
+      if (!host.isConnected || active.get(host) !== state) return;
+      host.replaceChildren(canvas);
+      host.dataset.pdfReady = "true";
+      window.PresentationFit?.schedule();
+    } catch (error) {
+      if (error.name !== "RenderingCancelledException" && host.isConnected) {
+        host.dataset.pdfError = error.message;
+        host.textContent = "PDF görüntülenemedi. Dersi yeniden açarak tekrar deneyin.";
+      }
+    } finally { state.busy = false; state.task = null; }
+  }
+
+  const resize = new ResizeObserver(entries => entries.forEach(({ target }) => {
+    const state = active.get(target);
+    if (state) paint(target, state);
+  }));
   const visibility = new IntersectionObserver(entries => entries.forEach(entry => {
-    if (entry.isIntersecting) mount(entry.target);
+    const host = entry.target;
+    if (entry.isIntersecting && !active.has(host)) {
+      const state = { source: tokens.get(host.dataset.pdfSource) };
+      active.set(host, state);
+      resize.observe(host);
+      paint(host, state);
+    } else if (!entry.isIntersecting && active.has(host)) {
+      active.get(host).task?.cancel();
+      active.delete(host);
+      resize.unobserve(host);
+      host.replaceChildren();
+      delete host.dataset.pdfReady;
+      releaseUnusedDocuments();
+    }
   }), { rootMargin: "160px" });
   const observed = new WeakSet();
+  let scheduled = false;
   function scan() {
     scheduled = false;
-    mounted.forEach(({ handle }, host) => {
-      if (!host.isConnected) { handle.dispose(); resize.unobserve(host); visibility.unobserve(host); mounted.delete(host); }
-    });
-    document.querySelectorAll("[data-pptx-render]").forEach(host => {
+    for (const [host, state] of active) {
+      if (!host.isConnected) { state.task?.cancel(); active.delete(host); resize.unobserve(host); visibility.unobserve(host); }
+    }
+    const connected = new Set();
+    document.querySelectorAll("[data-pdf-source]").forEach(host => {
+      connected.add(host.dataset.pdfSource);
       if (!observed.has(host)) { observed.add(host); visibility.observe(host); }
     });
+    for (const [token, source] of tokens) {
+      if (!connected.has(token)) { tokens.delete(token); sources.delete(source); }
+    }
+    releaseUnusedDocuments();
   }
   new MutationObserver(() => {
     if (!scheduled) { scheduled = true; requestAnimationFrame(scan); }
   }).observe(document.body, { childList: true, subtree: true });
-
-  /** Changes display state only; it never updates saved slide fields. */
-  function setImageMode(container, mode) {
-    container.querySelectorAll("[data-pptx-render]").forEach(host => {
-      host.dataset.displayMode = mode;
-      if (host.dataset.rendered === "true") SlideImage.setMode(host, mounted.get(host), mode);
-    });
-  }
-
-  return { prepareUpload, prepareLecture, visualFor, setImageMode, inheritBindings };
+  return { parse, render };
 })();
-;
-
-/* pptx-import.js */
-/* OOXML package reader. Resolves actual parts, rather than slide-number guesses. */
-(function (root) {
-  const DRAWING_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
-  let zipLibrary;
-
-  /** Loads the local ZIP reader only when an upload actually needs it. */
-  function loadZipLibrary() {
-    if (root.JSZip) return Promise.resolve(root.JSZip);
-    if (!zipLibrary) {
-      zipLibrary = new Promise((resolve, reject) => {
-        const script = root.document.createElement("script");
-        script.src = "vendor/jszip/jszip-3.10.1.min.js";
-        script.onload = () => root.JSZip ? resolve(root.JSZip) : reject(new Error("ZIP okuyucu yüklenemedi."));
-        script.onerror = () => { script.remove(); reject(new Error("ZIP okuyucu yüklenemedi; yeniden deneyin.")); };
-        root.document.head.append(script);
-      }).catch(error => { zipLibrary = null; throw error; });
-    }
-    return zipLibrary;
-  }
-  const REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
-  const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", svg: "image/svg+xml", webp: "image/webp", bmp: "image/bmp", tif: "image/tiff", tiff: "image/tiff", emf: "image/emf", wmf: "image/wmf" };
-  const SUPPORTED = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"]);
-  const escape = value => String(value || "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
-  const elements = (node, name) => Array.from(node.getElementsByTagName("*")).filter(item => item.localName === name);
-  const first = (node, name) => elements(node, name)[0];
-  const children = node => Array.from(node.childNodes || []).filter(child => child.nodeType === 1);
-  const number = (node, attr, fallback = 0) => node ? Number(node.getAttribute(attr) || fallback) : fallback;
-  const reference = node => node.getAttributeNS(REL_NS, "embed") || node.getAttributeNS(REL_NS, "id") || node.getAttributeNS(REL_NS, "link") || Array.from(node.attributes || []).find(attr => ["embed", "id", "link"].includes(attr.localName) && attr.prefix)?.value;
-
-  /** Resolves package-relative paths, including absolute OPC part names. */
-  function resolvePart(base, target) {
-    const path = target.startsWith("/") ? target.slice(1) : base.slice(0, base.lastIndexOf("/") + 1) + target;
-    const parts = [];
-    for (const part of decodeURIComponent(path).split("/")) {
-      if (part === "..") parts.pop();
-      else if (part && part !== ".") parts.push(part);
-    }
-    return parts.join("/");
-  }
-
-  class PptxPackage {
-    constructor(zip, parser) { this.zip = zip; this.parser = parser; this.cache = new Map(); this.warnings = []; }
-
-    async xml(path) {
-      if (this.cache.has(path)) return this.cache.get(path);
-      const entry = this.zip.file(path);
-      if (!entry) return null;
-      const xml = (await entry.async("text")).replace(/^\uFEFF/, "");
-      const doc = this.parser.parseFromString(xml, "application/xml");
-      if (elements(doc, "parsererror").length) throw new Error(`PPTX XML okunamadı: ${path}`);
-      this.cache.set(path, doc);
-      return doc;
-    }
-
-    async relations(path) {
-      const split = path.lastIndexOf("/");
-      const doc = await this.xml(`${path.slice(0, split)}/_rels/${path.slice(split + 1)}.rels`);
-      return new Map(doc ? elements(doc, "Relationship").map(node => [node.getAttribute("Id"), {
-        path: resolvePart(path, node.getAttribute("Target") || ""),
-        type: node.getAttribute("Type") || "", external: node.getAttribute("TargetMode") === "External"
-      }]) : []);
-    }
-
-    async image(part) {
-      const entry = this.zip.file(part);
-      if (!entry) { this.warnings.push(`Görsel dosyası bulunamadı: ${part}`); return null; }
-      const ext = part.split(".").pop().toLowerCase();
-      const data = `data:${MIME[ext] || "application/octet-stream"};base64,${await entry.async("base64")}`;
-      if (!SUPPORTED.has(ext)) this.warnings.push(`${part}: ${ext.toUpperCase()} görseli tarayıcıda doğrudan gösterilemiyor.`);
-      return { path: part, data, supported: SUPPORTED.has(ext) };
-    }
-
-    async part(path) {
-      const doc = await this.xml(path);
-      if (!doc) return null;
-      const relations = await this.relations(path);
-      const images = new Map();
-      for (const blip of [...elements(doc, "blip"), ...elements(doc, "svgBlip")]) {
-        const id = reference(blip);
-        const relation = relations.get(id);
-        if (relation?.external) this.warnings.push("Bağlantılı bir görsel PPTX dosyasının dışında; görseli PPTX içine gömerek yeniden yükleyin.");
-        if (!relation || relation.external || images.has(id)) continue;
-        const image = await this.image(relation.path);
-        if (image) images.set(id, image);
-      }
-      return { doc, relations, images, path };
-    }
-  }
-
-  function shapeBox(shape, inherited, unit = 1) {
-    let transform = first(shape, "xfrm");
-    if (!transform && inherited) transform = first(inherited, "xfrm");
-    const offset = transform && first(transform, "off");
-    const extent = transform && first(transform, "ext");
-    return { x: number(offset, "x") * unit, y: number(offset, "y") * unit, w: number(extent, "cx") * unit, h: number(extent, "cy") * unit, transform };
-  }
-
-  function placeholder(shape, layout) {
-    const ph = first(shape, "ph");
-    if (!ph || !layout) return null;
-    return elements(layout.doc, "sp").find(candidate => {
-      const other = first(candidate, "ph");
-      return other && (other.getAttribute("idx") || "0") === (ph.getAttribute("idx") || "0") &&
-        (other.getAttribute("type") || "body") === (ph.getAttribute("type") || "body");
-    });
-  }
-
-  function color(node, fallback = "#263440") {
-    const rgb = node && first(node, "srgbClr");
-    return rgb && /^[a-f\d]{6}$/i.test(rgb.getAttribute("val")) ? `#${rgb.getAttribute("val")}` : fallback;
-  }
-
-  function wrapText(text, maxChars) {
-    const lines = [];
-    let line = "";
-    for (const word of text.split(/\s+/)) {
-      if (line && line.length + word.length + 1 > maxChars) { lines.push(line); line = ""; }
-      line += (line ? " " : "") + word;
-    }
-    if (line) lines.push(line);
-    return lines;
-  }
-
-  function renderText(shape, box, unit) {
-    const body = first(shape, "txBody");
-    if (!body || !box.w || !box.h) return "";
-    const paragraphs = elements(body, "p").filter(node => node.namespaceURI === DRAWING_NS || node.namespaceURI?.includes("drawingml"));
-    const inset = Math.min(91440 * unit, box.w / 30);
-    const rows = paragraphs.map(paragraph => {
-      const text = elements(paragraph, "t").map(node => node.textContent).join("");
-      const props = first(paragraph, "rPr") || first(paragraph, "defRPr");
-      const font = number(props, "sz", 2000) * 127 * unit;
-      return { lines: wrapText(text, Math.max(3, Math.floor((box.w - 2 * inset) / (font * .52)))), font, fill: color(props), bold: props?.getAttribute("b") === "1" };
-    });
-    const needed = rows.reduce((total, row) => total + Math.max(1, row.lines.length) * row.font * 1.22, 0);
-    const scale = Math.min(1, (box.h - inset) / Math.max(1, needed));
-    let y = box.y + inset;
-    return rows.map(row => row.lines.map(line => {
-      const size = row.font * scale;
-      y += size * 1.2;
-      return `<text x="${box.x + inset}" y="${y}" fill="${row.fill}" font-family="Arial, sans-serif" font-size="${size}" font-weight="${row.bold ? 700 : 400}">${escape(line)}</text>`;
-    }).join("")).join("");
-  }
-
-  function renderShape(shape, part, layout, state) {
-    const name = shape.localName;
-    if (name === "grpSp") {
-      const xfrm = first(shape, "xfrm");
-      const box = shapeBox(shape, null, state.unit);
-      const childOffset = xfrm && first(xfrm, "chOff");
-      const childExtent = xfrm && first(xfrm, "chExt");
-      const sx = box.w / (number(childExtent, "cx") * state.unit || box.w || 1);
-      const sy = box.h / (number(childExtent, "cy") * state.unit || box.h || 1);
-      return `<g transform="translate(${box.x} ${box.y}) scale(${sx} ${sy}) translate(${-number(childOffset, "x") * state.unit} ${-number(childOffset, "y") * state.unit})">${children(shape).map(child => renderShape(child, part, layout, state)).join("")}</g>`;
-    }
-    if (!["pic", "sp", "cxnSp", "graphicFrame"].includes(name)) return "";
-    if (state.inherited && first(shape, "ph")) return "";
-    const box = shapeBox(shape, placeholder(shape, layout), state.unit);
-    if (!box.w || !box.h) return "";
-    let content = "";
-    if (name === "pic") {
-      const blips = [...elements(shape, "svgBlip"), ...elements(shape, "blip")];
-      const image = blips.map(blip => part.images.get(reference(blip))).find(item => item?.supported);
-      if (!image) return "";
-      const crop = first(shape, "srcRect");
-      const left = number(crop, "l") / 100000, right = number(crop, "r") / 100000;
-      const top = number(crop, "t") / 100000, bottom = number(crop, "b") / 100000;
-      const width = box.w / Math.max(.001, 1 - left - right), height = box.h / Math.max(.001, 1 - top - bottom);
-      const clip = `image-${state.nextId++}`;
-      content = `<defs><clipPath id="${clip}"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs><image href="${escape(image.data)}" x="${box.x - width * left}" y="${box.y - height * top}" width="${width}" height="${height}" preserveAspectRatio="none" clip-path="url(#${clip})"/>`;
-    } else {
-      const properties = children(shape).find(child => child.localName === "spPr");
-      const fill = properties && children(properties).find(child => child.localName === "solidFill");
-      const preset = properties && first(properties, "prstGeom")?.getAttribute("prst");
-      if (fill) {
-        content += preset === "ellipse"
-          ? `<ellipse cx="${box.x + box.w / 2}" cy="${box.y + box.h / 2}" rx="${box.w / 2}" ry="${box.h / 2}" fill="${color(fill, "#e8eef2")}"/>`
-          : `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="${color(fill, "#e8eef2")}"/>`;
-      }
-      const table = name === "graphicFrame" && first(shape, "tbl");
-      content += table ? renderTable(table, box, state.unit) : renderText(shape, box, state.unit);
-    }
-    const angle = number(box.transform, "rot") / 60000;
-    const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
-    const flipX = box.transform?.getAttribute("flipH") === "1" ? -1 : 1;
-    const flipY = box.transform?.getAttribute("flipV") === "1" ? -1 : 1;
-    return `<g transform="translate(${cx} ${cy}) rotate(${angle}) scale(${flipX} ${flipY}) translate(${-cx} ${-cy})">${content}</g>`;
-  }
-
-  function renderTable(table, box, unit) {
-    const columns = elements(table, "gridCol").map(col => number(col, "w") * unit);
-    const rows = children(table).filter(row => row.localName === "tr");
-    let y = box.y;
-    return rows.map(row => {
-      const height = number(row, "h", box.h / Math.max(1, rows.length) / unit) * unit;
-      let x = box.x;
-      const cells = children(row).filter(cell => cell.localName === "tc");
-      const rendered = cells.map((cell, index) => {
-        const width = columns[index] || box.w / Math.max(1, cells.length);
-        const properties = first(cell, "tcPr");
-        const fill = properties && first(properties, "solidFill");
-        const rect = `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${color(fill, "#ffffff")}" stroke="#c7cfd7" stroke-width="1"/>`;
-        const text = renderText(cell, { x, y, w: width, h: height }, unit);
-        x += width;
-        return rect + text;
-      }).join("");
-      y += height;
-      return rendered;
-    }).join("");
-  }
-
-  function sourceVisual(parts, width, height) {
-    const state = { nextId: 0, inherited: true, unit: 1280 / width };
-    const canvasHeight = height * state.unit;
-    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="${canvasHeight}" viewBox="0 0 1280 ${canvasHeight}">`;
-    let background = "#ffffff";
-    let backgroundImage = null;
-    for (const part of parts) {
-      const bg = first(part.doc, "bg");
-      if (bg) {
-        background = color(bg, background);
-        const blip = first(bg, "blip");
-        backgroundImage = blip ? part.images.get(reference(blip)) : null;
-      }
-    }
-    svg += `<rect width="1280" height="${canvasHeight}" fill="${background}"/>`;
-    if (backgroundImage?.supported) svg += `<image href="${escape(backgroundImage.data)}" width="1280" height="${canvasHeight}" preserveAspectRatio="none"/>`;
-    parts.forEach((part, index) => {
-      state.inherited = index < parts.length - 1;
-      const tree = first(part.doc, "spTree");
-      if (tree) svg += children(tree).map(shape => renderShape(shape, part, parts[parts.length - 2], state)).join("");
-    });
-    return svg + "</svg>";
-  }
-
-  /** Reads all embedded images and preserves source slide order and geometry. */
-  async function parse(file, weekLabel, customTitle, dependencies = {}) {
-    const library = dependencies.JSZip || await loadZipLibrary();
-    const zip = await library.loadAsync(file);
-    const pkg = new PptxPackage(zip, dependencies.parser || new root.DOMParser());
-    const presentation = await pkg.xml("ppt/presentation.xml");
-    const relations = await pkg.relations("ppt/presentation.xml");
-    let paths = presentation ? elements(presentation, "sldId").map(node => relations.get(reference(node))).filter(item => item && !item.external).map(item => item.path) : [];
-    if (!paths.length) paths = Object.keys(zip.files).filter(path => /^ppt\/slides\/slide\d+\.xml$/.test(path)).sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]));
-    if (!paths.length) throw new Error("PPTX dosyasında okunabilir slayt bulunamadı.");
-    const size = presentation && first(presentation, "sldSz");
-    const width = number(size, "cx", 12192000), height = number(size, "cy", 6858000);
-    const slides = [];
-    const yieldIntervalMs = 12;
-    let lastYield = Date.now();
-    for (const [index, path] of paths.entries()) {
-      if (root.document && Date.now() - lastYield >= yieldIntervalMs) {
-        await new Promise(resolve => setTimeout(resolve, 0));
-        lastYield = Date.now();
-      }
-      const part = await pkg.part(path);
-      if (!part) throw new Error(`Slayt dosyası bulunamadı: ${path}`);
-      const layoutPath = [...part.relations.values()].find(item => item.type.endsWith("/slideLayout") && !item.external)?.path;
-      const layout = layoutPath ? await pkg.part(layoutPath) : null;
-      const masterPath = layout && [...layout.relations.values()].find(item => item.type.endsWith("/slideMaster") && !item.external)?.path;
-      const master = masterPath ? await pkg.part(masterPath) : null;
-      const parts = [master, layout, part].filter(Boolean);
-      const images = [...new Map(parts.flatMap(item => [...item.images.values()]).map(image => [image.path, image])).values()];
-      const lines = elements(part.doc, "p").map(p => elements(p, "t").map(t => t.textContent).join("").trim()).filter(Boolean);
-      const title = lines[0] || `${customTitle || file.name || "Sunum"} — Slayt ${index + 1}`;
-      const bullets = lines.slice(1);
-      const usable = images.filter(image => image.supported);
-      const media = usable.length ? `<div class="ppt-import-media">${usable.map((image, i) => `<figure><img src="${escape(image.data)}" alt="${escape(title)} — Görsel ${i + 1}" loading="lazy"/></figure>`).join("")}</div>` : "";
-      if (elements(part.doc, "chart").length || elements(part.doc, "relIds").length) pkg.warnings.push(`${index + 1}. slaytta grafik veya SmartArt var; birebir görünüm için PowerPoint slayt görseli kullanılmalı.`);
-      const svg = sourceVisual(parts, width, height);
-      const unplacedText = elements(part.doc, "sp").some(shape => first(shape, "txBody") && first(shape, "t") && !shapeBox(shape, placeholder(shape, layout)).w);
-      const visual = unplacedText || !/<(?:text|image|ellipse)\b/.test(svg) ? "" : `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-      slides.push({ kicker: `${weekLabel.toLocaleUpperCase("tr")} • BÖLÜM ${index + 1}`, title, pptSummaryBullets: bullets,
-        defaultViewMode: "ppt", extractedImages: usable.map(image => image.data), sourceSlidePath: path, sourceSlideVisual: visual,
-        sourceSlideRatio: `${width}/${height}`, sourceWarnings: [...new Set(pkg.warnings)],
-        originalMedia: images.filter(image => !image.supported),
-        html: `<div class="ppt-import-content">${bullets.length ? `<ul class="bullet-list">${bullets.map((line, i) => `<li class="fragment"><span class="bullet-marker">${String(i + 1).padStart(2, "0")}</span><div>${escape(line)}</div></li>`).join("")}</ul>` : ""}${media}${pkg.warnings.length ? `<p class="ppt-import-warning">${[...new Set(pkg.warnings)].map(escape).join("<br/>")}</p>` : ""}</div>` });
-    }
-    if (root.PptxDisplay) await root.PptxDisplay.prepareUpload(file, slides);
-    return slides;
-  }
-
-  /** Adds recovered media without replacing existing notes or slide ordering. */
-  function repairMedia(existingSlides, importedSlides) {
-    let repaired = 0;
-    const unmatched = [];
-    for (const existing of existingSlides) {
-      const candidates = importedSlides.filter(slide => existing.sourceSlidePath ? slide.sourceSlidePath === existing.sourceSlidePath : slide.title.trim() === String(existing.title).trim());
-      if (candidates.length !== 1) { unmatched.push(existing.title); continue; }
-      const imported = candidates[0];
-      const recovered = imported.extractedImages || [];
-      existing.extractedImages = [...new Set([...(existing.extractedImages || []).filter(url => !url.startsWith("blob:")), ...recovered])];
-      existing.sourceSlideVisual = imported.sourceSlideVisual;
-      existing.sourceSlideRatio = imported.sourceSlideRatio;
-      existing.sourceSlidePath = imported.sourceSlidePath;
-      existing.originalMedia = imported.originalMedia;
-      let mediaIndex = 0;
-      existing.html = String(existing.html || "").replace(/(<img\b[^>]*\bsrc=["'])blob:[^"']+(["'])/gi, (match, prefix, suffix) => recovered[mediaIndex] ? `${prefix}${escape(recovered[mediaIndex++])}${suffix}` : match);
-      if (recovered.length && !String(existing.html).includes("ppt-import-media")) {
-        const missing = recovered.filter(url => !String(existing.html).includes(url));
-        existing.html = String(existing.html || "") + `<div class="ppt-import-media">${missing.map(url => `<figure><img src="${escape(url)}" alt="${escape(existing.title)}"/></figure>`).join("")}</div>`;
-      }
-      repaired += 1;
-    }
-    return { repaired, unmatched };
-  }
-
-  root.PptxImport = { parse, repairMedia, resolvePart };
-  if (typeof module !== "undefined") module.exports = root.PptxImport;
-})(typeof window !== "undefined" ? window : globalThis);
 ;
 
 /* slide-visual.js */
@@ -1181,17 +788,17 @@ window.PptxDisplay = (() => {
   /** Image mode shows one complete slide; Web and PPT retain the original notes. */
   function contentVisibility(slide, mode) {
     const hasNotes = Boolean(String(slide.html || "").trim());
-    const hasOriginal = Boolean(slide.pptImageUrl || (!slide.sourceSlideEdited && slide.sourceSlideVisual) || root.PptxDisplay?.visualFor(slide));
+    if (slide.pdf) return { web: mode === "web" && hasNotes, ppt: true };
+    const hasOriginal = Boolean(slide.pptImageUrl || (!slide.sourceSlideEdited && slide.sourceSlideVisual) || slide.pdf);
     const hasMedia = Array.isArray(slide.extractedImages) && slide.extractedImages.length > 0;
-    if (mode === "image") return { web: !hasOriginal && hasNotes, ppt: hasOriginal || !hasNotes };
+    if (mode === "image" || mode === "pdf") return { web: !hasOriginal && hasNotes, ppt: hasOriginal || !hasNotes };
     const visualMode = mode === "ppt";
     return { web: !visualMode || hasNotes, ppt: visualMode && (hasOriginal || hasMedia || !hasNotes) };
   }
 
   /** Uses original slide geometry when available; never invents a technical image. */
   function render(slide, slideIndex, totalSlides, week) {
-    const native = root.PptxDisplay?.visualFor(slide);
-    if (native && !slide.pptImageUrl) return `<div class="ppt-native-frame ppt-source-frame" style="aspect-ratio:${escape(native.ratio)}" data-pptx-render="${escape(native.token)}" role="img" aria-label="${escape(slide.title)}">Slayt yükleniyor…</div>`;
+    if (slide.pdf) return root.PdfSlides.render(slide);
     const original = slide.pptImageUrl || (!slide.sourceSlideEdited && slide.sourceSlideVisual);
     if (original) return `<div class="ppt-exact-frame ppt-source-frame" style="aspect-ratio:${escape(slide.sourceSlideRatio || "auto")}"><img src="${escape(original)}" alt="${escape(slide.title)}"/></div>${slide.sourceWarnings?.length ? `<p class="ppt-import-warning">${slide.sourceWarnings.map(escape).join("<br/>")}</p>` : ""}`;
     const images = [...new Set(slide.extractedImages || [])];
@@ -1204,9 +811,9 @@ window.PptxDisplay = (() => {
 })(typeof window !== "undefined" ? window : globalThis);
 ;
 
-/* pptx-preview.js */
+/* pdf-preview.js */
 /** Parses the selected upload once and displays it without writing lecture data. */
-window.PptxPreview = (() => {
+window.PdfPreview = (() => {
   let cached;
   let generation = 0;
   let slideIndex = 0;
@@ -1218,7 +825,7 @@ window.PptxPreview = (() => {
 
   function slidesFor(file, week, title) {
     if (!cached || cached.file !== file || cached.week !== week || cached.title !== title) {
-      cached = { file, week, title, promise: PptxImport.parse(file, week, title) };
+      cached = { file, week, title, promise: PdfSlides.parse(file, week, title) };
     }
     return cached.promise;
   }
@@ -1234,7 +841,7 @@ window.PptxPreview = (() => {
     const current = ++generation;
     slideIndex = 0;
     previous.disabled = next.disabled = true;
-    status.textContent = "PPTX Çözümleniyor...";
+    status.textContent = "PDF Çözümleniyor...";
     stage.replaceChildren();
     try {
       const slides = await slidesFor(file, field("imp-week") || "Ders", field("imp-title"));
@@ -1260,13 +867,13 @@ window.PptxPreview = (() => {
   return {
     prepare,
     async getSlides(file, week, title) {
-      return structuredClone(await slidesFor(file, week, title));
+      return LectureDocument.snapshot(await slidesFor(file, week, title));
     },
     clear() {
       generation += 1;
       cached = null;
       stage.replaceChildren();
-      status.textContent = "PPTX seçtiğinizde önizleme burada görünür.";
+      status.textContent = "PDF seçtiğinizde önizleme burada görünür.";
       previous.disabled = next.disabled = true;
     }
   };
@@ -1612,9 +1219,12 @@ window.PptxPreview = (() => {
 
     async externalize(lectures, onProgress = () => {}) {
       const addresses = new Set();
+      // PDF sources are published inline to GitHub, including all mixed-page references.
+      const pdfSources = new Set(lectures.flatMap(lecture => [lecture.pdfUrl,
+        ...(lecture.slides || []).map(slide => slide.pdf?.source)]).filter(Boolean));
       const urls = text => text.startsWith("data:") ? [text] : [...text.matchAll(/(["'])(data:[\s\S]*?)\1/g)].map(match => match[2]);
       const collect = value => {
-        if (typeof value === "string") urls(value).filter(url => url.length >= MIN_ASSET_LENGTH).forEach(url => addresses.add(url));
+        if (typeof value === "string") urls(value).filter(url => url.length >= MIN_ASSET_LENGTH && !pdfSources.has(url)).forEach(url => addresses.add(url));
         else if (value && typeof value === "object") Object.values(value).forEach(collect);
       };
       collect(lectures);
@@ -3662,7 +3272,7 @@ const LECTURES = [];
 // ============================================================================
 // UYGULAMA DURUMU (STATE)
 // ============================================================================
-const DEFAULT_SLIDE_VIEW_MODE = "image";
+const DEFAULT_SLIDE_VIEW_MODE = "pdf";
 const PREFERRED_VIEW_MODE_KEY = "mee101_preferred_view_mode_v1";
 let currentLecture = null;
 let isPresentationMode = false;
@@ -3671,7 +3281,7 @@ let animationFrameId = null;
 let preferredSlideViewMode = (function () {
   try {
     const saved = localStorage.getItem(PREFERRED_VIEW_MODE_KEY);
-    return ["ppt", "web", "image"].includes(saved) ? saved : DEFAULT_SLIDE_VIEW_MODE;
+    return ["web", "pdf"].includes(saved) ? saved : DEFAULT_SLIDE_VIEW_MODE;
   } catch {
     return DEFAULT_SLIDE_VIEW_MODE;
   }
@@ -4008,8 +3618,8 @@ function renderCatalog() {
   [...LECTURES].sort((a, b) => CatalogOrder.compareWeeks(a.week, b.week)).forEach((lec) => {
     const card = document.createElement("article");
     card.className = "lecture-card";
-    const pptxHref = lec.pptxUrl || "";
-    const downloadFileName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
+    const pptxHref = lec.pdfUrl || lec.pptxUrl || "";
+    const downloadFileName = lec.pdfFileName || lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
 
     const stats = getLectureVoteStats(lec.id);
 
@@ -4058,8 +3668,8 @@ function renderCatalog() {
             <button class="btn btn-primary btn-present" data-id="${lec.id}">
               Sunum
             </button>
-            <a ${pptxHref ? "" : "hidden"} href="${escapeXml(pptxHref)}" download="${escapeXml(downloadFileName)}" class="btn btn-outline btn-protected-pptx${pptxHref ? "" : " hidden"}" data-pptx-href="${escapeXml(pptxHref)}" data-pptx-name="${escapeXml(downloadFileName)}" title="PowerPoint (.pptx) dosyasını indir (Öğrenci No gerektirir)">
-              PPTX
+            <a ${pptxHref ? "" : "hidden"} href="${escapeXml(pptxHref)}" download="${escapeXml(downloadFileName)}" class="btn btn-outline btn-protected-pptx${pptxHref ? "" : " hidden"}" data-pptx-href="${escapeXml(pptxHref)}" data-pptx-name="${escapeXml(downloadFileName)}" title="Kaynak dosyayı indir">
+              ${lec.pdfUrl ? "PDF" : "PPTX"}
             </a>
           </div>
         </div>
@@ -4171,12 +3781,14 @@ function openLecture(lectureId, startInPresentation = false) {
   navCurrentLectureTitle.textContent = `${lec.week}: ${lec.title.split(":")[0]}`;
   presLectureName.textContent = `${lec.week}`;
 
-  const pptxHref = lec.pptxUrl || "";
-  const downloadName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
+  const pptxHref = lec.pdfUrl || lec.pptxUrl || "";
+  const downloadName = lec.pdfFileName || lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
   const navDl = document.getElementById("btn-nav-download-pptx");
   const bannerDl = document.getElementById("btn-banner-download-pptx");
   navDl.classList.toggle("hidden", !pptxHref);
   bannerDl.classList.toggle("hidden", !pptxHref);
+  navDl.textContent = lec.pdfUrl ? "PDF İndir" : "Kaynak İndir";
+  bannerDl.textContent = navDl.textContent;
   navDl.href = pptxHref;
   navDl.setAttribute("download", downloadName);
   bannerDl.href = pptxHref;
@@ -4195,15 +3807,6 @@ function openLecture(lectureId, startInPresentation = false) {
   });
 
   slidesContainer.innerHTML = "";
-  PptxDisplay.prepareLecture(lec).then(prepared => {
-    if (!prepared || currentLecture !== lec) return;
-    slidesContainer.querySelectorAll('.slide-body-ppt[data-rendered="true"]').forEach(body => {
-      const index = Number(body.closest(".slide").dataset.index);
-      body.innerHTML = buildPptExactVisualHtml(lec.slides[index], index, lec.slides.length, lec.week);
-      PptxDisplay.setImageMode(body, body.closest(".slide").dataset.viewMode);
-    });
-    slidesContainer.querySelectorAll('.slide').forEach(slide => setSlideElementViewMode(slide, slide.dataset.viewMode));
-  });
   lec.slides.forEach((s, idx) => {
     const slideEl = document.createElement("section");
     slideEl.className = "slide";
@@ -4218,7 +3821,7 @@ function openLecture(lectureId, startInPresentation = false) {
     slideEl.innerHTML = `
       <div class="slide-top-controls interactive-zone">
         ${isAdminAuthenticated ? `<button type="button" class="btn-edit-lecture btn-edit-this-slide" data-edit-slide-idx="${idx}" title="Bu slaytı düzenle">&#9998; Slaytı Düzenle</button>` : ""}
-        <select class="btn-slide-mode-switch slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="image">Resim</option><option value="web">Web</option><option value="ppt">PPT</option></select>
+        <select class="btn-slide-mode-switch slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="pdf">Slayt</option><option value="web">Notlar</option></select>
         <span class="slide-number-badge">Slayt ${idx + 1} / ${lec.slides.length}</span>
       </div>
       <div class="slide-content">
@@ -4229,7 +3832,6 @@ function openLecture(lectureId, startInPresentation = false) {
       </div>
     `;
     slidesContainer.appendChild(slideEl);
-    PptxDisplay.setImageMode(slideEl, effectiveMode);
     slideEl.querySelector("[data-slide-view-select]").value = effectiveMode;
   });
 
@@ -4274,13 +3876,12 @@ function setSlideElementViewMode(slideEl, mode) {
   }
 
   slideEl.dataset.viewMode = mode;
-  PptxDisplay.setImageMode(pptBody, mode);
 
   switchBtn.value = mode;
 }
 
 function applyPersistentSlideViewMode(targetMode) {
-  const mode = ["ppt", "web", "image"].includes(targetMode) ? targetMode : DEFAULT_SLIDE_VIEW_MODE;
+  const mode = ["web", "pdf"].includes(targetMode) ? targetMode : DEFAULT_SLIDE_VIEW_MODE;
   preferredSlideViewMode = mode;
   try {
     localStorage.setItem(PREFERRED_VIEW_MODE_KEY, mode);
@@ -4310,7 +3911,7 @@ document.addEventListener("change", event => {
 function toggleSingleSlideViewMode(slideIdx) {
   const slideEl = document.querySelector(`.slide[data-index="${slideIdx}"]`);
   if (!slideEl) return;
-  const modes = ["image", "web", "ppt"];
+  const modes = ["pdf", "web"];
   applyPersistentSlideViewMode(modes[(modes.indexOf(slideEl.dataset.viewMode) + 1) % modes.length]);
 }
 
@@ -4447,11 +4048,12 @@ const studentLoginBackdrop = document.getElementById("student-login-backdrop");
 const inpStudentNo = document.getElementById("inp-student-email");
 const studentLoginError = document.getElementById("student-login-error");
 
-const inpPptxFile = document.getElementById("inp-pptx-file");
-const btnProcessPptx = document.getElementById("btn-process-pptx");
-const pptxFileStatus = document.getElementById("pptx-file-status");
-let selectedPptxFile = null;
-let selectedSlideImages = [];
+const inpPdfFile = document.getElementById("inp-pdf-file");
+const btnProcessPdf = document.getElementById("btn-process-pdf");
+const pdfFileStatus = document.getElementById("pdf-file-status");
+let selectedPdfFile = null;
+let pendingPdfInsertIndex = null;
+let pdfImportGeneration = 0;
 let pendingAdminTab = null;
 
 // --- ÖĞRENCİ GİRİŞİ VE DOĞRULAMA ---
@@ -4769,50 +4371,62 @@ document.querySelectorAll(".modal-tab").forEach((tabBtn) => {
   });
 });
 
-const pptxDropzone = document.getElementById("pptx-dropzone");
-pptxDropzone.addEventListener("click", () => inpPptxFile.click());
-pptxDropzone.addEventListener("dragover", (e) => {
+const pdfDropzone = document.getElementById("pdf-dropzone");
+pdfDropzone.addEventListener("click", () => inpPdfFile.click());
+pdfDropzone.addEventListener("dragover", (e) => {
   e.preventDefault();
-  pptxDropzone.style.borderColor = "#5c3d28";
+  pdfDropzone.style.borderColor = "#5c3d28";
 });
-pptxDropzone.addEventListener("dragleave", () => {
-  pptxDropzone.style.borderColor = "#bfaf9c";
+pdfDropzone.addEventListener("dragleave", () => {
+  pdfDropzone.style.borderColor = "#bfaf9c";
 });
-pptxDropzone.addEventListener("drop", (e) => {
+pdfDropzone.addEventListener("drop", (e) => {
   e.preventDefault();
   if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-    handlePptxFileChosen(e.dataTransfer.files[0]);
+    handlePdfFileChosen(e.dataTransfer.files[0]);
   }
 });
-inpPptxFile.addEventListener("change", (e) => {
+inpPdfFile.addEventListener("change", (e) => {
   if (e.target.files && e.target.files[0]) {
-    handlePptxFileChosen(e.target.files[0]);
+    handlePdfFileChosen(e.target.files[0]);
   }
 });
 
-function handlePptxFileChosen(file) {
-  selectedPptxFile = file;
-  pptxFileStatus.innerHTML = `Seçilen dosya: <strong>${escapeXml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+function handlePdfFileChosen(file) {
+  if (!/\.pdf$/i.test(file.name)) { pdfFileStatus.textContent = "Lütfen PDF dosyası seçin."; return; }
+  selectedPdfFile = file;
+  document.getElementById("btn-clear-pdf-file").classList.remove("hidden");
+  pdfFileStatus.innerHTML = `Seçilen dosya: <strong>${escapeXml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
   const titleInput = document.getElementById("imp-title");
   if (!titleInput.value.trim()) {
-    titleInput.value = file.name.replace(/\.pptx$/i, "").replace(/[-_]/g, " ");
+    titleInput.value = file.name.replace(/\.pdf$/i, "").replace(/[-_]/g, " ");
   }
-  PptxPreview.prepare(file);
+  PdfPreview.prepare(file);
 }
 
-async function parsePptxFileToSlides(pptxFile, weekLabel, customTitle) {
-  return PptxImport.parse(pptxFile, weekLabel, customTitle);
+document.getElementById("btn-clear-pdf-file").addEventListener("click", event => {
+  event.stopPropagation();
+  selectedPdfFile = null;
+  inpPdfFile.value = "";
+  PdfPreview.clear();
+  pdfFileStatus.textContent = "Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.";
+  event.currentTarget.classList.add("hidden");
+});
+
+async function parsePdfFileToSlides(pdfFile, weekLabel, customTitle) {
+  return PdfSlides.parse(pdfFile, weekLabel, customTitle);
 }
 
-btnProcessPptx.addEventListener("click", async () => {
+btnProcessPdf.addEventListener("click", async () => {
   const weekLabel = document.getElementById("imp-week").value.trim() || `${LECTURES.length + 1}. Hafta`;
   const customTitleInput = document.getElementById("imp-title").value.trim();
   const customDescInput = document.getElementById("imp-desc").value.trim();
   const manualBulletsRaw = document.getElementById("imp-manual-bullets").value.trim();
   const simType = document.getElementById("imp-sim-type").value;
+  const pdfFile = selectedPdfFile;
 
-  // Durum A: .PPTX dosyası seçilmeden manuel ders ekleme
-  if (!selectedPptxFile) {
+  // Dosya seçmeden ek ders notu oluştur.
+  if (!selectedPdfFile) {
     const finalTitle = customTitleInput || `${weekLabel} Ders İçeriği`;
     const finalDesc = customDescInput;
     const bulletLines = manualBulletsRaw
@@ -4863,99 +4477,49 @@ btnProcessPptx.addEventListener("click", async () => {
     return;
   }
 
-  // Durum B: .PPTX dosyası seçilmişse JSZip ile ayrıştır
-  btnProcessPptx.disabled = true;
-  btnProcessPptx.textContent = "PPTX Çözümleniyor...";
+  // PDF sayfalarını kaynak dosyaya bağlı, sıralanabilir slaytlar olarak ekle.
+  btnProcessPdf.disabled = true;
+  btnProcessPdf.textContent = "PDF Açılıyor...";
 
   try {
-    const customTitle = customTitleInput || selectedPptxFile.name.replace(/\.pptx$/i, "");
-    const parsedSlides = await PptxPreview.getSlides(selectedPptxFile, weekLabel, customTitle);
+    const customTitle = customTitleInput || pdfFile.name.replace(/\.pdf$/i, "");
+    const parsedSlides = await PdfPreview.getSlides(pdfFile, weekLabel, customTitle);
 
     if (simType !== "none") {
       parsedSlides.push(getSimulationSlideObject(simType, weekLabel.toUpperCase()));
     }
 
-    const pptxDataUrl = await readFileAsDataURL(selectedPptxFile);
+    const pdfDataUrl = parsedSlides[0].pdf.source;
 
     const newLecture = {
       id: `custom-${Date.now()}`,
       week: weekLabel,
       title: customTitle,
-      description: customDescInput || `${selectedPptxFile.name} dosyasından aktarılmış ders içeriği.`,
-      pptxUrl: pptxDataUrl,
-      pptxFileName: selectedPptxFile.name,
-      features: ["PPTX'ten Aktarıldı", "Hibrit Slayt Modu"],
+      description: customDescInput || `${pdfFile.name} dosyasından aktarılmış ders içeriği.`,
+      pdfUrl: pdfDataUrl,
+      pdfFileName: pdfFile.name,
+      features: ["PDF'ten Aktarıldı", "Hibrit Slayt Modu"],
       slides: parsedSlides
     };
 
     LECTURES.push(newLecture);
     await saveCustomLectureToStorage(newLecture);
-    selectedPptxFile = null;
-    PptxPreview.clear();
-    pptxFileStatus.textContent = "Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.";
+    if (selectedPdfFile === pdfFile) {
+      selectedPdfFile = null;
+      inpPdfFile.value = "";
+      document.getElementById("btn-clear-pdf-file").classList.add("hidden");
+      PdfPreview.clear();
+    }
+    pdfFileStatus.textContent = "Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.";
     renderCatalog();
     closePptxModal();
     openLecture(newLecture.id, false);
   } catch (err) {
-    alert("PPTX dosyası okunurken bir hata oluştu: " + err.message);
+    alert("PDF dosyası okunurken bir hata oluştu: " + err.message);
   } finally {
-    btnProcessPptx.disabled = false;
-    btnProcessPptx.textContent = "+ Dersi Listeye Ekle";
+    btnProcessPdf.disabled = false;
+    btnProcessPdf.textContent = "+ Dersi Listeye Ekle";
   }
-});
-
-// TAB 2: Çoklu Slayt Görseli (.PNG / .JPG)
-const imgDropzone = document.getElementById("img-dropzone");
-const inpSlideImages = document.getElementById("inp-slide-images");
-const btnProcessImages = document.getElementById("btn-process-images");
-
-imgDropzone.addEventListener("click", () => inpSlideImages.click());
-inpSlideImages.addEventListener("change", (e) => {
-  selectedSlideImages = Array.from(e.target.files || []);
-  if (selectedSlideImages.length > 0) {
-    document.getElementById("img-files-status").innerHTML =
-      `<strong>${selectedSlideImages.length} adet</strong> slayt görseli seçildi.`;
-    btnProcessImages.disabled = false;
-  }
-});
-
-btnProcessImages.addEventListener("click", async () => {
-  if (selectedSlideImages.length === 0) return;
-  const weekLabel = document.getElementById("img-imp-week").value.trim() || "Ek Ders";
-  const titleLabel = document.getElementById("img-imp-title").value.trim() || "PowerPoint Görsel Sunumu";
-
-  const imageSlides = await Promise.all(selectedSlideImages.map(async (file, idx) => {
-    const imgUrl = await readFileAsDataURL(file);
-    return {
-      kicker: `${weekLabel.toUpperCase()} • SLAYT ${idx + 1}`,
-      title: `${titleLabel} — Slayt ${idx + 1}`,
-      defaultViewMode: "ppt",
-      pptImageUrl: imgUrl,
-      pptSummaryBullets: [file.name],
-      html: `
-        <div class="ppt-exact-frame">
-          <img src="${imgUrl}" alt="Slayt ${idx + 1}" />
-          <span class="ppt-frame-badge">Orijinal PowerPoint Slayt Görseli</span>
-        </div>
-      `
-    };
-  }));
-
-  const newLec = {
-    id: `img-lec-${Date.now()}`,
-    week: weekLabel,
-    title: titleLabel,
-    description: `${selectedSlideImages.length} adet slayt görseli ile oluşturulmuş sunum.`,
-    pptxUrl: "",
-    features: ["Birebir Görsel Koruma", "Lazer ve Kalem Destekli"],
-    slides: imageSlides
-  };
-
-  LECTURES.push(newLec);
-  await saveCustomLectureToStorage(newLec);
-  renderCatalog();
-  closePptxModal();
-  openLecture(newLec.id, true);
 });
 
 document.getElementById("btn-export-json").addEventListener("click", () => {
@@ -5069,7 +4633,7 @@ function extractSlideEditableFields(slide) {
   return {
     kicker: slide.kicker || "",
     title: slide.title || "",
-    viewMode: slide.defaultViewMode || "web",
+    viewMode: slide.pdf ? "pdf" : slide.defaultViewMode || "web",
     simType,
     lead,
     bulletsText: bullets.join("\n"),
@@ -5152,10 +4716,9 @@ function updateEditLivePreview() {
       extractedImages: slide._imageChanged ? (activeImg ? [activeImg] : []) : (slide.extractedImages || []),
       pptSummaryBullets: bulletLines
     };
-    const native = PptxDisplay.visualFor(slide);
-    if (native) previewSlideObj = slide;
+    if (slide.pdf) previewSlideObj = slide;
     if (typeLabel) {
-      typeLabel.textContent = activeImg
+      typeLabel.textContent = slide.pdf ? `PDF · Sayfa ${slide.pdf.page} (Sayfa içeriği kaynak PDF’de düzenlenir)` : activeImg
         ? "Görselli Slayt Önizlemesi"
         : "Slayt Levha Önizlemesi (Canlı)";
     }
@@ -5202,6 +4765,8 @@ function loadSlideIntoEditForm(slideIdx, rebuildTabs = true) {
   document.getElementById("edit-slide-title").value = fields.title;
   document.getElementById("edit-slide-viewmode").value = fields.viewMode;
   document.getElementById("edit-slide-simtype").value = fields.simType;
+  document.getElementById("edit-slide-simtype").disabled = Boolean(slide.pdf);
+  document.getElementById("inp-edit-slide-img").disabled = Boolean(slide.pdf);
 
   document.getElementById("edit-slide-lead").value = fields.lead;
   document.getElementById("edit-slide-bullets").value = fields.bulletsText;
@@ -5238,6 +4803,7 @@ function createInsertBetweenBar(insertPos, totalSlides) {
   bar.innerHTML = `
     <span class="edit-insert-label">${posLabel}</span>
     <div class="edit-insert-btns">
+      <button type="button" class="btn-insert-here" data-ins-type="pdf" data-ins-pos="${insertPos}" title="Bu araya PDF sayfaları ekle">+PDF</button>
       <button type="button" class="btn-insert-here" data-ins-type="slide" data-ins-pos="${insertPos}" title="Bu araya yeni konu/metin slaytı ekle">+Konu</button>
       <button type="button" class="btn-insert-here" data-ins-type="sim" data-ins-pos="${insertPos}" title="Bu araya teknik simülasyon slaytı ekle">+Sim</button>
       <button type="button" class="btn-insert-here" data-ins-type="img" data-ins-pos="${insertPos}" title="Bu araya görsel (PNG/JPG) slayt ekle">+Görsel</button>
@@ -5249,7 +4815,10 @@ function createInsertBetweenBar(insertPos, totalSlides) {
       e.stopPropagation();
       const pos = parseInt(btn.dataset.insPos, 10);
       const type = btn.dataset.insType;
-      if (type === "slide") {
+      if (type === "pdf") {
+        pendingPdfInsertIndex = pos;
+        document.getElementById("inp-edit-pdf-file").click();
+      } else if (type === "slide") {
         insertContentSlideAt(pos);
       } else if (type === "sim") {
         insertSimSlideAt(pos);
@@ -5487,7 +5056,6 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
   if (!targetLec) return;
 
   editingLectureDraft = LectureDocument.snapshot(targetLec);
-  PptxDisplay.inheritBindings(targetLec.slides || [], editingLectureDraft.slides || []);
   if (!Array.isArray(editingLectureDraft.slides) || editingLectureDraft.slides.length === 0) {
     editingLectureDraft.slides = [
       {
@@ -5504,21 +5072,15 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
   document.getElementById("edit-lec-week").value = editingLectureDraft.week || "";
   document.getElementById("edit-lec-title").value = editingLectureDraft.title || "";
   document.getElementById("edit-lec-desc").value = editingLectureDraft.description || "";
-  const sourceUrl = String(editingLectureDraft.pptxUrl || "");
-  document.getElementById("edit-lec-pptx-url").value = /^(data:|blob:)/.test(sourceUrl)
-    ? (editingLectureDraft.pptxFileName ? `pptx/${editingLectureDraft.pptxFileName}` : "")
+  const sourceUrl = String(editingLectureDraft.pdfUrl || "");
+  document.getElementById("edit-lec-pdf-url").value = /^(data:|blob:)/.test(sourceUrl)
+    ? (editingLectureDraft.pdfFileName ? `pdf/${editingLectureDraft.pdfFileName}` : "")
     : sourceUrl;
-  document.getElementById("edit-pptx-status").textContent = "";
+  document.getElementById("edit-pdf-status").textContent = "";
   document.getElementById("edit-save-feedback").textContent = "";
-  document.getElementById("inp-edit-pptx-file").value = "";
+  document.getElementById("inp-edit-pdf-file").value = "";
 
   loadSlideIntoEditForm(initialSlideIdx);
-  const displayDraft = editingLectureDraft;
-  PptxDisplay.prepareLecture(displayDraft).then(prepared => {
-    if (!prepared || editingLectureDraft !== displayDraft) return;
-    renderEditSlideTabs();
-    updateEditLivePreview();
-  });
   editLectureBackdrop.classList.remove("hidden");
 }
 
@@ -5526,6 +5088,9 @@ function closeEditLectureModal() {
   if (editPreviewFrame !== null) cancelAnimationFrame(editPreviewFrame);
   editPreviewFrame = null;
   editThumbnailObserver?.disconnect();
+  pendingPdfInsertIndex = null;
+  pdfImportGeneration++;
+  document.getElementById("btn-save-edit-lecture").disabled = false;
   if (editLectureBackdrop) {
     editLectureBackdrop.classList.add("hidden");
   }
@@ -5704,57 +5269,42 @@ document.getElementById("btn-delete-current-slide").addEventListener("click", ()
   loadSlideIntoEditForm(nextIdx);
 });
 
-// Düzenleme Modalı İçinden Yeni .PPTX Yükleme
-document.getElementById("inp-edit-pptx-file").addEventListener("change", async (e) => {
-  const file = e.target.files && e.target.files[0];
+document.getElementById("inp-edit-pdf-file").addEventListener("cancel", () => { pendingPdfInsertIndex = null; });
+
+/** Imports into the draft only; cancelling leaves every saved source unchanged. */
+document.getElementById("inp-edit-pdf-file").addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  event.target.value = "";
   if (!file || !editingLectureDraft) return;
   commitCurrentSlideFormToDraft();
-
-  const mode = document.getElementById("sel-edit-pptx-mode").value;
-  const statusEl = document.getElementById("edit-pptx-status");
-  const weekLabel = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
-  const lecTitle = document.getElementById("edit-lec-title").value.trim() || editingLectureDraft.title;
-
-  statusEl.textContent = "PPTX dosyası çözümleniyor...";
-
+  const draft = editingLectureDraft;
+  const generation = ++pdfImportGeneration;
+  const mode = pendingPdfInsertIndex === null ? document.getElementById("sel-edit-pdf-mode").value : "insert";
+  const position = pendingPdfInsertIndex ?? editingSlideIndex + 1;
+  pendingPdfInsertIndex = null;
+  const status = document.getElementById("edit-pdf-status");
+  status.textContent = "PDF açılıyor…";
+  document.getElementById("btn-save-edit-lecture").disabled = true;
   try {
-    const parsedSlides = mode === "file-only" ? null : await parsePptxFileToSlides(file, weekLabel, lecTitle);
-    const dataUrl = await readFileAsDataURL(file);
-    editingLectureDraft.pptxUrl = dataUrl;
-    editingLectureDraft.pptxFileName = file.name;
-    document.getElementById("edit-lec-pptx-url").value = `pptx/${file.name}`;
-
-    if (mode !== "file-only") {
-      if (parsedSlides.length > 0) {
-        if (mode === "restore-media") {
-          const result = PptxImport.repairMedia(editingLectureDraft.slides, parsedSlides);
-          loadSlideIntoEditForm(editingSlideIndex);
-          statusEl.textContent = `${result.repaired} slaydın görselleri onarıldı; notlar korundu.${result.unmatched.length ? ` ${result.unmatched.length} slayt güvenle eşleştirilemedi ve değiştirilmedi.` : ""}`;
-        } else if (mode === "replace") {
-          editingLectureDraft.slides = parsedSlides;
-          loadSlideIntoEditForm(0);
-          statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> yüklendi (${parsedSlides.length} slayt ile yenilendi).`;
-        } else {
-          editingLectureDraft.slides.push(...parsedSlides);
-          loadSlideIntoEditForm(editingLectureDraft.slides.length - 1);
-          statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> yüklendi (+${parsedSlides.length} slayt sona eklendi).`;
-        }
-      }
-    } else {
-      statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> indirme dosyası olarak tanımlandı.`;
+    const slides = await parsePdfFileToSlides(file, draft.week, draft.title);
+    if (editingLectureDraft !== draft || generation !== pdfImportGeneration) return;
+    if (mode === "replace" && !confirm("Mevcut slaytların tamamı bu PDF ile değiştirilsin mi? Araya eklediğiniz slaytlar da kaldırılır.")) {
+      status.textContent = "Değiştirme iptal edildi; mevcut slaytlar korundu.";
+      return;
     }
-    const displayDraft = editingLectureDraft;
-    if (await PptxDisplay.prepareLecture(displayDraft) && editingLectureDraft === displayDraft) {
-      renderEditSlideTabs();
-      updateEditLivePreview();
+    if (mode === "replace") draft.slides = slides;
+    else if (mode !== "file-only") draft.slides.splice(mode === "insert" ? position : draft.slides.length, 0, ...slides);
+    if (!draft.pdfUrl || mode === "replace" || mode === "file-only") {
+      draft.pdfUrl = slides[0].pdf.source;
+      draft.pdfFileName = file.name;
+      document.getElementById("edit-lec-pdf-url").value = `pdf/${file.name}`;
     }
-    document.querySelector(".edit-live-preview-wrap").scrollIntoView({ block: "nearest" });
-  } catch (err) {
-    statusEl.textContent = "Hata: " + err.message;
-  }
+    loadSlideIntoEditForm(mode === "replace" ? 0 : mode === "insert" ? position : editingSlideIndex);
+    status.textContent = `${file.name} · ${slides.length} sayfa. Kalıcı olması için Değişiklikleri Kaydet düğmesine basın.`;
+  } catch (error) { if (generation === pdfImportGeneration) status.textContent = `Hata: ${error.message}`; }
+  finally { if (generation === pdfImportGeneration) document.getElementById("btn-save-edit-lecture").disabled = false; }
 });
 
-// Değişiklikleri Kaydet
 document.getElementById("btn-save-edit-lecture").addEventListener("click", async () => {
   if (!isAdminAuthenticated || !editingLectureDraft) return;
   const saveButton = document.getElementById("btn-save-edit-lecture");
@@ -5771,11 +5321,11 @@ document.getElementById("btn-save-edit-lecture").addEventListener("click", async
     editingLectureDraft.description =
       document.getElementById("edit-lec-desc").value.trim() || editingLectureDraft.description;
 
-    const manualPptxUrl = document.getElementById("edit-lec-pptx-url").value.trim();
-    const embeddedSource = /^(blob:|data:)/.test(String(editingLectureDraft.pptxUrl || ""));
-    const embeddedLabel = editingLectureDraft.pptxFileName ? `pptx/${editingLectureDraft.pptxFileName}` : "";
-    if (manualPptxUrl && (!embeddedSource || manualPptxUrl !== embeddedLabel)) {
-      editingLectureDraft.pptxUrl = manualPptxUrl;
+    const manualPdfUrl = document.getElementById("edit-lec-pdf-url").value.trim();
+    const embeddedSource = /^(blob:|data:)/.test(String(editingLectureDraft.pdfUrl || ""));
+    const embeddedLabel = editingLectureDraft.pdfFileName ? `pdf/${editingLectureDraft.pdfFileName}` : "";
+    if (manualPdfUrl && (!embeddedSource || manualPdfUrl !== embeddedLabel)) {
+      editingLectureDraft.pdfUrl = manualPdfUrl;
     }
 
     // Geçici düzenleme alanlarını temizle

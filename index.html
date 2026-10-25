@@ -17,10 +17,10 @@
   <link rel="stylesheet" href="style.css?v=11" />
   <link rel="stylesheet" href="modern.css?v=2" />
   <link rel="stylesheet" href="editor.css?v=registered-roster-5" />
-  <link rel="stylesheet" href="content.css?v=single-slide-image-1" />
+  <link rel="stylesheet" href="content.css?v=pdf-slides-1" />
   <link rel="stylesheet" href="portal-ui.css?v=7" />
   <script defer src="firebase-config.js?v=2"></script>
-  <script defer src="portal-startup.js?v=d63a984534c6"></script>
+  <script defer src="portal-startup.js?v=44b7646d2ee6"></script>
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -71,8 +71,8 @@
           <button id="btn-nav-edit-lecture" class="btn btn-outline hidden" title="Bu dersi ve slaytlarını düzenle">
             &#9998; Dersi Düzenle
           </button>
-          <a id="btn-nav-download-pptx" href="#" download class="btn btn-secondary" title="PowerPoint (.pptx) dosyasını indir">
-            PPTX İndir
+          <a id="btn-nav-download-pptx" href="#" download class="btn btn-secondary" title="PDF (.pdf) dosyasını indir">
+            PDF İndir
           </a>
           <button id="btn-start-presentation" class="btn btn-primary">
             Sunum Moduna Geç
@@ -125,7 +125,7 @@
       </div>
 
       <div id="admin-compact-methods" class="methods-equal-group">
-        <button type="button" class="method-suite-btn" data-open-tab="tab-add-manual" title="Yöntem I: PPTX'ten Web Slaytlarına Dönüştür">
+        <button type="button" class="method-suite-btn" data-open-tab="tab-add-manual" title="Yöntem I: PDF'ten Web Slaytlarına Dönüştür">
           <span class="method-suite-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           </span>
@@ -135,23 +135,23 @@
           </span>
         </button>
 
-        <button type="button" class="method-suite-btn" data-open-tab="tab-method-2" title="Yöntem II: Birebir Slayt Görselleri (Hibrit)">
+        <button type="button" class="method-suite-btn" data-open-tab="tab-add-manual" title="PDF Sunum">
           <span class="method-suite-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
           </span>
           <span class="method-suite-text">
             <small>II. YÖNTEM</small>
-            <strong>PPT Görsel</strong>
+            <strong>PDF Sunum</strong>
           </span>
         </button>
 
-        <button type="button" class="method-suite-btn" data-open-tab="tab-permanent" title="Yöntem III: Doğrudan PPTX İndirme ve Klasör Aracı">
+        <button type="button" class="method-suite-btn" data-open-tab="tab-permanent" title="Yöntem III: Doğrudan PDF İndirme ve Klasör Aracı">
           <span class="method-suite-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </span>
           <span class="method-suite-text">
             <small>III. YÖNTEM</small>
-            <strong>PPTX Arşivi</strong>
+            <strong>PDF Arşivi</strong>
           </span>
         </button>
       </div>
@@ -195,15 +195,15 @@
       <div class="reading-banner-info">
         <div class="reading-banner-top">
           <span class="badge-mode">DERS NOTU GÖRÜNÜMÜ</span>
-          <span class="badge-sub">Slaytın sağ üstündeki menüden Resim, Web veya PPT görünümünü seçebilirsiniz.</span>
+          <span class="badge-sub">PDF sayfaları ve ek slaytlar sırayla gösterilir. Notlar görünümüyle ek açıklamaları açabilirsiniz.</span>
         </div>
         <p>Tam ekran projeksiyon anlatımı ve adım adım ilerleme için <strong>Sunum Moduna Geç</strong> butonunu kullanınız.</p>
       </div>
       <div class="reading-banner-actions">
         <button id="btn-banner-edit-lecture" class="btn btn-outline hidden" title="Bu dersi ve slaytlarını düzenle">&#9998; Dersi Düzenle</button>
-        <select id="lecture-view-mode" class="btn btn-secondary slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="image">Resim</option><option value="web">Web</option><option value="ppt">PPT</option></select>
+        <select id="lecture-view-mode" class="btn btn-secondary slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="pdf">Slayt</option><option value="web">Notlar</option></select>
         <a id="btn-banner-download-pptx" href="#" download class="btn btn-secondary">
-          PPTX İndir
+          PDF İndir
         </a>
         <button id="btn-banner-present" class="btn btn-primary">
           Sunum Moduna Geç
@@ -236,7 +236,7 @@
       </div>
 
       <div class="toolbar-right">
-        <select id="btn-pres-view-mode" class="tool-btn slide-view-select" data-slide-view-select aria-label="Görünüm" title="Görünüm (V)"><option value="image">Resim</option><option value="web">Web</option><option value="ppt">PPT</option></select>
+        <select id="btn-pres-view-mode" class="tool-btn slide-view-select" data-slide-view-select aria-label="Görünüm" title="Görünüm (V)"><option value="pdf">Slayt</option><option value="web">Notlar</option></select>
         <button id="btn-toggle-laser" class="tool-btn" title="Lazer İşaretçi (Kısayol: L)">
           Lazer
         </button>
@@ -347,7 +347,7 @@
     </div>
   </div>
 
-  <!-- DERS EKLE & PPTX ENTEGRASYON MODALI -->
+  <!-- DERS EKLE & PDF ENTEGRASYON MODALI -->
   <div id="pptx-modal-backdrop" class="modal-backdrop course-editor hidden">
     <div class="modal-card modal-card-wide">
       <div class="modal-header">
@@ -361,7 +361,6 @@
       <div class="modal-body">
         <div class="modal-tabs">
           <button class="modal-tab active" data-tab="tab-add-manual">Ders Ekle</button>
-          <button class="modal-tab" data-tab="tab-method-2">Slayt Görselleri</button>
           <button class="modal-tab" data-tab="tab-permanent">Dosyalar ve Aktarım</button>
           <button class="modal-tab" data-tab="tab-student-roster">Öğrenci Listesi</button>
         </div>
@@ -371,7 +370,7 @@
           <div class="import-workspace">
           <div class="import-fields">
           <p class="modal-desc">
-            Yeni bir haftalık ders eklemek için bilgileri girin. İsterseniz doğrudan <code>.pptx</code> dosyası yükleyebilir veya slayt maddelerini aşağıya yazabilirsiniz.
+            Yeni bir haftalık ders eklemek için bilgileri girin. İsterseniz doğrudan <code>.pdf</code> dosyası yükleyebilir veya slayt maddelerini aşağıya yazabilirsiniz.
           </p>
 
           <div class="form-grid">
@@ -403,58 +402,32 @@
             </div>
             <div class="form-field">
               <label for="imp-manual-bullets">Manuel Slayt Maddeleri (Her satır bir madde olur)</label>
-              <textarea id="imp-manual-bullets" rows="2" placeholder="PPTX seçmezseniz buraya yazdığınız satırlar slayt maddesi olur..."></textarea>
+              <textarea id="imp-manual-bullets" rows="2" placeholder="PDF seçmezseniz buraya yazdığınız satırlar slayt maddesi olur..."></textarea>
             </div>
           </div>
 
-          <div class="dropzone" id="pptx-dropzone">
-            <input type="file" id="inp-pptx-file" accept=".pptx" class="hidden" />
-            <h4>İsteğe Bağlı: .PPTX Dosyasını Buraya Sürükleyin veya Seçmek İçin Tıklayın</h4>
-            <p id="pptx-file-status">Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.</p>
+          <div class="dropzone" id="pdf-dropzone">
+            <input type="file" id="inp-pdf-file" accept=".pdf,application/pdf" class="hidden" />
+            <h4>İsteğe Bağlı: .PDF Dosyasını Buraya Sürükleyin veya Seçmek İçin Tıklayın</h4>
+            <button type="button" id="btn-clear-pdf-file" class="btn btn-outline hidden">Dosyayı Kaldır</button>
+            <p id="pdf-file-status">Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.</p>
           </div>
 
           <div class="modal-footer-actions">
-            <button id="btn-process-pptx" class="btn btn-primary">
+            <button id="btn-process-pdf" class="btn btn-primary">
               + Dersi Listeye Ekle
             </button>
           </div>
           </div>
-          <aside class="import-preview" aria-label="PPTX önizlemesi">
+          <aside class="import-preview" aria-label="PDF önizlemesi">
             <div class="edit-live-preview-header"><strong>Slayt Önizlemesi</strong></div>
             <div id="import-preview-stage" class="edit-live-preview-stage"></div>
             <div class="import-preview-controls">
               <button type="button" id="btn-import-preview-prev" class="btn btn-outline" aria-label="Önceki slayt" disabled>←</button>
-              <span id="import-preview-status" role="status">PPTX seçtiğinizde önizleme burada görünür.</span>
+              <span id="import-preview-status" role="status">PDF seçtiğinizde önizleme burada görünür. Sayfaların arasına +Konu, +Görsel, +Sim veya +PDF ekleyebilirsiniz.</span>
               <button type="button" id="btn-import-preview-next" class="btn btn-outline" aria-label="Sonraki slayt" disabled>→</button>
             </div>
           </aside>
-          </div>
-        </div>
-
-        <!-- TAB 2: SLAYT GÖRSELLERİ -->
-        <div id="tab-method-2" class="tab-pane hidden">
-          <p class="modal-desc">
-            PowerPoint üzerinden <strong>Farklı Kaydet &rarr; PNG / JPEG</strong> seçeneğiyle dışa aktarılmış slayt görsellerini seçiniz.
-          </p>
-          <div class="form-grid">
-            <div class="form-field">
-              <label for="img-imp-week">Hafta Bilgisi</label>
-              <input type="text" id="img-imp-week" value="5. Hafta" />
-            </div>
-            <div class="form-field">
-              <label for="img-imp-title">Ders Başlığı</label>
-              <input type="text" id="img-imp-title" placeholder="Görsel Tabanlı Sunum" />
-            </div>
-          </div>
-          <div class="dropzone" id="img-dropzone" style="margin-top:0.85rem;">
-            <input type="file" id="inp-slide-images" accept="image/*" multiple class="hidden" />
-            <h4>Slayt Görsellerini Seçin (Çoklu PNG / JPG)</h4>
-            <p id="img-files-status">Seçilen görseller sıralı olarak tam ekran slayt haline getirilir.</p>
-          </div>
-          <div class="modal-footer-actions">
-            <button id="btn-process-images" class="btn btn-primary" disabled>
-              Görsel Slaytları Oluştur
-            </button>
           </div>
         </div>
 
@@ -592,8 +565,8 @@
               <input type="text" id="edit-lec-title" placeholder="Ders başlığını giriniz..." />
             </div>
             <div class="form-field">
-              <label for="edit-lec-pptx-url">PPTX İndirme Yolu / Dosyası</label>
-              <input type="text" id="edit-lec-pptx-url" placeholder="Örn: pptx/MEE101-Hafta1.pptx" />
+              <label for="edit-lec-pdf-url">PDF İndirme Yolu / Dosyası</label>
+              <input type="text" id="edit-lec-pdf-url" placeholder="Örn: pdf/MEE101-Hafta1.pdf" />
             </div>
           </div>
 
@@ -603,20 +576,20 @@
               <input type="text" id="edit-lec-desc" placeholder="Dersin kısa özeti..." />
             </div>
             <div class="form-field">
-              <label>Yeni .PPTX Dosyası ile Güncelle (İsteğe Bağlı)</label>
+              <label>Yeni .PDF Dosyası ile Güncelle (İsteğe Bağlı)</label>
               <div class="editor-file-controls">
                 <label class="btn btn-secondary" style="cursor:pointer; margin:0; white-space:nowrap; font-size:0.76rem; padding:0.4rem 0.65rem;">
-                  .PPTX Seç ve Aktar
-                  <input type="file" id="inp-edit-pptx-file" accept=".pptx" class="hidden" />
+                  .PDF Seç ve Aktar
+                  <input type="file" id="inp-edit-pdf-file" accept=".pdf,application/pdf" class="hidden" />
                 </label>
-                <select id="sel-edit-pptx-mode" style="font-size:0.76rem; padding:0.38rem 0.45rem;">
-                  <option value="restore-media" selected>Görselleri Onar · Notları Koru</option>
-                  <option value="replace">Slaytları PPTX ile Değiştir</option>
-                  <option value="append">Slaytları Sona Ekle</option>
+                <select id="sel-edit-pdf-mode" style="font-size:0.76rem; padding:0.38rem 0.45rem;">
+                  <option value="replace">Tüm Slaytları PDF ile Değiştir</option>
+                  <option value="append" selected>PDF Sayfalarını Sona Ekle</option>
+                  <option value="insert">Seçili Slayttan Sonra Ekle</option>
                   <option value="file-only">Sadece İndirme Dosyasını Güncelle</option>
                 </select>
               </div>
-              <small id="edit-pptx-status" style="display:block; font-size:0.7rem; color:#6e6256; margin-top:0.2rem;"></small>
+              <small id="edit-pdf-status" style="display:block; font-size:0.7rem; color:#6e6256; margin-top:0.2rem;"></small>
             </div>
           </div>
         </div>
@@ -675,7 +648,7 @@
               <div class="edit-live-preview-wrap">
                 <div class="edit-live-preview-header">
                   <span>Seçili Slayt Önizlemesi</span>
-                  <small id="edit-live-preview-type-label">Web &amp; PPT Levha Görünümü</small>
+                  <small id="edit-live-preview-type-label">Web &amp; Slayt Görünümü</small>
                 </div>
                 <div id="edit-live-preview-stage" class="edit-live-preview-stage">
                   <!-- JS ile anlık slayt önizlemesi -->
@@ -695,7 +668,7 @@
                   <label for="edit-slide-viewmode">Varsayılan Görünüm</label>
                   <select id="edit-slide-viewmode">
                     <option value="web">Web Ders Notu</option>
-                    <option value="ppt">PPT Levhası</option>
+                    <option value="pdf">PDF Sayfası</option><option value="ppt">Ek Slayt</option>
                   </select>
                 </div>
                 <div class="form-field">
@@ -718,7 +691,7 @@
 
                 <div class="form-grid" style="grid-template-columns: 1.35fr 0.65fr; margin-top:0.55rem; align-items: start;">
                   <div class="form-field">
-                    <label for="edit-slide-bullets">Slayt Maddeleri (Her satır bir madde olur — hem Web hem PPT Levha görünümünü günceller)</label>
+                    <label for="edit-slide-bullets">Slayt Maddeleri (Her satır bir madde olur — hem Web hem Slayt görünümünü günceller)</label>
                     <textarea id="edit-slide-bullets" rows="4" placeholder="Her satıra bir slayt maddesi yazınız..."></textarea>
                   </div>
 

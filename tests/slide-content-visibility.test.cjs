@@ -34,3 +34,12 @@ test("image mode preserves HTML-only interactive slides and never adds a recover
     assert.deepEqual(contentVisibility({ ...source, html: '<button>Simulation</button>' }, "image"), { web: true, ppt: false });
   }
 });
+
+
+test("PDF pages stay visible with and without notes in both current modes", () => {
+  for (const html of ["", "<p>Additional notes</p>"]) {
+    const slide = { pdf: { source: "source.pdf", page: 2 }, html };
+    assert.deepEqual(contentVisibility(slide, "pdf"), { web: false, ppt: true });
+    assert.deepEqual(contentVisibility(slide, "web"), { web: Boolean(html), ppt: true });
+  }
+});

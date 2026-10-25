@@ -233,7 +233,7 @@ const LECTURES = [];
 // ============================================================================
 // UYGULAMA DURUMU (STATE)
 // ============================================================================
-const DEFAULT_SLIDE_VIEW_MODE = "image";
+const DEFAULT_SLIDE_VIEW_MODE = "pdf";
 const PREFERRED_VIEW_MODE_KEY = "mee101_preferred_view_mode_v1";
 let currentLecture = null;
 let isPresentationMode = false;
@@ -242,7 +242,7 @@ let animationFrameId = null;
 let preferredSlideViewMode = (function () {
   try {
     const saved = localStorage.getItem(PREFERRED_VIEW_MODE_KEY);
-    return ["ppt", "web", "image"].includes(saved) ? saved : DEFAULT_SLIDE_VIEW_MODE;
+    return ["web", "pdf"].includes(saved) ? saved : DEFAULT_SLIDE_VIEW_MODE;
   } catch {
     return DEFAULT_SLIDE_VIEW_MODE;
   }
@@ -579,8 +579,8 @@ function renderCatalog() {
   [...LECTURES].sort((a, b) => CatalogOrder.compareWeeks(a.week, b.week)).forEach((lec) => {
     const card = document.createElement("article");
     card.className = "lecture-card";
-    const pptxHref = lec.pptxUrl || "";
-    const downloadFileName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
+    const pptxHref = lec.pdfUrl || lec.pptxUrl || "";
+    const downloadFileName = lec.pdfFileName || lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
 
     const stats = getLectureVoteStats(lec.id);
 
@@ -629,8 +629,8 @@ function renderCatalog() {
             <button class="btn btn-primary btn-present" data-id="${lec.id}">
               Sunum
             </button>
-            <a ${pptxHref ? "" : "hidden"} href="${escapeXml(pptxHref)}" download="${escapeXml(downloadFileName)}" class="btn btn-outline btn-protected-pptx${pptxHref ? "" : " hidden"}" data-pptx-href="${escapeXml(pptxHref)}" data-pptx-name="${escapeXml(downloadFileName)}" title="PowerPoint (.pptx) dosyasını indir (Öğrenci No gerektirir)">
-              PPTX
+            <a ${pptxHref ? "" : "hidden"} href="${escapeXml(pptxHref)}" download="${escapeXml(downloadFileName)}" class="btn btn-outline btn-protected-pptx${pptxHref ? "" : " hidden"}" data-pptx-href="${escapeXml(pptxHref)}" data-pptx-name="${escapeXml(downloadFileName)}" title="Kaynak dosyayı indir">
+              ${lec.pdfUrl ? "PDF" : "PPTX"}
             </a>
           </div>
         </div>
@@ -742,12 +742,14 @@ function openLecture(lectureId, startInPresentation = false) {
   navCurrentLectureTitle.textContent = `${lec.week}: ${lec.title.split(":")[0]}`;
   presLectureName.textContent = `${lec.week}`;
 
-  const pptxHref = lec.pptxUrl || "";
-  const downloadName = lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
+  const pptxHref = lec.pdfUrl || lec.pptxUrl || "";
+  const downloadName = lec.pdfFileName || lec.pptxFileName || `${lec.week.replace(/\s+/g, "")}-MEE101.pptx`;
   const navDl = document.getElementById("btn-nav-download-pptx");
   const bannerDl = document.getElementById("btn-banner-download-pptx");
   navDl.classList.toggle("hidden", !pptxHref);
   bannerDl.classList.toggle("hidden", !pptxHref);
+  navDl.textContent = lec.pdfUrl ? "PDF İndir" : "Kaynak İndir";
+  bannerDl.textContent = navDl.textContent;
   navDl.href = pptxHref;
   navDl.setAttribute("download", downloadName);
   bannerDl.href = pptxHref;
@@ -766,15 +768,6 @@ function openLecture(lectureId, startInPresentation = false) {
   });
 
   slidesContainer.innerHTML = "";
-  PptxDisplay.prepareLecture(lec).then(prepared => {
-    if (!prepared || currentLecture !== lec) return;
-    slidesContainer.querySelectorAll('.slide-body-ppt[data-rendered="true"]').forEach(body => {
-      const index = Number(body.closest(".slide").dataset.index);
-      body.innerHTML = buildPptExactVisualHtml(lec.slides[index], index, lec.slides.length, lec.week);
-      PptxDisplay.setImageMode(body, body.closest(".slide").dataset.viewMode);
-    });
-    slidesContainer.querySelectorAll('.slide').forEach(slide => setSlideElementViewMode(slide, slide.dataset.viewMode));
-  });
   lec.slides.forEach((s, idx) => {
     const slideEl = document.createElement("section");
     slideEl.className = "slide";
@@ -789,7 +782,7 @@ function openLecture(lectureId, startInPresentation = false) {
     slideEl.innerHTML = `
       <div class="slide-top-controls interactive-zone">
         ${isAdminAuthenticated ? `<button type="button" class="btn-edit-lecture btn-edit-this-slide" data-edit-slide-idx="${idx}" title="Bu slaytı düzenle">&#9998; Slaytı Düzenle</button>` : ""}
-        <select class="btn-slide-mode-switch slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="image">Resim</option><option value="web">Web</option><option value="ppt">PPT</option></select>
+        <select class="btn-slide-mode-switch slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="pdf">Slayt</option><option value="web">Notlar</option></select>
         <span class="slide-number-badge">Slayt ${idx + 1} / ${lec.slides.length}</span>
       </div>
       <div class="slide-content">
@@ -800,7 +793,6 @@ function openLecture(lectureId, startInPresentation = false) {
       </div>
     `;
     slidesContainer.appendChild(slideEl);
-    PptxDisplay.setImageMode(slideEl, effectiveMode);
     slideEl.querySelector("[data-slide-view-select]").value = effectiveMode;
   });
 
@@ -845,13 +837,12 @@ function setSlideElementViewMode(slideEl, mode) {
   }
 
   slideEl.dataset.viewMode = mode;
-  PptxDisplay.setImageMode(pptBody, mode);
 
   switchBtn.value = mode;
 }
 
 function applyPersistentSlideViewMode(targetMode) {
-  const mode = ["ppt", "web", "image"].includes(targetMode) ? targetMode : DEFAULT_SLIDE_VIEW_MODE;
+  const mode = ["web", "pdf"].includes(targetMode) ? targetMode : DEFAULT_SLIDE_VIEW_MODE;
   preferredSlideViewMode = mode;
   try {
     localStorage.setItem(PREFERRED_VIEW_MODE_KEY, mode);
@@ -881,7 +872,7 @@ document.addEventListener("change", event => {
 function toggleSingleSlideViewMode(slideIdx) {
   const slideEl = document.querySelector(`.slide[data-index="${slideIdx}"]`);
   if (!slideEl) return;
-  const modes = ["image", "web", "ppt"];
+  const modes = ["pdf", "web"];
   applyPersistentSlideViewMode(modes[(modes.indexOf(slideEl.dataset.viewMode) + 1) % modes.length]);
 }
 
@@ -1018,11 +1009,12 @@ const studentLoginBackdrop = document.getElementById("student-login-backdrop");
 const inpStudentNo = document.getElementById("inp-student-email");
 const studentLoginError = document.getElementById("student-login-error");
 
-const inpPptxFile = document.getElementById("inp-pptx-file");
-const btnProcessPptx = document.getElementById("btn-process-pptx");
-const pptxFileStatus = document.getElementById("pptx-file-status");
-let selectedPptxFile = null;
-let selectedSlideImages = [];
+const inpPdfFile = document.getElementById("inp-pdf-file");
+const btnProcessPdf = document.getElementById("btn-process-pdf");
+const pdfFileStatus = document.getElementById("pdf-file-status");
+let selectedPdfFile = null;
+let pendingPdfInsertIndex = null;
+let pdfImportGeneration = 0;
 let pendingAdminTab = null;
 
 // --- ÖĞRENCİ GİRİŞİ VE DOĞRULAMA ---
@@ -1340,50 +1332,62 @@ document.querySelectorAll(".modal-tab").forEach((tabBtn) => {
   });
 });
 
-const pptxDropzone = document.getElementById("pptx-dropzone");
-pptxDropzone.addEventListener("click", () => inpPptxFile.click());
-pptxDropzone.addEventListener("dragover", (e) => {
+const pdfDropzone = document.getElementById("pdf-dropzone");
+pdfDropzone.addEventListener("click", () => inpPdfFile.click());
+pdfDropzone.addEventListener("dragover", (e) => {
   e.preventDefault();
-  pptxDropzone.style.borderColor = "#5c3d28";
+  pdfDropzone.style.borderColor = "#5c3d28";
 });
-pptxDropzone.addEventListener("dragleave", () => {
-  pptxDropzone.style.borderColor = "#bfaf9c";
+pdfDropzone.addEventListener("dragleave", () => {
+  pdfDropzone.style.borderColor = "#bfaf9c";
 });
-pptxDropzone.addEventListener("drop", (e) => {
+pdfDropzone.addEventListener("drop", (e) => {
   e.preventDefault();
   if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-    handlePptxFileChosen(e.dataTransfer.files[0]);
+    handlePdfFileChosen(e.dataTransfer.files[0]);
   }
 });
-inpPptxFile.addEventListener("change", (e) => {
+inpPdfFile.addEventListener("change", (e) => {
   if (e.target.files && e.target.files[0]) {
-    handlePptxFileChosen(e.target.files[0]);
+    handlePdfFileChosen(e.target.files[0]);
   }
 });
 
-function handlePptxFileChosen(file) {
-  selectedPptxFile = file;
-  pptxFileStatus.innerHTML = `Seçilen dosya: <strong>${escapeXml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+function handlePdfFileChosen(file) {
+  if (!/\.pdf$/i.test(file.name)) { pdfFileStatus.textContent = "Lütfen PDF dosyası seçin."; return; }
+  selectedPdfFile = file;
+  document.getElementById("btn-clear-pdf-file").classList.remove("hidden");
+  pdfFileStatus.innerHTML = `Seçilen dosya: <strong>${escapeXml(file.name)}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
   const titleInput = document.getElementById("imp-title");
   if (!titleInput.value.trim()) {
-    titleInput.value = file.name.replace(/\.pptx$/i, "").replace(/[-_]/g, " ");
+    titleInput.value = file.name.replace(/\.pdf$/i, "").replace(/[-_]/g, " ");
   }
-  PptxPreview.prepare(file);
+  PdfPreview.prepare(file);
 }
 
-async function parsePptxFileToSlides(pptxFile, weekLabel, customTitle) {
-  return PptxImport.parse(pptxFile, weekLabel, customTitle);
+document.getElementById("btn-clear-pdf-file").addEventListener("click", event => {
+  event.stopPropagation();
+  selectedPdfFile = null;
+  inpPdfFile.value = "";
+  PdfPreview.clear();
+  pdfFileStatus.textContent = "Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.";
+  event.currentTarget.classList.add("hidden");
+});
+
+async function parsePdfFileToSlides(pdfFile, weekLabel, customTitle) {
+  return PdfSlides.parse(pdfFile, weekLabel, customTitle);
 }
 
-btnProcessPptx.addEventListener("click", async () => {
+btnProcessPdf.addEventListener("click", async () => {
   const weekLabel = document.getElementById("imp-week").value.trim() || `${LECTURES.length + 1}. Hafta`;
   const customTitleInput = document.getElementById("imp-title").value.trim();
   const customDescInput = document.getElementById("imp-desc").value.trim();
   const manualBulletsRaw = document.getElementById("imp-manual-bullets").value.trim();
   const simType = document.getElementById("imp-sim-type").value;
+  const pdfFile = selectedPdfFile;
 
-  // Durum A: .PPTX dosyası seçilmeden manuel ders ekleme
-  if (!selectedPptxFile) {
+  // Dosya seçmeden ek ders notu oluştur.
+  if (!selectedPdfFile) {
     const finalTitle = customTitleInput || `${weekLabel} Ders İçeriği`;
     const finalDesc = customDescInput;
     const bulletLines = manualBulletsRaw
@@ -1434,99 +1438,49 @@ btnProcessPptx.addEventListener("click", async () => {
     return;
   }
 
-  // Durum B: .PPTX dosyası seçilmişse JSZip ile ayrıştır
-  btnProcessPptx.disabled = true;
-  btnProcessPptx.textContent = "PPTX Çözümleniyor...";
+  // PDF sayfalarını kaynak dosyaya bağlı, sıralanabilir slaytlar olarak ekle.
+  btnProcessPdf.disabled = true;
+  btnProcessPdf.textContent = "PDF Açılıyor...";
 
   try {
-    const customTitle = customTitleInput || selectedPptxFile.name.replace(/\.pptx$/i, "");
-    const parsedSlides = await PptxPreview.getSlides(selectedPptxFile, weekLabel, customTitle);
+    const customTitle = customTitleInput || pdfFile.name.replace(/\.pdf$/i, "");
+    const parsedSlides = await PdfPreview.getSlides(pdfFile, weekLabel, customTitle);
 
     if (simType !== "none") {
       parsedSlides.push(getSimulationSlideObject(simType, weekLabel.toUpperCase()));
     }
 
-    const pptxDataUrl = await readFileAsDataURL(selectedPptxFile);
+    const pdfDataUrl = parsedSlides[0].pdf.source;
 
     const newLecture = {
       id: `custom-${Date.now()}`,
       week: weekLabel,
       title: customTitle,
-      description: customDescInput || `${selectedPptxFile.name} dosyasından aktarılmış ders içeriği.`,
-      pptxUrl: pptxDataUrl,
-      pptxFileName: selectedPptxFile.name,
-      features: ["PPTX'ten Aktarıldı", "Hibrit Slayt Modu"],
+      description: customDescInput || `${pdfFile.name} dosyasından aktarılmış ders içeriği.`,
+      pdfUrl: pdfDataUrl,
+      pdfFileName: pdfFile.name,
+      features: ["PDF'ten Aktarıldı", "Hibrit Slayt Modu"],
       slides: parsedSlides
     };
 
     LECTURES.push(newLecture);
     await saveCustomLectureToStorage(newLecture);
-    selectedPptxFile = null;
-    PptxPreview.clear();
-    pptxFileStatus.textContent = "Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.";
+    if (selectedPdfFile === pdfFile) {
+      selectedPdfFile = null;
+      inpPdfFile.value = "";
+      document.getElementById("btn-clear-pdf-file").classList.add("hidden");
+      PdfPreview.clear();
+    }
+    pdfFileStatus.textContent = "Dosya seçilmezse yukarıdaki başlık ve maddelerle ders oluşturulur.";
     renderCatalog();
     closePptxModal();
     openLecture(newLecture.id, false);
   } catch (err) {
-    alert("PPTX dosyası okunurken bir hata oluştu: " + err.message);
+    alert("PDF dosyası okunurken bir hata oluştu: " + err.message);
   } finally {
-    btnProcessPptx.disabled = false;
-    btnProcessPptx.textContent = "+ Dersi Listeye Ekle";
+    btnProcessPdf.disabled = false;
+    btnProcessPdf.textContent = "+ Dersi Listeye Ekle";
   }
-});
-
-// TAB 2: Çoklu Slayt Görseli (.PNG / .JPG)
-const imgDropzone = document.getElementById("img-dropzone");
-const inpSlideImages = document.getElementById("inp-slide-images");
-const btnProcessImages = document.getElementById("btn-process-images");
-
-imgDropzone.addEventListener("click", () => inpSlideImages.click());
-inpSlideImages.addEventListener("change", (e) => {
-  selectedSlideImages = Array.from(e.target.files || []);
-  if (selectedSlideImages.length > 0) {
-    document.getElementById("img-files-status").innerHTML =
-      `<strong>${selectedSlideImages.length} adet</strong> slayt görseli seçildi.`;
-    btnProcessImages.disabled = false;
-  }
-});
-
-btnProcessImages.addEventListener("click", async () => {
-  if (selectedSlideImages.length === 0) return;
-  const weekLabel = document.getElementById("img-imp-week").value.trim() || "Ek Ders";
-  const titleLabel = document.getElementById("img-imp-title").value.trim() || "PowerPoint Görsel Sunumu";
-
-  const imageSlides = await Promise.all(selectedSlideImages.map(async (file, idx) => {
-    const imgUrl = await readFileAsDataURL(file);
-    return {
-      kicker: `${weekLabel.toUpperCase()} • SLAYT ${idx + 1}`,
-      title: `${titleLabel} — Slayt ${idx + 1}`,
-      defaultViewMode: "ppt",
-      pptImageUrl: imgUrl,
-      pptSummaryBullets: [file.name],
-      html: `
-        <div class="ppt-exact-frame">
-          <img src="${imgUrl}" alt="Slayt ${idx + 1}" />
-          <span class="ppt-frame-badge">Orijinal PowerPoint Slayt Görseli</span>
-        </div>
-      `
-    };
-  }));
-
-  const newLec = {
-    id: `img-lec-${Date.now()}`,
-    week: weekLabel,
-    title: titleLabel,
-    description: `${selectedSlideImages.length} adet slayt görseli ile oluşturulmuş sunum.`,
-    pptxUrl: "",
-    features: ["Birebir Görsel Koruma", "Lazer ve Kalem Destekli"],
-    slides: imageSlides
-  };
-
-  LECTURES.push(newLec);
-  await saveCustomLectureToStorage(newLec);
-  renderCatalog();
-  closePptxModal();
-  openLecture(newLec.id, true);
 });
 
 document.getElementById("btn-export-json").addEventListener("click", () => {
@@ -1640,7 +1594,7 @@ function extractSlideEditableFields(slide) {
   return {
     kicker: slide.kicker || "",
     title: slide.title || "",
-    viewMode: slide.defaultViewMode || "web",
+    viewMode: slide.pdf ? "pdf" : slide.defaultViewMode || "web",
     simType,
     lead,
     bulletsText: bullets.join("\n"),
@@ -1723,10 +1677,9 @@ function updateEditLivePreview() {
       extractedImages: slide._imageChanged ? (activeImg ? [activeImg] : []) : (slide.extractedImages || []),
       pptSummaryBullets: bulletLines
     };
-    const native = PptxDisplay.visualFor(slide);
-    if (native) previewSlideObj = slide;
+    if (slide.pdf) previewSlideObj = slide;
     if (typeLabel) {
-      typeLabel.textContent = activeImg
+      typeLabel.textContent = slide.pdf ? `PDF · Sayfa ${slide.pdf.page} (Sayfa içeriği kaynak PDF’de düzenlenir)` : activeImg
         ? "Görselli Slayt Önizlemesi"
         : "Slayt Levha Önizlemesi (Canlı)";
     }
@@ -1773,6 +1726,8 @@ function loadSlideIntoEditForm(slideIdx, rebuildTabs = true) {
   document.getElementById("edit-slide-title").value = fields.title;
   document.getElementById("edit-slide-viewmode").value = fields.viewMode;
   document.getElementById("edit-slide-simtype").value = fields.simType;
+  document.getElementById("edit-slide-simtype").disabled = Boolean(slide.pdf);
+  document.getElementById("inp-edit-slide-img").disabled = Boolean(slide.pdf);
 
   document.getElementById("edit-slide-lead").value = fields.lead;
   document.getElementById("edit-slide-bullets").value = fields.bulletsText;
@@ -1809,6 +1764,7 @@ function createInsertBetweenBar(insertPos, totalSlides) {
   bar.innerHTML = `
     <span class="edit-insert-label">${posLabel}</span>
     <div class="edit-insert-btns">
+      <button type="button" class="btn-insert-here" data-ins-type="pdf" data-ins-pos="${insertPos}" title="Bu araya PDF sayfaları ekle">+PDF</button>
       <button type="button" class="btn-insert-here" data-ins-type="slide" data-ins-pos="${insertPos}" title="Bu araya yeni konu/metin slaytı ekle">+Konu</button>
       <button type="button" class="btn-insert-here" data-ins-type="sim" data-ins-pos="${insertPos}" title="Bu araya teknik simülasyon slaytı ekle">+Sim</button>
       <button type="button" class="btn-insert-here" data-ins-type="img" data-ins-pos="${insertPos}" title="Bu araya görsel (PNG/JPG) slayt ekle">+Görsel</button>
@@ -1820,7 +1776,10 @@ function createInsertBetweenBar(insertPos, totalSlides) {
       e.stopPropagation();
       const pos = parseInt(btn.dataset.insPos, 10);
       const type = btn.dataset.insType;
-      if (type === "slide") {
+      if (type === "pdf") {
+        pendingPdfInsertIndex = pos;
+        document.getElementById("inp-edit-pdf-file").click();
+      } else if (type === "slide") {
         insertContentSlideAt(pos);
       } else if (type === "sim") {
         insertSimSlideAt(pos);
@@ -2058,7 +2017,6 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
   if (!targetLec) return;
 
   editingLectureDraft = LectureDocument.snapshot(targetLec);
-  PptxDisplay.inheritBindings(targetLec.slides || [], editingLectureDraft.slides || []);
   if (!Array.isArray(editingLectureDraft.slides) || editingLectureDraft.slides.length === 0) {
     editingLectureDraft.slides = [
       {
@@ -2075,21 +2033,15 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
   document.getElementById("edit-lec-week").value = editingLectureDraft.week || "";
   document.getElementById("edit-lec-title").value = editingLectureDraft.title || "";
   document.getElementById("edit-lec-desc").value = editingLectureDraft.description || "";
-  const sourceUrl = String(editingLectureDraft.pptxUrl || "");
-  document.getElementById("edit-lec-pptx-url").value = /^(data:|blob:)/.test(sourceUrl)
-    ? (editingLectureDraft.pptxFileName ? `pptx/${editingLectureDraft.pptxFileName}` : "")
+  const sourceUrl = String(editingLectureDraft.pdfUrl || "");
+  document.getElementById("edit-lec-pdf-url").value = /^(data:|blob:)/.test(sourceUrl)
+    ? (editingLectureDraft.pdfFileName ? `pdf/${editingLectureDraft.pdfFileName}` : "")
     : sourceUrl;
-  document.getElementById("edit-pptx-status").textContent = "";
+  document.getElementById("edit-pdf-status").textContent = "";
   document.getElementById("edit-save-feedback").textContent = "";
-  document.getElementById("inp-edit-pptx-file").value = "";
+  document.getElementById("inp-edit-pdf-file").value = "";
 
   loadSlideIntoEditForm(initialSlideIdx);
-  const displayDraft = editingLectureDraft;
-  PptxDisplay.prepareLecture(displayDraft).then(prepared => {
-    if (!prepared || editingLectureDraft !== displayDraft) return;
-    renderEditSlideTabs();
-    updateEditLivePreview();
-  });
   editLectureBackdrop.classList.remove("hidden");
 }
 
@@ -2097,6 +2049,9 @@ function closeEditLectureModal() {
   if (editPreviewFrame !== null) cancelAnimationFrame(editPreviewFrame);
   editPreviewFrame = null;
   editThumbnailObserver?.disconnect();
+  pendingPdfInsertIndex = null;
+  pdfImportGeneration++;
+  document.getElementById("btn-save-edit-lecture").disabled = false;
   if (editLectureBackdrop) {
     editLectureBackdrop.classList.add("hidden");
   }
@@ -2275,57 +2230,42 @@ document.getElementById("btn-delete-current-slide").addEventListener("click", ()
   loadSlideIntoEditForm(nextIdx);
 });
 
-// Düzenleme Modalı İçinden Yeni .PPTX Yükleme
-document.getElementById("inp-edit-pptx-file").addEventListener("change", async (e) => {
-  const file = e.target.files && e.target.files[0];
+document.getElementById("inp-edit-pdf-file").addEventListener("cancel", () => { pendingPdfInsertIndex = null; });
+
+/** Imports into the draft only; cancelling leaves every saved source unchanged. */
+document.getElementById("inp-edit-pdf-file").addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  event.target.value = "";
   if (!file || !editingLectureDraft) return;
   commitCurrentSlideFormToDraft();
-
-  const mode = document.getElementById("sel-edit-pptx-mode").value;
-  const statusEl = document.getElementById("edit-pptx-status");
-  const weekLabel = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
-  const lecTitle = document.getElementById("edit-lec-title").value.trim() || editingLectureDraft.title;
-
-  statusEl.textContent = "PPTX dosyası çözümleniyor...";
-
+  const draft = editingLectureDraft;
+  const generation = ++pdfImportGeneration;
+  const mode = pendingPdfInsertIndex === null ? document.getElementById("sel-edit-pdf-mode").value : "insert";
+  const position = pendingPdfInsertIndex ?? editingSlideIndex + 1;
+  pendingPdfInsertIndex = null;
+  const status = document.getElementById("edit-pdf-status");
+  status.textContent = "PDF açılıyor…";
+  document.getElementById("btn-save-edit-lecture").disabled = true;
   try {
-    const parsedSlides = mode === "file-only" ? null : await parsePptxFileToSlides(file, weekLabel, lecTitle);
-    const dataUrl = await readFileAsDataURL(file);
-    editingLectureDraft.pptxUrl = dataUrl;
-    editingLectureDraft.pptxFileName = file.name;
-    document.getElementById("edit-lec-pptx-url").value = `pptx/${file.name}`;
-
-    if (mode !== "file-only") {
-      if (parsedSlides.length > 0) {
-        if (mode === "restore-media") {
-          const result = PptxImport.repairMedia(editingLectureDraft.slides, parsedSlides);
-          loadSlideIntoEditForm(editingSlideIndex);
-          statusEl.textContent = `${result.repaired} slaydın görselleri onarıldı; notlar korundu.${result.unmatched.length ? ` ${result.unmatched.length} slayt güvenle eşleştirilemedi ve değiştirilmedi.` : ""}`;
-        } else if (mode === "replace") {
-          editingLectureDraft.slides = parsedSlides;
-          loadSlideIntoEditForm(0);
-          statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> yüklendi (${parsedSlides.length} slayt ile yenilendi).`;
-        } else {
-          editingLectureDraft.slides.push(...parsedSlides);
-          loadSlideIntoEditForm(editingLectureDraft.slides.length - 1);
-          statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> yüklendi (+${parsedSlides.length} slayt sona eklendi).`;
-        }
-      }
-    } else {
-      statusEl.innerHTML = `<strong style="color:#2d6a4f;">${escapeXml(file.name)}</strong> indirme dosyası olarak tanımlandı.`;
+    const slides = await parsePdfFileToSlides(file, draft.week, draft.title);
+    if (editingLectureDraft !== draft || generation !== pdfImportGeneration) return;
+    if (mode === "replace" && !confirm("Mevcut slaytların tamamı bu PDF ile değiştirilsin mi? Araya eklediğiniz slaytlar da kaldırılır.")) {
+      status.textContent = "Değiştirme iptal edildi; mevcut slaytlar korundu.";
+      return;
     }
-    const displayDraft = editingLectureDraft;
-    if (await PptxDisplay.prepareLecture(displayDraft) && editingLectureDraft === displayDraft) {
-      renderEditSlideTabs();
-      updateEditLivePreview();
+    if (mode === "replace") draft.slides = slides;
+    else if (mode !== "file-only") draft.slides.splice(mode === "insert" ? position : draft.slides.length, 0, ...slides);
+    if (!draft.pdfUrl || mode === "replace" || mode === "file-only") {
+      draft.pdfUrl = slides[0].pdf.source;
+      draft.pdfFileName = file.name;
+      document.getElementById("edit-lec-pdf-url").value = `pdf/${file.name}`;
     }
-    document.querySelector(".edit-live-preview-wrap").scrollIntoView({ block: "nearest" });
-  } catch (err) {
-    statusEl.textContent = "Hata: " + err.message;
-  }
+    loadSlideIntoEditForm(mode === "replace" ? 0 : mode === "insert" ? position : editingSlideIndex);
+    status.textContent = `${file.name} · ${slides.length} sayfa. Kalıcı olması için Değişiklikleri Kaydet düğmesine basın.`;
+  } catch (error) { if (generation === pdfImportGeneration) status.textContent = `Hata: ${error.message}`; }
+  finally { if (generation === pdfImportGeneration) document.getElementById("btn-save-edit-lecture").disabled = false; }
 });
 
-// Değişiklikleri Kaydet
 document.getElementById("btn-save-edit-lecture").addEventListener("click", async () => {
   if (!isAdminAuthenticated || !editingLectureDraft) return;
   const saveButton = document.getElementById("btn-save-edit-lecture");
@@ -2342,11 +2282,11 @@ document.getElementById("btn-save-edit-lecture").addEventListener("click", async
     editingLectureDraft.description =
       document.getElementById("edit-lec-desc").value.trim() || editingLectureDraft.description;
 
-    const manualPptxUrl = document.getElementById("edit-lec-pptx-url").value.trim();
-    const embeddedSource = /^(blob:|data:)/.test(String(editingLectureDraft.pptxUrl || ""));
-    const embeddedLabel = editingLectureDraft.pptxFileName ? `pptx/${editingLectureDraft.pptxFileName}` : "";
-    if (manualPptxUrl && (!embeddedSource || manualPptxUrl !== embeddedLabel)) {
-      editingLectureDraft.pptxUrl = manualPptxUrl;
+    const manualPdfUrl = document.getElementById("edit-lec-pdf-url").value.trim();
+    const embeddedSource = /^(blob:|data:)/.test(String(editingLectureDraft.pdfUrl || ""));
+    const embeddedLabel = editingLectureDraft.pdfFileName ? `pdf/${editingLectureDraft.pdfFileName}` : "";
+    if (manualPdfUrl && (!embeddedSource || manualPdfUrl !== embeddedLabel)) {
+      editingLectureDraft.pdfUrl = manualPdfUrl;
     }
 
     // Geçici düzenleme alanlarını temizle

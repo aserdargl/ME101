@@ -8,7 +8,7 @@ Site adresi GitHub Pages üzerinde kalır. 32 KiB üzerindeki gömülü ders dos
 
 Öğretim üyesi girişinden sonra **Drive’a Bağlan** ile bir kez Google hesabına izin verilir. **Yerel Dersleri Drive’a Aktar / Dersleri Yayımla** önce **ME101 — Backups** altında bağımsız yedeği tamamlar, ardından büyük dosyaları aktarır. Dosyanın boyutu ve Google SHA-256 değeri doğrulanmadan ders adresi değiştirilmez. Yedeklerde mevcut uzak medya için ayrı, özel kopyalar saklanır. Başarısız yüklemeler sonraki denemede kaldığı yerden sürer; kota hatası ücretli plana geçiş başlatmaz.
 
-Mevcut Rust Worker, yalnız yayımlanan ders dosyalarını içerik özetiyle sunar. Böylece mevcut PPTX görüntüleyicisi dosyayı tarayıcıda okumaya devam eder; indirme zorunlu değildir. Drive yedekleri bu dosya yolundan sunulmaz. Google yenileme belirteci yalnız sunucu hesabının erişebildiği `portalSettings` kaydındadır; istemci Firestore kuralları bu kayıtlara erişimi kapatır. Google erişim belirteci yalnız öğretim üyesinin sekme belleğinde tutulur.
+Mevcut Rust Worker, yalnız yayımlanan ders dosyalarını içerik özetiyle sunar. PDF sayfaları dosyayı tarayıcıda okuyarak görüntülenir; indirme zorunlu değildir. Drive yedekleri bu dosya yolundan sunulmaz. Google yenileme belirteci yalnız sunucu hesabının erişebildiği `portalSettings` kaydındadır; istemci Firestore kuralları bu kayıtlara erişimi kapatır. Google erişim belirteci yalnız öğretim üyesinin sekme belleğinde tutulur.
 
 Google OAuth web istemcisi, mevcut projede `DRIVE_CLIENT_ID` ve Worker gizli ayarı `DRIVE_CLIENT_SECRET` ile yapılandırılır. Tek dönüş adresi `https://lecturenotes-approval.aserdargl.workers.dev/drive/callback` olur. Google uygulaması Testing durumundaysa izin verilen test kullanıcısı eklenmelidir ve Google izinleri dönemsel yenileme gerektirebilir. Kart, R2, yeni faturalandırma hesabı, ücretli plan veya kullandıkça öde açılmaz. Google Drive’ın mevcut depolama ve API kotaları uygulanır.
 
@@ -58,15 +58,13 @@ GitHub OAuth dönüşü önce sabit depo sahibi hesabını ve ME101 yazma yetkis
 
 Birleşik giriş testi: demo emülatörlerini başlatıp `node tests/instructor-fixtures.cjs` çalıştırın. Bu komut yalnız yerel demo hesabını, örnek listeyi ve göz ardı edilen `.dev.vars.test` test anahtarını hazırlar. Worker'ı `--env test --local --port 8797` ile başlatın, ardından `node --test tests/instructor-worker.cjs` çalıştırın. Tarayıcı testi için `MEE101_QA_PORT=4197`, `MEE101_QA_INSTRUCTOR=1` ile önizleme sunucusunu çalıştırın. Firestore kural testleri aynı demo veritabanını temizlediği için bu testlerden önce ve ayrı çalıştırılır.
 
-## PPTX görsellerini onarma
+## PDF sunumları
 
-PPTX seçildiğinde slaytlar tarayıcıdaki görüntüleyiciyle doğrudan açılır. Tema, yazı biçimleri, özgün nesne konumları ve sayfa oranı kaynak dosyadan okunur; PNG/ZIP hazırlama veya ek dönüştürme işlemi gerekmez. Görüntüleyici dosyaları GitHub’da `vendor/pptx-renderer/` altında barındırılır.
+PowerPoint sunumunu **Dışa Aktar → PDF** ile kaydedip **Ders Ekle** ekranına yükleyin. Her PDF sayfası özgün dosyasına ve sayfa numarasına bağlı bir slayt olur; PNG/JPG dönüşümü yapılmaz. Mozilla PDF.js 6.4.299, çalışanı, yazı tipleri ve yardımcı dosyaları GitHub üzerinde `vendor/pdfjs/` altında barındırılır. Tarayıcı yalnız görünür sayfaları çizer.
 
-Mevcut derslerde özgün PPTX varsa slaytlar kaynak slayt yolu veya benzersiz başlıkla eşleştirilir. Görüntüleme kayıtlı HTML notlarını, ders sırasını, özel görselleri veya kullanıcı ayarlarını değiştirmez. Tarayıcıda bulunmayan ve dosyaya gömülmemiş yazı tipleri için sistem yazı tipi kullanılır. Özgün PowerPoint dosyası indirmeye açık kalır.
+Dersi düzenlerken sayfaların arasındaki **+Konu**, **+Sim**, **+Görsel** ve **+PDF** düğmeleriyle içerik ekleyin. PDF sayfaları ile ek slaytlar taşınabilir ve birlikte kaydedilir. **+PDF** başka bir PDF'nin sayfalarını seçilen araya ekler. Varsayılan dosya güncellemesi sona ekler; tüm slaytları değiştirmek ayrıca seçilip onaylanır. Vazgeç işlemi kaydedilmiş içeriği değiştirmez.
 
-Dersi düzenlerken özgün PPTX'i seçip **Görselleri Onar · Notları Koru** seçeneğini kullanın. Slaytlar kaynak dosya yolu veya benzersiz başlıkla eşleştirilir; güvenle eşleşmeyen slaytlar değiştirilmez. Desteklenen tüm gömülü resimler alınır. Yeni dosyalar kalıcı veri adresleriyle saklanır; geçici `blob:` adresleri kaydedilmez.
-
-Tarayıcının doğrudan gösteremediği EMF/WMF/TIFF görselleri ve PowerPoint grafik/SmartArt nesneleri için uyarı gösterilir. Bu tür slaytların birebir PowerPoint görünümü için PNG/JPG olarak dışa aktarılmış slayt görselleri kullanılabilir. Özgün içerik ve notlar otomatik silinmez.
+PDF sayfasının kendi metni ve görselleri kaynak dosyada düzenlenir; web açıklamaları ayrıca eklenebilir. İndirme düğmesi özgün PDF'yi verir; araya eklenen slaytlar site sunumunda ve ders yedeğinde bulunur. Önceki dersler, notlar, görseller ve özgün PPTX dosyaları korunur; yeni PPTX yükleme ve resim dönüştürme kaldırılmıştır.
 
 ## Geliştirme
 
@@ -76,12 +74,12 @@ Kaynak değişikliklerinden önce uzak dalı alın; `data/` altındaki kullanıc
 
 ### Açılış dosyalarını hazırlama
 
-JavaScript modülleri değiştiğinde yayımlamadan önce `npm run build` çalıştırın. Bu komut kaynak sırasını koruyarak `portal-startup.js` dosyasını oluşturur ve HTML içindeki önbellek sürümünü içeriğe göre günceller. `npm test`, paketin kaynaklarla eşleştiğini de denetler. `firebase-config.js` ayrı kalır; ZIP okuyucusu yalnız dosya içe aktarılırken GitHub’dan yüklenir.
+JavaScript modülleri değiştiğinde yayımlamadan önce `npm run build` çalıştırın. Bu komut kaynak sırasını koruyarak `portal-startup.js` dosyasını oluşturur ve HTML içindeki önbellek sürümünü içeriğe göre günceller. `npm test`, paketin kaynaklarla eşleştiğini de denetler. `firebase-config.js` ayrı kalır; PDF görüntüleyicisi yalnız PDF açılırken GitHub’dan yüklenir.
 
-`PLAYWRIGHT_MODULE` Playwright kurulum yolunu gösterirken `node tests/startup-performance.cjs` ayrı localhost kaynağında beş soğuk açılış ölçer. `STARTUP_BEFORE=1` önceki yayını, `STARTUP_VERIFY=1` düzenleyicide açma/iptal/kaydetme/yenileme, kayıt koruma, ZIP içe aktarma ve katalog görünümü eşitliğini denetler. Sentetik veri kullanılır; canlı kayıtlara yazılmaz.
+`node tests/pdf-slides-browser.cjs` ayrı localhost kaynağında PDF önizlemesi, sayfalar arasına ek slayt ve PDF ekleme, sıralama, iptal/kaydetme/yenileme, kayıt koruma ve mobil sunumu denetler. `node tests/presentation-fit.cjs` ile farklı ekran oranları, `node tests/fullscreen.cjs` ile tam ekran davranışı doğrulanır. Sentetik veri kullanılır; canlı kayıtlara yazılmaz.
 
 Kullanıcı canlı açılış ölçümü istediğinde `node tests/live-startup.cjs`, gerçek siteyi temiz ve oturumsuz tarayıcılarda yalnız okuyarak ölçer; sentetik veri eklemez, düğmelere basmaz ve yazma isteklerini engeller. İlk ziyaret ve önbellekli tekrar ziyaret ayrı raporlanır. Sonuçlar `tests/live-startup-results.md` dosyasındadır.
 
-## Resim görünümü
+## Slayt görünümü
 
-Ders, slayt ve sunum kontrollerindeki **Resim / Web / PPT** açılır menüsü PPTX slaytlarını tarayıcıda PNG olarak gösterir. Her ders açılışı resim görünümünde başlar. Açık derste seçilen görünüm sonraki slaytlara da uygulanır; eski kayıtlar silinmez. Web/PPT görünümleri, HTML notları, etkileşimli içerik ve özgün PPTX dosyaları korunur. Resimler yalnız görüntüleme belleğinde üretilir; ders kaydı değiştirilmez. Dönüşüm mevcut PPTX görüntüleyicisini kullanır; PowerPoint masaüstü dışa aktarımı değildir. Dönüşüm başarısızsa mevcut slayt görünümü korunur.
+**Slayt / Notlar** menüsü PDF sayfasını ve varsa ek web açıklamalarını gösterir. PDF sayfasındaki başlık yeniden eklenmez. Sunum, tam ekran, lazer ve kalem araçları aynı slayt sırası üzerinde çalışır.

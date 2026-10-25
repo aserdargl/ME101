@@ -101,9 +101,12 @@
 
     async externalize(lectures, onProgress = () => {}) {
       const addresses = new Set();
+      // PDF sources are published inline to GitHub, including all mixed-page references.
+      const pdfSources = new Set(lectures.flatMap(lecture => [lecture.pdfUrl,
+        ...(lecture.slides || []).map(slide => slide.pdf?.source)]).filter(Boolean));
       const urls = text => text.startsWith("data:") ? [text] : [...text.matchAll(/(["'])(data:[\s\S]*?)\1/g)].map(match => match[2]);
       const collect = value => {
-        if (typeof value === "string") urls(value).filter(url => url.length >= MIN_ASSET_LENGTH).forEach(url => addresses.add(url));
+        if (typeof value === "string") urls(value).filter(url => url.length >= MIN_ASSET_LENGTH && !pdfSources.has(url)).forEach(url => addresses.add(url));
         else if (value && typeof value === "object") Object.values(value).forEach(collect);
       };
       collect(lectures);
