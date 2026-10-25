@@ -4249,7 +4249,7 @@ function updatePresentationHUD() {
 
   const activeSlide = document.querySelector(".slide.active-slide");
   if (activeSlide) {
-    const isPptMode = activeSlide.dataset.viewMode === "ppt";
+    const usesSteps = activeSlide.dataset.viewMode === "web";
     const presViewBtn = document.getElementById("btn-pres-view-mode");
     if (presViewBtn) {
       presViewBtn.value = activeSlide.dataset.viewMode;
@@ -4257,7 +4257,7 @@ function updatePresentationHUD() {
 
     const allFragments = activeSlide.querySelectorAll(".slide-body-web .fragment");
     const visibleFragments = activeSlide.querySelectorAll(".slide-body-web .fragment.visible");
-    if (!isPptMode && allFragments.length > 0) {
+    if (usesSteps && allFragments.length > 0) {
       stepIndicator.classList.remove("hidden");
       stepIndicator.textContent = `Adım ${visibleFragments.length}/${allFragments.length}`;
     } else {
@@ -4274,7 +4274,7 @@ function nextStepOrSlide() {
   const activeSlide = document.querySelector(".slide.active-slide");
   if (!activeSlide) return;
 
-  if (activeSlide.dataset.viewMode !== "ppt") {
+  if (activeSlide.dataset.viewMode === "web") {
     const hiddenFragments = activeSlide.querySelectorAll(".slide-body-web .fragment:not(.visible)");
     if (hiddenFragments.length > 0) {
       hiddenFragments[0].classList.add("visible");
@@ -4294,7 +4294,7 @@ function prevStepOrSlide() {
   const activeSlide = document.querySelector(".slide.active-slide");
   if (!activeSlide) return;
 
-  if (activeSlide.dataset.viewMode !== "ppt") {
+  if (activeSlide.dataset.viewMode === "web") {
     const visibleFragments = activeSlide.querySelectorAll(".slide-body-web .fragment.visible");
     if (visibleFragments.length > 0) {
       visibleFragments[visibleFragments.length - 1].classList.remove("visible");
