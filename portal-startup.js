@@ -2249,13 +2249,23 @@ window.PptxPreview = (() => {
       this.generation = 0;
       this.accessResolved = false;
       this.unsubscribe = () => {};
+      this.appliedUser = null;
+      this.userUpdate = null;
     }
 
     async start() {
       await this.adapter.start(user => this.applyUser(user));
     }
 
-    async applyUser(user) {
+    /** Shares the SDK callback's verification with the explicit sign-in completion. */
+    applyUser(user) {
+      if (user && user === this.appliedUser && this.userUpdate) return this.userUpdate;
+      this.appliedUser = user;
+      this.userUpdate = this.resolveUser(user);
+      return this.userUpdate;
+    }
+
+    async resolveUser(user) {
       const generation = ++this.generation;
       this.unsubscribe();
       this.profile = null;
@@ -2592,17 +2602,11 @@ window.createFirebaseStudentAdapter = async config => {
   return {
     getUser: () => auth.currentUser,
     async signInInstructorWithPassword(email, password) {
-      const { user } = await authSdk.signInWithEmailAndPassword(auth, email, password);
-      const registered = user.emailVerified && (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", user.uid))).exists();
-      if (!registered) { await authSdk.signOut(auth); throw { code: "permission-denied" }; }
+      // FirebaseStudentService verifies email and the current server role once.
+      await authSdk.signInWithEmailAndPassword(auth, email, password);
     },
     async signInInstructor(token) {
-      const { user } = await authSdk.signInWithCustomToken(auth, token);
-      const registered = (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", user.uid))).exists();
-      if (!user.emailVerified || !registered) {
-        await authSdk.signOut(auth);
-        throw { code: "permission-denied" };
-      }
+      await authSdk.signInWithCustomToken(auth, token);
     },
     async start(onUser) {
       authSdk.onAuthStateChanged(auth, onUser);

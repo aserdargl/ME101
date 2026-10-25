@@ -21,13 +21,23 @@
       this.generation = 0;
       this.accessResolved = false;
       this.unsubscribe = () => {};
+      this.appliedUser = null;
+      this.userUpdate = null;
     }
 
     async start() {
       await this.adapter.start(user => this.applyUser(user));
     }
 
-    async applyUser(user) {
+    /** Shares the SDK callback's verification with the explicit sign-in completion. */
+    applyUser(user) {
+      if (user && user === this.appliedUser && this.userUpdate) return this.userUpdate;
+      this.appliedUser = user;
+      this.userUpdate = this.resolveUser(user);
+      return this.userUpdate;
+    }
+
+    async resolveUser(user) {
       const generation = ++this.generation;
       this.unsubscribe();
       this.profile = null;
