@@ -1,5 +1,7 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Başka bir cihazdan yeni yayın var. Güncel yayını ayrı sekmede inceleyip bu sayfayı yenileyin; yerel değişiklikleriniz korundu.": "Another device published changes. Review the latest publication in a separate tab and reload this page; your local changes are preserved.",
+  "Önceki kayıt yayımlandı; aktarım sırasında yaptığınız değişiklikler yerelde korundu. Son değişiklikler için yeniden Yayımla düğmesine basın.": "The previous version was published; edits made during transfer remain local. Select Publish again for your latest changes.",
   "Öğretim üyesi bağlantısı kurulamadı; mevcut yerel veriler korundu.": "Instructor connection failed; existing local data is preserved.",
   "Öğrenci numaranızı girerek devam ediniz.": "Enter your student ID to continue.",
   "Geçerli bir öğrenci numarası giriniz (yalnızca rakam, en fazla 32 hane).": "Enter a valid student ID (digits only, up to 32 characters).",

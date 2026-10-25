@@ -45,17 +45,6 @@
     button.textContent = !authenticated ? "Hoca Girişi" : "Yayımla";
   }
 
-  /** Conflicting versions become separate lessons, keeping every original note. */
-  async function mergePreservingNotes(remote, local) {
-    const merged = remote.slice();
-    for (const lecture of local) {
-      const existing = remote.find(item => item.id === lecture.id);
-      if (!existing) merged.push(lecture);
-      else if (await repository.documentDigest(existing) !== await repository.documentDigest(lecture)) merged.push({ ...lecture, id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
-    }
-    return merged;
-  }
-
   async function portableDocument(lectures) {
     const replacements = new Map();
     async function readAddress(address) {
@@ -100,8 +89,7 @@
       const backedUp = await LectureStorage.save(lectures);
       message("GitHub’daki mevcut kayıt kontrol ediliyor…");
       const current = await repository.readCurrent({ skipLecturesForVersion: synchronized ? version : null });
-      if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
-      if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = await mergePreservingNotes(current.lectures, lectures);
+      if ((current.manifest?.id || null) !== version) throw new Error("Başka bir cihazdan yeni yayın var. Güncel yayını ayrı sekmede inceleyip bu sayfayı yenileyin; yerel değişiklikleriniz korundu.");
       if (root.DrivePublishing?.enabled()) {
         message("Derslerin bağımsız Drive yedeği hazırlanıyor…");
         lectures = (await root.DrivePublishing.prepare(lectures, progress)).lectures;
@@ -116,7 +104,7 @@
           if (saved && !pendingSave) rememberDigest(manifest.digest);
         }
       }
-      message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : root.DrivePublishing?.enabled()
+      message(pendingSave ? "Önceki kayıt yayımlandı; aktarım sırasında yaptığınız değişiklikler yerelde korundu. Son değişiklikler için yeniden Yayımla düğmesine basın." : root.DrivePublishing?.enabled()
         ? "Drive dosyaları ve yedek kaydedildi · Ders listesi GitHub yayını tamamlandığında güncellenecek."
         : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
       showProgress(100);

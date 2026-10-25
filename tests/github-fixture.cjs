@@ -26,9 +26,15 @@ function fakeGitHub() {
     }
     if (path === "/git/blobs") { const sha = `blob-${++sequence}`; blobs.set(sha, body.content); return response({ sha }, 201); }
     if (path === "/git/trees") {
-      assert.ok(body.base_tree, "source files must be preserved through base_tree");
+      if (body.tree.some(entry => entry.path === "data/manifest.json")) assert.ok(body.base_tree, "source files must be preserved through base_tree");
       const tree = new Map(trees.get(body.base_tree));
-      body.tree.forEach(entry => tree.set(entry.path, entry.sha));
+      for (const entry of body.tree) {
+        if (entry.type === "tree") {
+          for (const key of tree.keys()) if (key === entry.path || key.startsWith(entry.path + "/")) tree.delete(key);
+          for (const [name, sha] of trees.get(entry.sha)) tree.set(entry.path + "/" + name, sha);
+        } else if (entry.sha === null) tree.delete(entry.path);
+        else tree.set(entry.path, entry.sha);
+      }
       const sha = `tree-${++sequence}`; trees.set(sha, tree); return response({ sha }, 201);
     }
     if (path === "/git/commits") { const sha = `commit-${++sequence}`; commits.set(sha, { tree: { sha: body.tree }, parents: body.parents }); return response({ sha }, 201); }

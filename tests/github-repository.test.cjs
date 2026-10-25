@@ -7,7 +7,7 @@ const { fakeGitHub } = require("./github-fixture.cjs");
 
 const create = server => new GitHubLectureRepository({ owner: "aserdargl", repository: "ME101", fetch: server.fetch, crypto: webcrypto, baseUrl: "https://aserdargl.github.io/ME101/" });
 
-test("atomic publication preserves the site, publishes all notes, and retains prior snapshots", async () => {
+test("atomic publication preserves source files and history while removing obsolete published snapshots", async () => {
   const server = fakeGitHub(), repository = create(server);
   assert.equal((await repository.readPublished()).manifest, null);
   await repository.login("isolated-test-key");
@@ -18,7 +18,8 @@ test("atomic publication preserves the site, publishes all notes, and retains pr
   await repository.publish(changed, await repository.readCurrent());
   const latestTree = server.trees.get(server.commits.get(server.state.head).tree.sha);
   assert.equal(server.blobs.get(latestTree.get("index.html")), "<h1>Mevcut site</h1>");
-  assert.ok(latestTree.has(`data/snapshots/${first.id}/0.txt`));
+  assert.equal(latestTree.has(`data/snapshots/${first.id}/0.txt`), false);
+  assert.ok([...server.trees.values()].some(tree => tree.has(`data/snapshots/${first.id}/0.txt`)), "Git history remains available");
   assert.deepEqual((await repository.readPublished()).lectures, changed);
   assert.ok(server.state.requests.filter(request => request.path.startsWith("/git/")).every(request => request.headers.Authorization === "Bearer isolated-test-key"));
 });
@@ -104,7 +105,7 @@ test("uploads run with bounded concurrency and a recreated repository resumes ac
   assert.ok([...values.values()].every(value => !value.includes("synthetic")), "checkpoints contain no access token");
 });
 
-test("another tab reuses published unchanged parts while preserving prior snapshots", async () => {
+test("another tab reuses unchanged blobs while removing old published snapshot paths", async () => {
   const server = fakeGitHub(), first = create(server);
   await first.login("synthetic");
   const lectures = [{ id: "reuse", slides: [{ image: "A".repeat(5 * 1024 * 1024), html: "Özgün notlar" }] }];
@@ -133,4 +134,38 @@ test("a verified unchanged version skips content downloads and creates no new co
   assert.equal(result.id, first.id);
   assert.equal(server.state.requests.length, before);
   assert.equal(server.state.head, head);
+});
+
+
+test("publishing deletions replaces the exact list, including an empty course", async () => {
+  const server = fakeGitHub(), repository = create(server);
+  await repository.login("synthetic");
+  const original = [{ id: "removed", slides: [] }, { id: "keep", slides: [{ html: "Preserve" }] }];
+  const initial = await repository.publish(original, await repository.readCurrent());
+  const next = [original[1], { id: "new", slides: [] }];
+  await repository.publish(next, await repository.readCurrent());
+  assert.deepEqual((await repository.readPublished()).lectures, next);
+  assert.equal((await server.fetch(`https://aserdargl.github.io/ME101/data/snapshots/${initial.id}/0.txt`)).status, 404);
+  await repository.publish([], await repository.readCurrent());
+  assert.deepEqual((await repository.readPublished()).lectures, []);
+  const tree = server.trees.get(server.commits.get(server.state.head).tree.sha);
+  assert.equal([...tree.keys()].filter(name => name.startsWith("data/snapshots/")).length, 1);
+  assert.equal(tree.get("index.html"), "original-html");
+});
+
+test("the first unchanged legacy publication also removes obsolete snapshot files", async () => {
+  const server = fakeGitHub(), repository = create(server);
+  await repository.login("synthetic");
+  const notes = [{ id: "keep", slides: [] }];
+  await repository.publish(notes, await repository.readCurrent());
+  const tree = server.trees.get(server.commits.get(server.state.head).tree.sha);
+  const manifest = JSON.parse(server.blobs.get(tree.get("data/manifest.json")));
+  delete manifest.snapshotPolicy;
+  server.blobs.set(tree.get("data/manifest.json"), JSON.stringify(manifest));
+  tree.set("data/snapshots/obsolete/0.txt", "unreferenced");
+  const result = await repository.publish(notes, await repository.readCurrent());
+  assert.equal(result.snapshotPolicy, "current");
+  const latest = server.trees.get(server.commits.get(server.state.head).tree.sha);
+  assert.equal(latest.has("data/snapshots/obsolete/0.txt"), false);
+  assert.deepEqual((await repository.readPublished()).lectures, notes);
 });

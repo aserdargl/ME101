@@ -73,7 +73,13 @@ async function setup() {
     if (path === "/git/blobs") { const id = sha(data.content); blobs.set(id, data.content); return send({ sha: id }, 201); }
     if (path === "/git/trees") {
       const tree = { ...trees.get(data.base_tree) };
-      data.tree.forEach(entry => { tree[entry.path] = entry.sha; });
+      for (const entry of data.tree) {
+        if (entry.type === "tree") {
+          for (const key of Object.keys(tree)) if (key === entry.path || key.startsWith(entry.path + "/")) delete tree[key];
+          for (const [name, sha] of Object.entries(trees.get(entry.sha))) tree[entry.path + "/" + name] = sha;
+        } else if (entry.sha === null) delete tree[entry.path];
+        else tree[entry.path] = entry.sha;
+      }
       const id = sha(JSON.stringify(tree)); trees.set(id, tree); return send({ sha: id }, 201);
     }
     if (path === "/git/commits") {

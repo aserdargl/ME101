@@ -28,8 +28,8 @@ async fn blob(env: &Env, content: &str) -> Result<Value> {
 /// Always extends the latest source tree and uses a non-forced update, preserving published history.
 async fn commit(env: &Env, publication: Publication) -> Result<(u16, Value)> {
     let current=current(env).await?;
-    if current["head"]!=publication.head {return Ok((409,json!({"error":"Başka bir cihazdan yeni kayıt var. Yerel notlarınız korundu; yeniden Yayımla ile birleştirin."})));}
-    let mut manifest=json!({"id":publication.id,"parts":publication.parts.len(),"digest":publication.digest,
+    if current["head"]!=publication.head {return Ok((409,json!({"error":"Başka bir cihazdan yeni kayıt var. Yerel notlarınız korundu; güncel yayını inceleyip yeniden deneyin."})));}
+    let mut manifest=json!({"snapshotPolicy":"current","id":publication.id,"parts":publication.parts.len(),"digest":publication.digest,
         "savedAt":js_sys::Date::new_0().to_iso_string().as_string(),"lectureCount":publication.lecture_count});
     if publication.format==Some(2) {
         manifest["format"]=json!(2);manifest["partLength"]=json!(publication.part_length);
@@ -37,12 +37,13 @@ async fn commit(env: &Env, publication: Publication) -> Result<(u16, Value)> {
         manifest["encodings"]=json!(publication.encodings);
     }
     let file=blob(env,&manifest.to_string()).await?;
-    let entries=publication.entries(file["sha"].as_str().ok_or("Yayın dosyası oluşturulamadı.")?);
+    let snapshot=github_app::object(env,"/git/trees",Method::Post,Some(json!({"tree":publication.snapshot_entries()}))).await?;
+    let entries=publication.entries(snapshot["sha"].as_str().ok_or("Yayın klasörü oluşturulamadı.")?,file["sha"].as_str().ok_or("Yayın dosyası oluşturulamadı.")?);
     let tree=github_app::object(env,"/git/trees",Method::Post,Some(json!({"base_tree":current["tree"],"tree":entries}))).await?;
     let commit=github_app::object(env,"/git/commits",Method::Post,Some(json!({"message":"Update published MEE 101 lecture notes",
         "tree":tree["sha"],"parents":[publication.head]}))).await?;
     let (status,_)=github_app::api(env,"/git/refs/heads/main",Method::Patch,Some(json!({"sha":commit["sha"],"force":false}))).await?;
-    if [409,422].contains(&status) {return Ok((409,json!({"error":"GitHub’da daha yeni değişiklik var. Yerel notlarınız korundu; yeniden Yayımla ile birleştirin."})));}
+    if [409,422].contains(&status) {return Ok((409,json!({"error":"GitHub’da daha yeni değişiklik var. Yerel notlarınız korundu; güncel yayını inceleyip yeniden deneyin."})));}
     if status!=200 {return Err(Error::RustError("Yayın tamamlanamadı.".into()));}
     let mut result=manifest;result["commit"]=commit["sha"].clone();
     Ok((200,result))

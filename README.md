@@ -1,5 +1,9 @@
 # MEE 101 Ders Portalı
 
+## Yayın listesinin değiştirilmesi ve dosya temizliği
+
+**Yayımla**, ekrandaki mevcut ders listesini aynen yayımlar: silinen dersler birleştirmeyle geri eklenmez, yeni dersler ve düzenlemeler güncel listeye aktarılır. Sunucu, manifest ile `data/snapshots/` klasörünü aynı Git işleminde değiştirir; bu klasörde yalnızca yeni yayının parçaları kalır. Artık kullanılmayan eski yayın dosyaları GitHub Pages üzerinden sunulmaz. Kaynak dosyalar, bu klasör dışındaki dosyalar, Git geçmişi ve bağımsız Drive yedekleri korunur. Başka cihazdan araya yeni yayın girerse işlem durur; yerel değişiklikler korunur. Güncel derslerde hiçbir referansı kalmadığı doğrulanan sekiz eski örnek PPTX dosyası da depodan kaldırılmıştır.
+
 ## Öğrenci girişi
 
 Öğrenciler yalnızca öğrenci numaralarını girerek erişir. E-posta, parola, hesap oluşturma, doğrulama veya yönetici onayı gerekmez; özel öğrenci listesi giriş için sorgulanmaz. Baştaki sıfırlar korunur ve aynı sekmede yenileme sonrası giriş sürer. Numara beyanı kimlik doğrulaması değildir. Öğretim üyesinin yetkileri ayrı doğrulanır. Eski hesaplar, başvurular, öğrenci kayıtları, notlar ve puanlar silinmez. Aşağıdaki eski üyelik altyapısı bilgileri korunmuş kayıtların yönetimi içindir; öğrenci girişinde kullanılmaz.

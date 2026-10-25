@@ -43,12 +43,19 @@ impl Publication {
             }
     }
 
-    pub fn entries(&self, manifest_sha: &str) -> Vec<Value> {
-        let mut entries: Vec<Value> = self.parts.iter().enumerate().map(|(index, sha)| {
-            json!({"path":format!("data/snapshots/{}/{index}.txt",self.id),"mode":"100644","type":"blob","sha":sha})
-        }).collect();
-        entries.push(json!({"path":"data/manifest.json","mode":"100644","type":"blob","sha":manifest_sha}));
-        entries
+    /// Builds a fresh snapshot subtree so obsolete publication files are no longer served.
+    pub fn snapshot_entries(&self) -> Vec<Value> {
+        self.parts.iter().enumerate().map(|(index, sha)| {
+            json!({"path":format!("{}/{index}.txt",self.id),"mode":"100644","type":"blob","sha":sha})
+        }).collect()
+    }
+
+    /// Replaces only the managed snapshot directory and manifest in the existing source tree.
+    pub fn entries(&self, snapshot_sha: &str, manifest_sha: &str) -> Vec<Value> {
+        vec![
+            json!({"path":"data/snapshots","mode":"040000","type":"tree","sha":snapshot_sha}),
+            json!({"path":"data/manifest.json","mode":"100644","type":"blob","sha":manifest_sha}),
+        ]
     }
 }
 
@@ -63,9 +70,12 @@ mod tests {
     fn only_snapshot_files_and_manifest_can_be_written() {
         let publication=fixture();
         assert!(publication.valid());
-        let entries=publication.entries(&"d".repeat(40));
+        let entries=publication.entries(&"e".repeat(40), &"d".repeat(40));
         assert_eq!(entries.len(),2);
-        assert_eq!(entries[0]["path"],format!("data/snapshots/{}/0.txt",publication.id));
+        assert_eq!(entries[0]["path"],"data/snapshots");
+        assert_eq!(entries[0]["type"],"tree");
+        let parts=publication.snapshot_entries();
+        assert_eq!(parts[0]["path"],format!("{}/0.txt",publication.id));
         assert_eq!(entries[1]["path"],"data/manifest.json");
         assert!(entries.iter().all(|entry|entry["sha"].is_string()));
     }

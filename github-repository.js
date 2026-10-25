@@ -194,12 +194,12 @@
       return chunks;
     }
 
-    /** Publishes one atomic commit; never removes source files or older snapshots. */
+    /** Atomically replaces published snapshot files while preserving source files and Git history. */
     async publish(lectures, current, onProgress = () => {}) {
       if (!this.token) throw new Error("Yayımlamak için GitHub girişi gerekli.");
       const hashes = await this.documentHashes(lectures, onProgress);
       const digest = await this.digest(JSON.stringify(hashes));
-      if (current.manifest?.format === 2 && current.manifest.digest === digest) {
+      if (current.manifest?.format === 2 && current.manifest.snapshotPolicy === "current" && current.manifest.digest === digest) {
         onProgress({ stage: "commit", completed: hashes.length, total: hashes.length });
         return current.manifest;
       }
@@ -207,11 +207,16 @@
       this.rememberCheckpoint(checkpoint);
       const entries = await this.uploadParts(lectures, hashes, checkpoint, onProgress, current.manifest);
       onProgress({ stage: "commit", completed: hashes.length, total: hashes.length });
-      const manifest = { format: 2, partLength: documentCodec.partLength, id: checkpoint.id, parts: hashes.length, hashes, digest,
+      const manifest = { snapshotPolicy: "current", format: 2, partLength: documentCodec.partLength, id: checkpoint.id, parts: hashes.length, hashes, digest,
         blobs: entries.map(entry => entry.sha), encodings: entries.map((_, index) => checkpoint.encodings[index] || "plain"),
         savedAt: new Date().toISOString(), lectureCount: lectures.length };
       const manifestBlob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: JSON.stringify(manifest), encoding: "utf-8" } });
-      entries.push({ path: MANIFEST, mode: "100644", type: "blob", sha: manifestBlob.sha });
+      const snapshot = await this.api(`${this.prefix}/git/trees`, { method: "POST", body: {
+        tree: entries.map(entry => ({ ...entry, path: entry.path.slice("data/snapshots/".length) }))
+      } });
+      entries.splice(0, entries.length,
+        { path: "data/snapshots", mode: "040000", type: "tree", sha: snapshot.sha },
+        { path: MANIFEST, mode: "100644", type: "blob", sha: manifestBlob.sha });
       const tree = await this.api(`${this.prefix}/git/trees`, { method: "POST", body: { base_tree: current.tree, tree: entries } });
       const commit = await this.api(`${this.prefix}/git/commits`, { method: "POST", body: { message: "Update published MEE 101 lecture notes", tree: tree.sha, parents: [current.head] } });
       await this.api(`${this.prefix}/git/refs/heads/${encodeURIComponent(this.branch)}`, { method: "PATCH", body: { sha: commit.sha, force: false } });

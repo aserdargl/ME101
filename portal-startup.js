@@ -3,6 +3,8 @@
 /* portal-translations.js */
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Başka bir cihazdan yeni yayın var. Güncel yayını ayrı sekmede inceleyip bu sayfayı yenileyin; yerel değişiklikleriniz korundu.": "Another device published changes. Review the latest publication in a separate tab and reload this page; your local changes are preserved.",
+  "Önceki kayıt yayımlandı; aktarım sırasında yaptığınız değişiklikler yerelde korundu. Son değişiklikler için yeniden Yayımla düğmesine basın.": "The previous version was published; edits made during transfer remain local. Select Publish again for your latest changes.",
   "Öğretim üyesi bağlantısı kurulamadı; mevcut yerel veriler korundu.": "Instructor connection failed; existing local data is preserved.",
   "Öğrenci numaranızı girerek devam ediniz.": "Enter your student ID to continue.",
   "Geçerli bir öğrenci numarası giriniz (yalnızca rakam, en fazla 32 hane).": "Enter a valid student ID (digits only, up to 32 characters).",
@@ -1615,12 +1617,12 @@ window.PdfPreview = (() => {
       return chunks;
     }
 
-    /** Publishes one atomic commit; never removes source files or older snapshots. */
+    /** Atomically replaces published snapshot files while preserving source files and Git history. */
     async publish(lectures, current, onProgress = () => {}) {
       if (!this.token) throw new Error("Yayımlamak için GitHub girişi gerekli.");
       const hashes = await this.documentHashes(lectures, onProgress);
       const digest = await this.digest(JSON.stringify(hashes));
-      if (current.manifest?.format === 2 && current.manifest.digest === digest) {
+      if (current.manifest?.format === 2 && current.manifest.snapshotPolicy === "current" && current.manifest.digest === digest) {
         onProgress({ stage: "commit", completed: hashes.length, total: hashes.length });
         return current.manifest;
       }
@@ -1628,11 +1630,16 @@ window.PdfPreview = (() => {
       this.rememberCheckpoint(checkpoint);
       const entries = await this.uploadParts(lectures, hashes, checkpoint, onProgress, current.manifest);
       onProgress({ stage: "commit", completed: hashes.length, total: hashes.length });
-      const manifest = { format: 2, partLength: documentCodec.partLength, id: checkpoint.id, parts: hashes.length, hashes, digest,
+      const manifest = { snapshotPolicy: "current", format: 2, partLength: documentCodec.partLength, id: checkpoint.id, parts: hashes.length, hashes, digest,
         blobs: entries.map(entry => entry.sha), encodings: entries.map((_, index) => checkpoint.encodings[index] || "plain"),
         savedAt: new Date().toISOString(), lectureCount: lectures.length };
       const manifestBlob = await this.api(`${this.prefix}/git/blobs`, { method: "POST", body: { content: JSON.stringify(manifest), encoding: "utf-8" } });
-      entries.push({ path: MANIFEST, mode: "100644", type: "blob", sha: manifestBlob.sha });
+      const snapshot = await this.api(`${this.prefix}/git/trees`, { method: "POST", body: {
+        tree: entries.map(entry => ({ ...entry, path: entry.path.slice("data/snapshots/".length) }))
+      } });
+      entries.splice(0, entries.length,
+        { path: "data/snapshots", mode: "040000", type: "tree", sha: snapshot.sha },
+        { path: MANIFEST, mode: "100644", type: "blob", sha: manifestBlob.sha });
       const tree = await this.api(`${this.prefix}/git/trees`, { method: "POST", body: { base_tree: current.tree, tree: entries } });
       const commit = await this.api(`${this.prefix}/git/commits`, { method: "POST", body: { message: "Update published MEE 101 lecture notes", tree: tree.sha, parents: [current.head] } });
       await this.api(`${this.prefix}/git/refs/heads/${encodeURIComponent(this.branch)}`, { method: "PATCH", body: { sha: commit.sha, force: false } });
@@ -1703,7 +1710,7 @@ window.PdfPreview = (() => {
       if (!this.connected) throw new Error("Yayımlamak için öğretim üyesi girişi yapın.");
       const hashes = await this.documentHashes(lectures, onProgress);
       const digest = await this.digest(JSON.stringify(hashes));
-      if (current.manifest?.format === 2 && current.manifest.digest === digest) return current.manifest;
+      if (current.manifest?.format === 2 && current.manifest.snapshotPolicy === "current" && current.manifest.digest === digest) return current.manifest;
       const checkpoint = this.checkpoint(digest);
       this.rememberCheckpoint(checkpoint);
       const entries = await this.uploadParts(lectures, hashes, checkpoint, onProgress, current.manifest);
@@ -1769,17 +1776,6 @@ window.PdfPreview = (() => {
     button.textContent = !authenticated ? "Hoca Girişi" : "Yayımla";
   }
 
-  /** Conflicting versions become separate lessons, keeping every original note. */
-  async function mergePreservingNotes(remote, local) {
-    const merged = remote.slice();
-    for (const lecture of local) {
-      const existing = remote.find(item => item.id === lecture.id);
-      if (!existing) merged.push(lecture);
-      else if (await repository.documentDigest(existing) !== await repository.documentDigest(lecture)) merged.push({ ...lecture, id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
-    }
-    return merged;
-  }
-
   async function portableDocument(lectures) {
     const replacements = new Map();
     async function readAddress(address) {
@@ -1824,8 +1820,7 @@ window.PdfPreview = (() => {
       const backedUp = await LectureStorage.save(lectures);
       message("GitHub’daki mevcut kayıt kontrol ediliyor…");
       const current = await repository.readCurrent({ skipLecturesForVersion: synchronized ? version : null });
-      if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
-      if (explicit && current.lectures && (!synchronized || current.manifest.id !== version)) lectures = await mergePreservingNotes(current.lectures, lectures);
+      if ((current.manifest?.id || null) !== version) throw new Error("Başka bir cihazdan yeni yayın var. Güncel yayını ayrı sekmede inceleyip bu sayfayı yenileyin; yerel değişiklikleriniz korundu.");
       if (root.DrivePublishing?.enabled()) {
         message("Derslerin bağımsız Drive yedeği hazırlanıyor…");
         lectures = (await root.DrivePublishing.prepare(lectures, progress)).lectures;
@@ -1840,7 +1835,7 @@ window.PdfPreview = (() => {
           if (saved && !pendingSave) rememberDigest(manifest.digest);
         }
       }
-      message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : root.DrivePublishing?.enabled()
+      message(pendingSave ? "Önceki kayıt yayımlandı; aktarım sırasında yaptığınız değişiklikler yerelde korundu. Son değişiklikler için yeniden Yayımla düğmesine basın." : root.DrivePublishing?.enabled()
         ? "Drive dosyaları ve yedek kaydedildi · Ders listesi GitHub yayını tamamlandığında güncellenecek."
         : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
       showProgress(100);

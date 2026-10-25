@@ -53,7 +53,7 @@
       if (!this.connected) throw new Error("Yayımlamak için öğretim üyesi girişi yapın.");
       const hashes = await this.documentHashes(lectures, onProgress);
       const digest = await this.digest(JSON.stringify(hashes));
-      if (current.manifest?.format === 2 && current.manifest.digest === digest) return current.manifest;
+      if (current.manifest?.format === 2 && current.manifest.snapshotPolicy === "current" && current.manifest.digest === digest) return current.manifest;
       const checkpoint = this.checkpoint(digest);
       this.rememberCheckpoint(checkpoint);
       const entries = await this.uploadParts(lectures, hashes, checkpoint, onProgress, current.manifest);

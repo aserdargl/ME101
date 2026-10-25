@@ -37,11 +37,22 @@ test("password session publishes atomically, rejects stale updates, preserves ro
     digest: createHash("sha256").update(text).digest("hex"), lectureCount: 1 };
   const saved = await call("commit", idToken, body); assert.equal(saved.status, 200, JSON.stringify(saved.data));
   assert.equal(saved.data.digest, body.digest);
+  assert.equal(saved.data.snapshotPolicy, "current");
   const latest = await call("current", idToken); assert.equal(latest.data.manifest.id, body.id);
   const raw = await fetch(`http://127.0.0.1:4198/raw/${latest.data.head}/data/snapshots/${body.id}/0.txt`);
   assert.equal(await raw.text(), text);
   assert.equal((await call("commit", idToken, body)).status, 409);
   assert.equal((await call("commit", idToken, { ...body, id: "../index.html" })).status, 400);
+  const empty = await call("blob", idToken, { content: "[]" });
+  const replacement = { head: latest.data.head, id: randomUUID(), parts: [empty.data.sha],
+    digest: createHash("sha256").update("[]").digest("hex"), lectureCount: 0 };
+  assert.equal((await call("commit", idToken, replacement)).status, 200);
+  const cleaned = await call("current", idToken);
+  const deleted = await fetch(`http://127.0.0.1:4198/raw/${cleaned.data.head}/data/snapshots/${body.id}/0.txt`);
+  assert.equal(deleted.status, 404, "obsolete publication files must no longer be served");
+  const remaining = await fetch(`http://127.0.0.1:4198/raw/${cleaned.data.head}/data/snapshots/${replacement.id}/0.txt`);
+  assert.equal(await remaining.text(), "[]");
+  assert.equal(cleaned.data.manifest.lectureCount, 0);
   assert.deepEqual(await roster(), before);
   assert.equal(JSON.stringify([session.data, saved.data, latest.data]).includes("synthetic-installation-token"), false);
 });
