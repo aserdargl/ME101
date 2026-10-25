@@ -7,7 +7,7 @@ const sources = [
   'portal-translations.js', 'portal-language.js', 'catalog-order.js', 'catalog-ui.js',
   'pdf-slides.js', 'html-slides.js', 'slide-visual.js', 'pdf-preview.js',
   'lecture-storage.js', 'lecture-document.js', 'google-drive-storage.js', 'drive-publishing.js', 'github-repository.js', 'instructor-repository.js', 'lecture-publishing.js', 'legacy-content.js',
-  'student-numbers.js', 'firebase-student-service.js', 'firebase-enrollment.js',
+  'student-numbers.js', 'student-session.js', 'firebase-student-service.js', 'firebase-enrollment.js',
   'approval-client.js', 'roster-edit-client.js', 'firebase-adapter.js', 'firebase-students.js', 'approval-ui.js',
   'instructor-login.js', 'roster-table.js', 'registered-roster.js', 'presentation-fullscreen.js', 'presentation-fit.js', 'app.js'
 ];

@@ -81,30 +81,17 @@ test("pending, rejected and failed server checks preserve the existing access po
   assert.equal(service.accessResolved, true);
 });
 
-test("public sign-in waits for the approved server profile before deciding enrollment", async () => {
-  const { service, user, emit } = fixture();
-  let currentUser = null, signedOut = false;
-  service.adapter.getUser = () => currentUser;
-  service.adapter.signIn = async () => { currentUser = user; };
-  service.adapter.signOut = async () => { signedOut = true; };
+test("the public bridge exposes instructor access without student account creation or sign-in", async () => {
+  const { service } = fixture();
   service.adapter.start = async () => {};
   const host = { MEE101_FIREBASE_CONFIG: {}, createFirebaseStudentAdapter: async () => service.adapter,
     FirebaseStudentService, StudentRosterImport: {} };
   const context = { window: host, ...host, document: { getElementById: () => ({}) }, setTimeout, Date };
   vm.runInNewContext(fs.readFileSync(require.resolve("../firebase-students.js"), "utf8"), context);
   await host.FirebaseStudents.initialize(() => {});
-  const signingIn = host.FirebaseStudents.signIn(user.email, "Synthetic-Only-123!");
-  await new Promise(resolve => setImmediate(resolve));
-  emit("applications/synthetic", null, true);
-  await new Promise(resolve => setTimeout(resolve, 80));
-  assert.equal(signedOut, false);
-  emit("applications/synthetic", { status: "approved", approvedNo: "001", approvedName: "Approved Student" });
-  emit("studentNumbers/001", null, true);
-  await new Promise(resolve => setTimeout(resolve, 80));
-  assert.equal(signedOut, false);
-  emit("studentNumbers/001", { enabled: true });
-  const result = await signingIn;
-  assert.equal(result.ok, true);
-  assert.equal(host.FirebaseStudents.profile.no, "001");
-  assert.equal(signedOut, false);
+  assert.equal(host.FirebaseStudents.signIn, undefined);
+  assert.equal(host.FirebaseStudents.register, undefined);
+  assert.equal(host.FirebaseStudents.resendVerification, undefined);
+  assert.equal(typeof host.FirebaseStudents.signInInstructorWithPassword, "function");
+  assert.equal(typeof host.FirebaseStudents.resetPassword, "function");
 });

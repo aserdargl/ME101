@@ -1,5 +1,10 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Öğretim üyesi bağlantısı kurulamadı; mevcut yerel veriler korundu.": "Instructor connection failed; existing local data is preserved.",
+  "Öğrenci numaranızı girerek devam ediniz.": "Enter your student ID to continue.",
+  "Geçerli bir öğrenci numarası giriniz (yalnızca rakam, en fazla 32 hane).": "Enter a valid student ID (digits only, up to 32 characters).",
+  "Oturum kapatılamadı. Tarayıcı depolama izinlerini kontrol ediniz.": "Could not sign out. Check your browser storage permissions.",
+  "Öğrenciler yalnızca öğrenci numaralarını girerek erişebilir. Bu liste giriş için zorunlu değildir. Mevcut öğrenci kayıtları gizli tutulur ve korunur.": "Students can enter using only their student ID. This roster is optional for entry. Existing student records remain private and preserved.",
   "HTML Sayfası": "HTML Page",
   "Bu araya çalışan HTML sayfası ekle": "Insert an interactive HTML page here",
   "HTML / CSS / JavaScript Sayfası": "HTML / CSS / JavaScript Page",

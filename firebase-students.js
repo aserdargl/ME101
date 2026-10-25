@@ -17,21 +17,9 @@ window.FirebaseStudents = (() => {
           onChange(state);
         });
         await service.start();
-      } catch { report("Firebase bağlantısı kurulamadı. Öğrenci erişimi kapalı; mevcut yerel veriler korundu."); }
+      } catch { report("Öğretim üyesi bağlantısı kurulamadı; mevcut yerel veriler korundu."); }
     })();
     return ready;
-  }
-
-  async function signIn(email, password, number, name) {
-    await ready;
-    if (!service) return unavailable();
-    const result = await service.signIn(email, password, number, name);
-    if (!result.ok) return result;
-    const deadline = Date.now() + 10000;
-    while (!service.accessResolved && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 50));
-    if (service.profile || service.isAdmin) return { ok: true };
-    await service.signOut();
-    return { ok: false, error: "Bu hesap için etkin ders kaydı bulunamadı veya kayıt doğrulanamadı. Öğretim üyesine başvurunuz." };
   }
 
   async function saveText(text, replaceAll) {
@@ -42,7 +30,7 @@ window.FirebaseStudents = (() => {
   }
 
   return {
-    initialize, signIn, saveText,
+    initialize, saveText,
     signInInstructorWithPassword: async (email, password) => { await ready; return service ? service.signInInstructorWithPassword(email, password) : unavailable(); },
     getIdToken: async (forceRefresh = true) => {
       await ready;
@@ -50,7 +38,6 @@ window.FirebaseStudents = (() => {
       return service.adapter.getUser().getIdToken(forceRefresh);
     },
     signInInstructor: async token => { await ready; return service ? service.signInInstructor(token) : unavailable(); },
-    get profile() { return service?.profile || null; },
     get isAdmin() { return service?.isAdmin === true; },
     /** Returns the signed-in instructor identity without changing the account. */
     get instructorName() {
@@ -60,9 +47,7 @@ window.FirebaseStudents = (() => {
     },
     get roster() { return service?.isAdmin ? service.roster : []; },
     get applications() { return service?.isAdmin ? service.applications : []; },
-    register: async (email, password, number, name) => { await ready; return service ? service.register(email, password, number, name) : unavailable(); },
     resetPassword: async email => { await ready; return service ? service.resetPassword(email) : unavailable(); },
-    resendVerification: async () => service ? service.perform(() => service.adapter.resendVerification()) : unavailable(),
     signOut: async () => service ? service.signOut() : { ok: true },
     saveRoster: async students => service ? service.saveRoster(students) : unavailable(),
     removeStudent: async key => service ? service.removeStudent(key) : unavailable(),

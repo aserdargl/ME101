@@ -1,5 +1,9 @@
 # MEE 101 Ders Portalı
 
+## Öğrenci girişi
+
+Öğrenciler yalnızca öğrenci numaralarını girerek erişir. E-posta, parola, hesap oluşturma, doğrulama veya yönetici onayı gerekmez; özel öğrenci listesi giriş için sorgulanmaz. Baştaki sıfırlar korunur ve aynı sekmede yenileme sonrası giriş sürer. Numara beyanı kimlik doğrulaması değildir. Öğretim üyesinin yetkileri ayrı doğrulanır. Eski hesaplar, başvurular, öğrenci kayıtları, notlar ve puanlar silinmez. Aşağıdaki eski üyelik altyapısı bilgileri korunmuş kayıtların yönetimi içindir; öğrenci girişinde kullanılmaz.
+
 https://aserdargl.github.io/ME101/
 
 ## GitHub sitesi ve kişisel Google Drive
@@ -22,19 +26,15 @@ Aktarım ilerlemesi parça sayısı ve yüzde olarak gösterilir. Parçalar en f
 
 Ortak ders kaydı `data/manifest.json` ve `data/snapshots/` altında tutulur. Yayın tek Git commit'iyle yapılır; mevcut site dosyaları ve eski kayıtlar korunur. Çakışan notlar silinmez; yerel sürüm ayrı ders olarak korunur. Öğrenci listeleri, parolalar ve kişisel oturum bilgileri ortak ders verisine eklenmez.
 
-## Gizli öğrenci listesi ve öğrenci girişi
+## Gizli öğrenci kayıtlarının yönetimi
 
-Site ve ders dosyaları GitHub Pages'te kalır. Öğrenci numarası/ad-soyad listesi yalnızca `lecturenotes-b97ad` projesindeki gizli `studentNumbers` koleksiyonunda tutulur. `registrationRequests`, `numberClaims` ve `enrollments` kayıt/eşleştirme bilgilerini saklar. Bunların hiçbiri GitHub ders yayınına eklenmez. Parolaları Firebase Authentication yönetir. Eski `students` e-posta kayıtları korunur ve çalışmaya devam eder.
+Site ve ders dosyaları GitHub Pages'te kalır. Öğrenci listesi ve önceki hesap/başvuru belgeleri gizli Firebase koleksiyonlarında korunur; GitHub ders yayınına eklenmez. Listeyi yalnızca doğrulanmış öğretim üyesi okuyup değiştirebilir. Liste ve eski hesap bağları yeni öğrenci girişini sınırlamaz.
 
-- Authentication içinde **Email/Password** etkin, şifresiz e-posta bağlantısı kapalı olmalıdır. Yetkili alan adlarına `aserdargl.github.io` eklenir.
-- Firestore için `firestore.rules` yayımlanır. Listeyi yalnızca yetkili yönetici okuyup değiştirebilir. Numara ve ad-soyad sunucu kurallarında eşleştirilir; doğrulanmış öğrenci sadece kendi kaydını okuyabilir. Başka öğrenciler ve anonim ziyaretçiler numara/ad listesini okuyamaz.
-- İlk yönetici, Authentication'da kendi e-posta/parola hesabını oluşturup e-postasını doğrular. Proje sahibi Firebase konsolundan `admins/{Firebase-kullanıcı-UID}` belgesini oluşturur. İstemci bu yetkiyi kendisine veremez.
-- Tek öğretim üyesi girişinden sonra Öğrenci Listesi ekranını açın. CSV/TXT veya metin biçimi: `öğrenci numarası;ad soyad`. Excel'den bu iki sütun başlıksız yapıştırılabilir; numaraları metin biçiminde tutun. Büyük/küçük harf ve fazla boşluklar ad eşleştirmesini etkilemez; Türkçe harfler korunur. **Listeye Ekle / Güncelle** diğer kayıtları korur. **Listeyi Sıfırla ve Yeniden Tanımla** yeni numara listesini uygular, eski e-posta kayıtlarını silmez. Bir numarayı kaldırmak o numarayla bağlı hesabın ders erişimini kapatır.
-- Eski yerel öğrenci listeleri ve oylar silinmez. **Listeyi Kopyala** yerel listeyi kurtarmak için de kullanılabilir; kişisel listeyi kaynak koda veya GitHub'a yapıştırmayın.
-- Öğrenci **Hesap Oluştur** ile numarasını, ad-soyadını, istediği e-postayı ve parolayı girer. Eşleşen kayıt, e-posta doğrulandıktan sonra numaraya atomik bağlanır. Eşleşmeyen kayıt gizli `applications` koleksiyonunda yönetici onayını bekler; e-postası doğrulanmış öğrenci karar verilene kadar geçici erişim alır. Geçici kimlik kullanıcı UID'sidir; başka öğrencinin numarasını veya oy kimliğini sahiplenmez.
-- **Öğrenci Listesi → Onay Bekleyen Başvurular** bölümünde numara/adı gerektiğinde düzeltip **Onayla** seçilir. Onay numarayı tek hesaba bağlar; başka hesaba bağlı numara devralınamaz. **Reddet ve Hesabı Sil**, başvuruyu reddeder, erişimi keser ve Firebase Authentication hesabını sunucudan siler. Silme geçici olarak başarısızsa durum panelde görünür; 10 dakikalık zamanlayıcı yeniden dener. Aynı e-posta yeni hesapla tekrar geçici erişim alamaz. Yöneticiler bu işlemle silinemez.
-- Numara/ad eşleşmesi kimlik kanıtı değildir. Başkasının bilgilerini bilen biri doğrulanmış başka bir e-postayla numarayı ilk sahiplenen kişi olabilir. **Hesap Bağını Sıfırla** yanlış bağlantıyı kaldırır. Spark planı korunur; parolalar yalnız Firebase Authentication'a iletilir.
-- GitHub'da yayımlanan ders dosyaları genel erişime açıktır. Firebase erişim kuralları öğrenci listesini korur; GitHub'daki dosya adreslerini özel dosyalara dönüştürmez.
+- Öğretim üyesi mevcut Firebase e-posta/parola hesabını ve sunucuda doğrulanan `admins/{uid}` yetkisini kullanır.
+- Öğrenci Listesi ekranında Excel sütunları veya CSV/TXT ile numara, isim ve soyisim yönetimi devam eder. Mevcut kayıtlar ve eski yerel listeler kendiliğinden değiştirilmez.
+- Önceki başvurular yönetici ekranında korunur; yeni öğrenci girişi hesap veya başvuru oluşturmaz.
+- Puanlar mevcut yerel depolama anahtarında öğrenci numarasıyla saklanır. Numara girişi mevcut puanları sıfırlamaz.
+- GitHub'da yayımlanan ders dosyaları genel erişime açıktır.
 
 `npm test` uygulama testlerini; `npm run test:firebase` Java 21+ ile ayrı `demo-lecturenotes` emülatöründe izin kurallarını çalıştırır. Canlı projede sentetik öğrenci oluşturulmaz. Dağıtım için yalnızca Firestore kuralları kullanılır; Firebase Hosting yapılandırılmaz. `firebase-config.js` yalnızca herkese açık uygulama tanımlayıcılarını içerir; servis hesabı anahtarı eklemeyin.
 

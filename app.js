@@ -329,7 +329,8 @@ function getActiveAdminPassHash() {
 const DEFAULT_STUDENT_ROSTER = [];
 
 let isAdminAuthenticated = false;
-let activeStudentNo = null;
+const studentSession = new StudentSession(sessionStorage, STUDENT_SESSION_KEY);
+let activeStudentNo = studentSession.number;
 let firebaseAdminSession = false;
 let pendingStudentAction = null; // { type: 'vote', lecId, val } veya { type: 'download', href, fileName }
 
@@ -345,11 +346,9 @@ function getStudentRoster() {
   }
 }
 
-function findStudentInRoster(studentNoInput) {
-  const cleanNo = String(studentNoInput || "").trim();
-  if (!cleanNo) return null;
-  const student = FirebaseStudents.profile;
-  return student && String(student.accessKey || student.no || student.email).toLowerCase() === cleanNo.toLowerCase() ? student : null;
+function getActiveStudent(studentNoInput) {
+  const no = StudentNumbers.normalize(studentNoInput);
+  return no && no === studentSession.number ? { no, accessKey: no } : null;
 }
 
 function updateAdminUI() {
@@ -389,7 +388,7 @@ function updateStudentUI() {
   if (!studentBtn || !studentLabel) return;
 
   if (activeStudentNo) {
-    const stu = findStudentInRoster(activeStudentNo);
+    const stu = getActiveStudent(activeStudentNo);
     if (!stu) {
       activeStudentNo = null;
       sessionStorage.removeItem(STUDENT_SESSION_KEY);
@@ -398,10 +397,7 @@ function updateStudentUI() {
       return;
     }
     studentBtn.classList.add("logged-in");
-    studentLabel.textContent = stu.name
-      ? `Öğrenci: ${stu.no} (${stu.name}) • Çıkış`
-      : `Öğrenci: ${stu.no} (Çıkış)`;
-    if (stu.approvalStatus === "pending") studentLabel.textContent += " · Onay bekliyor";
+    studentLabel.textContent = `Öğrenci: ${stu.no} (Çıkış)`;
   } else {
     studentBtn.classList.remove("logged-in");
     studentLabel.textContent = "Öğrenci Girişi";
@@ -487,7 +483,7 @@ function deleteCustomLectureFromStorage(lecId) {
   saveAllLecturesToStorage();
 }
 
-// Yalnızca kayıtlı öğrencilerin oylarını saklar: { [lectureId]: { [studentNo]: starValue } }
+// Öğrenci numarasıyla verilen oyları saklar: { [lectureId]: { [studentNo]: starValue } }
 function getAllStudentVotes() {
   try {
     const raw = localStorage.getItem(RATING_STORAGE_KEY);
@@ -499,7 +495,7 @@ function getAllStudentVotes() {
 }
 
 function setStudentVote(lectureId, studentNo, starValue) {
-  const stu = findStudentInRoster(studentNo);
+  const stu = getActiveStudent(studentNo);
   if (!stu) return false;
   try {
     const all = getAllStudentVotes();
@@ -1006,7 +1002,7 @@ const adminLoginBackdrop = document.getElementById("admin-login-backdrop");
 const adminLoginError = document.getElementById("admin-login-error");
 
 const studentLoginBackdrop = document.getElementById("student-login-backdrop");
-const inpStudentNo = document.getElementById("inp-student-email");
+const inpStudentNo = document.getElementById("inp-student-number");
 const studentLoginError = document.getElementById("student-login-error");
 
 const inpPdfFile = document.getElementById("inp-pdf-file");
@@ -1021,10 +1017,6 @@ let pendingAdminTab = null;
 function openStudentLoginModal(actionAfterLogin = null) {
   pendingStudentAction = actionAfterLogin;
   inpStudentNo.value = "";
-  document.getElementById("inp-student-password").value = "";
-  document.getElementById("student-registration-details").open = false;
-  document.getElementById("inp-student-number").value = "";
-  document.getElementById("inp-student-name").value = "";
   studentLoginError.classList.add("hidden");
   studentLoginBackdrop.classList.remove("hidden");
   setTimeout(() => inpStudentNo.focus(), 50);
@@ -1035,23 +1027,15 @@ function closeStudentLoginModal() {
   pendingStudentAction = null;
 }
 
-async function handleStudentLoginSubmit() {
-  const button = document.getElementById("btn-submit-student-login");
-  if (button.disabled) return;
-  button.disabled = true;
+function handleStudentLoginSubmit() {
   studentLoginError.classList.add("hidden");
-  const passwordInput = document.getElementById("inp-student-password");
-  const result = await FirebaseStudents.signIn(inpStudentNo.value, passwordInput.value,
-    document.getElementById("inp-student-number").value, document.getElementById("inp-student-name").value);
-  passwordInput.value = "";
-  button.disabled = false;
+  const result = studentSession.signIn(inpStudentNo.value);
   if (!result.ok) {
     studentLoginError.textContent = result.error;
     studentLoginError.classList.remove("hidden");
     return;
   }
-  const matchedStu = FirebaseStudents.profile;
-  activeStudentNo = matchedStu ? matchedStu.accessKey || matchedStu.no || matchedStu.email : null;
+  activeStudentNo = result.number;
   const actionToRun = pendingStudentAction;
   closeStudentLoginModal();
   renderCatalog();
@@ -1068,11 +1052,12 @@ async function handleStudentLoginSubmit() {
   }
 }
 
-document.getElementById("btn-student-toggle").addEventListener("click", async () => {
+document.getElementById("btn-student-toggle").addEventListener("click", () => {
   if (activeStudentNo) {
-    await FirebaseStudents.signOut();
+    const result = studentSession.signOut();
+    if (!result.ok) { alert(result.error); return; }
     activeStudentNo = null;
-    sessionStorage.removeItem(STUDENT_SESSION_KEY);
+    if (!isAdminAuthenticated) goHome();
     renderCatalog();
   } else {
     openStudentLoginModal(null);
@@ -1084,38 +1069,7 @@ document.getElementById("btn-submit-student-login").addEventListener("click", ha
 inpStudentNo.addEventListener("keydown", (e) => {
   if (e.key === "Enter") handleStudentLoginSubmit();
 });
-document.getElementById("inp-student-password").addEventListener("keydown", event => {
-  if (event.key === "Enter") handleStudentLoginSubmit();
-});
-document.getElementById("btn-student-register").addEventListener("click", async () => {
-  const number = document.getElementById("inp-student-number");
-  const name = document.getElementById("inp-student-name");
-  if (!number.value.trim() || !name.value.trim()) {
-    document.getElementById("student-registration-details").open = true;
-    number.focus();
-    return;
-  }
-  const button = document.getElementById("btn-student-register");
-  if (button.disabled) return;
-  button.disabled = true;
-  const input = document.getElementById("inp-student-password");
-  const result = await FirebaseStudents.register(inpStudentNo.value, input.value, number.value, name.value);
-  button.disabled = false;
-  input.value = "";
-  studentLoginError.textContent = result.ok ? "Doğrulama e-postası gönderildi. Bağlantıyı açtıktan sonra giriş yapınız." : result.error;
-  studentLoginError.classList.remove("hidden");
-});
-document.getElementById("btn-student-reset-password").addEventListener("click", async () => {
-  const result = await FirebaseStudents.resetPassword(inpStudentNo.value);
-  studentLoginError.textContent = result.ok ? "Adresiniz için bir hesap varsa parola sıfırlama e-postası gönderilecektir." : result.error;
-  studentLoginError.classList.remove("hidden");
-});
 document.getElementById("btn-roster-firebase-login").addEventListener("click", () => openAdminLoginModal());
-document.getElementById("btn-student-resend-verification").addEventListener("click", async () => {
-  const result = await FirebaseStudents.resendVerification();
-  studentLoginError.textContent = result.ok ? "Doğrulama e-postası yeniden gönderildi." : result.error;
-  studentLoginError.classList.remove("hidden");
-});
 
 // --- ÖĞRETİM ÜYESİ: ÖĞRENCİ NUMARASI LİSTESİ (OBS) YÖNETİMİ ---
 const rosterTable = new RosterTable(document);
@@ -3058,8 +3012,6 @@ window.addEventListener("resize", () => {
 /** Opens existing notes first; shared content never silently replaces unsynced notes. */
 async function initializeLectures() {
   FirebaseStudents.initialize(state => {
-    const hadStudentAccess = Boolean(activeStudentNo);
-    activeStudentNo = state.profile ? state.profile.accessKey || state.profile.no || state.profile.email : null;
     if (state.isAdmin) {
       if (LecturePublishing.isAuthenticated()) {
         isAdminAuthenticated = true;
@@ -3070,7 +3022,6 @@ async function initializeLectures() {
       firebaseAdminSession = false;
       LecturePublishing.logout();
     }
-    if (hadStudentAccess && !activeStudentNo && !isAdminAuthenticated) goHome();
     renderCatalog();
     renderRosterAdminList();
   });

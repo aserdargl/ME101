@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="content.css?v=html-slides-1" />
   <link rel="stylesheet" href="portal-ui.css?v=7" />
   <script defer src="firebase-config.js?v=2"></script>
-  <script defer src="portal-startup.js?v=91f00d4fb0f1"></script>
+  <script defer src="portal-startup.js?v=bd91236d982e"></script>
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -265,33 +265,16 @@
     <div class="modal-card" style="max-width: 440px;">
       <div class="modal-header">
         <div>
-          <span class="department-label">MEE 101 DERS KAYIT DOĞRULAMASI</span>
-          <h3>E-posta ve Parola ile Giriş</h3>
+          <span class="department-label">MEE 101</span>
+          <h3>Öğrenci Girişi</h3>
         </div>
         <button id="btn-close-student-login" class="modal-close-btn" aria-label="Öğrenci girişini kapat">&times;</button>
       </div>
       <div class="modal-body">
-        <p id="student-login-prompt-desc" class="modal-desc">
-          Mevcut hesabınızla giriş yapınız. İlk kayıtta öğrenci numaranızı ve ad-soyadınızı giriniz. Eşleşmeyen kayıtlar yönetici onayına gönderilir; e-postanızı doğruladıktan sonra karar verilene kadar geçici erişiminiz olur. Ret durumunda erişim kapanır ve hesap silinir.
-        </p>
-        <details id="student-registration-details" class="student-registration-details">
-          <summary>İlk Kayıt · Öğrenci Bilgileri</summary>
-          <div class="form-field">
-            <label for="inp-student-number">Öğrenci Numarası</label>
-            <input type="text" id="inp-student-number" inputmode="numeric" maxlength="32" autocomplete="off" />
-          </div>
-          <div class="form-field">
-            <label for="inp-student-name">Ad Soyad</label>
-            <input type="text" id="inp-student-name" maxlength="200" autocomplete="name" />
-          </div>
-        </details>
+        <p id="student-login-prompt-desc" class="modal-desc">Öğrenci numaranızı girerek devam ediniz.</p>
         <div class="form-field">
-          <label for="inp-student-email">E-posta</label>
-          <input type="email" id="inp-student-email" placeholder="ogrenci@universite.edu.tr" autocomplete="username" />
-        </div>
-        <div class="form-field" style="margin-top:12px;">
-          <label for="inp-student-password">Parola</label>
-          <input type="password" id="inp-student-password" autocomplete="current-password" minlength="12" />
+          <label for="inp-student-number">Öğrenci Numarası</label>
+          <input type="text" id="inp-student-number" inputmode="numeric" pattern="[0-9]+" maxlength="32" autocomplete="username" required aria-describedby="student-login-prompt-desc student-login-error" />
         </div>
         <p id="student-login-error" class="hidden" style="color:#9b2226; font-size:0.78rem; margin-top:0.45rem; font-weight:600;">
           Giriş yapılamadı. Bilgilerinizi kontrol ediniz.
@@ -300,11 +283,6 @@
           <button id="btn-submit-student-login" class="btn btn-primary" style="width:100%; justify-content:center;">
             Giriş Yap
           </button>
-        </div>
-        <div class="firebase-auth-actions">
-          <button type="button" id="btn-student-register" class="btn btn-outline">Hesap Oluştur</button>
-          <button type="button" id="btn-student-reset-password" class="btn btn-outline">Parolamı Unuttum</button>
-          <button type="button" id="btn-student-resend-verification" class="btn btn-outline">Doğrulamayı Yeniden Gönder</button>
         </div>
       </div>
     </div>
@@ -470,7 +448,7 @@
             <button type="button" id="btn-roster-firebase-login" class="btn btn-secondary">Öğretim Üyesi Girişi</button>
           </div>
           <p class="modal-desc">
-            Numara, isim ve soyisim sütunlarını Excel’den ayrı ayrı veya birlikte yapıştırınız. Her sütunda aynı satır aynı öğrenciye karşılık gelir. Öğrenciler eşleşen bilgilerle istedikleri e-postayı kullanarak kayıt olur. Her numara tek hesaba bağlanır. Liste gizli tutulur; mevcut eski e-posta kayıtları korunur.
+            Öğrenciler yalnızca öğrenci numaralarını girerek erişebilir. Bu liste giriş için zorunlu değildir. Mevcut öğrenci kayıtları gizli tutulur ve korunur.
           </p>
           <section class="approval-section">
             <h4>Onay Bekleyen ve Silinmeyi Bekleyen Başvurular (<span id="approval-pending-count">0</span>)</h4>
