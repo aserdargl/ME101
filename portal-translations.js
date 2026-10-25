@@ -167,6 +167,7 @@ window.PORTAL_ENGLISH = {
   "Giriş": "Mechanical Engineering",
   "DERS PORTALI": "COURSE PORTAL",
   "Öğrenci Listesi": "Student Roster",
+  "Yönetim": "Management",
   "Tüm Yıldızları Temizle": "Clear All Ratings",
   "+ Ders Ekle": "+ Add Lesson",
   "Öğrenci Girişi": "Student Login",

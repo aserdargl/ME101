@@ -18,9 +18,9 @@
   <link rel="stylesheet" href="modern.css?v=2" />
   <link rel="stylesheet" href="editor.css?v=registered-roster-5" />
   <link rel="stylesheet" href="content.css?v=html-slides-1" />
-  <link rel="stylesheet" href="portal-ui.css?v=7" />
+  <link rel="stylesheet" href="portal-ui.css?v=8" />
   <script defer src="firebase-config.js?v=2"></script>
-  <script defer src="portal-startup.js?v=bcf708d06dc6"></script>
+  <script defer src="portal-startup.js?v=495c95101bb0"></script>
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -40,12 +40,17 @@
         </div>
         <!-- SADECE YÖNETİCİ (ÖĞRETİM ÜYESİ) GİRİŞİ YAPILDIĞINDA GÖRÜNEN ARAÇLAR -->
         <div id="admin-toolbar" class="admin-toolbar hidden">
+          <details id="admin-management-menu" class="admin-management-menu">
+            <summary class="btn btn-secondary">Yönetim <span aria-hidden="true">▾</span></summary>
+            <div class="admin-management-items">
           <button id="btn-open-student-roster" class="btn btn-secondary" title="Derse kayıtlı öğrenci numaralarını tanımla veya düzenle">
             Öğrenci Listesi
           </button>
           <button id="btn-clear-all-ratings" class="btn btn-outline" title="Yeni dönem için tüm derslerin yıldız puanlarını sıfırla">
             Tüm Yıldızları Temizle
           </button>
+            </div>
+          </details>
           <button id="btn-open-pptx-modal" class="btn btn-primary">
             + Ders Ekle
           </button>
@@ -168,12 +173,6 @@
           <input id="lecture-search" name="lecture-query" type="search" aria-label="Ders veya konu ara" placeholder="Ders veya konu ara…" autocomplete="off" />
         </form>
         <div id="admin-section-actions" class="admin-toolbar hidden">
-          <button id="btn-section-student-roster" class="btn btn-secondary" title="Derse kayıtlı öğrenci numaralarını tanımla veya düzenle">
-            Öğrenci Listesi
-          </button>
-          <button id="btn-section-clear-all-ratings" class="btn btn-outline" title="Yeni dönem için tüm derslerin yıldız puanlarını sıfırla">
-            Tüm Yıldızları Temizle
-          </button>
           <button id="btn-hero-pptx-modal" class="btn btn-primary">
             + Ders Ekle
           </button>
@@ -340,7 +339,6 @@
         <div class="modal-tabs">
           <button class="modal-tab active" data-tab="tab-add-manual">Ders Ekle</button>
           <button class="modal-tab" data-tab="tab-permanent">Dosyalar ve Aktarım</button>
-          <button class="modal-tab" data-tab="tab-student-roster">Öğrenci Listesi</button>
         </div>
 
         <!-- TAB 1: YENİ DERS EKLE -->

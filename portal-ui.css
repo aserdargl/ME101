@@ -103,3 +103,19 @@ body :is(button, .btn, [role="button"]):not(:disabled):active { transform: trans
   .import-workspace { grid-template-columns: minmax(0, 1fr); }
   .import-preview { position: static; }
 }
+.admin-management-menu { position: relative; }
+.admin-management-menu > summary { list-style: none; cursor: pointer; gap: 8px; }
+.admin-management-menu > summary::-webkit-details-marker { display: none; }
+.admin-management-items {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 110;
+  display: grid; gap: 4px; min-width: 200px; padding: 6px;
+  background: #fff; border: 1px solid var(--button-border); border-radius: 8px;
+  box-shadow: 0 8px 24px #1e293b26;
+}
+.admin-management-items .btn { justify-content: flex-start; white-space: nowrap; }
+@media (max-width: 600px) {
+  .admin-management-items { left: 0; right: auto; }
+}
+body:has(#catalog-view.hidden) .admin-management-menu { display: none; }
+.course-editor .modal-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.course-editor:has(#tab-student-roster:not(.hidden)) .modal-tabs { display: none; }

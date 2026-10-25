@@ -170,6 +170,7 @@ window.PORTAL_ENGLISH = {
   "Giriş": "Mechanical Engineering",
   "DERS PORTALI": "COURSE PORTAL",
   "Öğrenci Listesi": "Student Roster",
+  "Yönetim": "Management",
   "Tüm Yıldızları Temizle": "Clear All Ratings",
   "+ Ders Ekle": "+ Add Lesson",
   "Öğrenci Girişi": "Student Login",
@@ -3547,6 +3548,7 @@ function updateAdminUI() {
     } else adminLockLabel.textContent = "Yönetici (Çıkış)";
   } else {
     adminToolbar.classList.add("hidden");
+    document.getElementById("admin-management-menu").open = false;
     if (adminSectionActions) adminSectionActions.classList.add("hidden");
     if (navEditBtn) navEditBtn.classList.add("hidden");
     if (bannerEditBtn) bannerEditBtn.classList.add("hidden");
@@ -3907,6 +3909,7 @@ function openLecture(lectureId, startInPresentation = false) {
   currentSlideIndex = 0;
 
   catalogView.classList.add("hidden");
+  document.getElementById("admin-management-menu").open = false;
   lectureView.classList.remove("hidden");
   lectureNavActions.classList.remove("hidden");
   navCurrentLectureTitle.textContent = `${lec.week}: ${lec.title.split(":")[0]}`;
@@ -4426,6 +4429,7 @@ function openPptxModal(defaultTabId) {
     return;
   }
   const nextWeekNum = LECTURES.length + 1;
+  document.getElementById("admin-management-menu").open = false;
   const weekInput = document.getElementById("imp-week");
   if (weekInput) weekInput.value = `${nextWeekNum}. Hafta`;
   renderRosterAdminList();
@@ -4442,10 +4446,21 @@ function closePptxModal() {
 document.getElementById("btn-open-pptx-modal").addEventListener("click", () => openPptxModal("tab-add-manual"));
 document.getElementById("btn-hero-pptx-modal").addEventListener("click", () => openPptxModal("tab-add-manual"));
 document.getElementById("btn-open-student-roster").addEventListener("click", () => openPptxModal("tab-student-roster"));
-document.getElementById("btn-section-student-roster").addEventListener("click", () => openPptxModal("tab-student-roster"));
 document.getElementById("btn-close-pptx-modal").addEventListener("click", closePptxModal);
 document.getElementById("btn-clear-all-ratings").addEventListener("click", clearAllStudentVotes);
-document.getElementById("btn-section-clear-all-ratings").addEventListener("click", clearAllStudentVotes);
+const managementMenu = document.getElementById("admin-management-menu");
+managementMenu.addEventListener("click", event => {
+  if (event.target.closest("button")) managementMenu.open = false;
+});
+document.addEventListener("click", event => {
+  if (!managementMenu.contains(event.target)) managementMenu.open = false;
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && managementMenu.open) {
+    managementMenu.open = false;
+    managementMenu.querySelector("summary").focus();
+  }
+});
 
 // İkonik 1., 2., 3. Yöntem butonları ilgili sekmeyi açar
 document.querySelectorAll("[data-open-tab]").forEach((btn) => {
