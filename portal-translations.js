@@ -25,6 +25,8 @@ window.PORTAL_ENGLISH = {
   "Tam HTML sayfanızı buraya yapıştırın. Kod, sunumda ayrı bir sayfa olarak çalışır.": "Paste your complete HTML page here. It runs as a separate page in the presentation.",
   "Önizlemeyi Çalıştır": "Run Preview",
   "Slayt": "Slide",
+  "Slayt numarası": "Slide number",
+  "Slayt numarasını yazıp Enter tuşuna basın": "Enter a slide number and press Enter",
   "Notlar": "Notes",
   "PDF İndir": "Download PDF",
   "Kaynak İndir": "Download Source",

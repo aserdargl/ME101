@@ -28,6 +28,8 @@ window.PORTAL_ENGLISH = {
   "Tam HTML sayfanızı buraya yapıştırın. Kod, sunumda ayrı bir sayfa olarak çalışır.": "Paste your complete HTML page here. It runs as a separate page in the presentation.",
   "Önizlemeyi Çalıştır": "Run Preview",
   "Slayt": "Slide",
+  "Slayt numarası": "Slide number",
+  "Slayt numarasını yazıp Enter tuşuna basın": "Enter a slide number and press Enter",
   "Notlar": "Notes",
   "PDF İndir": "Download PDF",
   "Kaynak İndir": "Download Source",
@@ -3461,7 +3463,8 @@ const lectureNavActions = document.getElementById("lecture-nav-actions");
 const navCurrentLectureTitle = document.getElementById("nav-current-lecture-title");
 const presentationToolbar = document.getElementById("presentation-toolbar");
 const presLectureName = document.getElementById("pres-lecture-name");
-const slideCounter = document.getElementById("slide-counter");
+const slideNumberInput = document.getElementById("slide-number");
+const slideTotal = document.getElementById("slide-total");
 const stepIndicator = document.getElementById("step-indicator");
 const presProgressBar = document.getElementById("pres-progress-bar");
 const laserPointer = document.getElementById("laser-pointer");
@@ -4129,7 +4132,9 @@ function updateActiveSlide() {
 function updatePresentationHUD() {
   if (!currentLecture) return;
   const totalSlides = currentLecture.slides.length;
-  slideCounter.textContent = `Slayt ${currentSlideIndex + 1} / ${totalSlides}`;
+  slideNumberInput.value = String(currentSlideIndex + 1);
+  slideNumberInput.size = Math.max(2, String(totalSlides).length);
+  slideTotal.textContent = String(totalSlides);
 
   const activeSlide = document.querySelector(".slide.active-slide");
   if (activeSlide) {
@@ -4151,6 +4156,19 @@ function updatePresentationHUD() {
 
   const progress = ((currentSlideIndex + 1) / totalSlides) * 100;
   presProgressBar.style.width = `${progress}%`;
+}
+
+/** Jumps to an existing slide; invalid input restores the current number. */
+function jumpToSlideNumber() {
+  if (!isPresentationMode || !currentLecture) return;
+  const value = slideNumberInput.value.trim();
+  const number = Number(value);
+  if (/^[0-9]+$/.test(value) && Number.isSafeInteger(number) &&
+      number >= 1 && number <= currentLecture.slides.length && number - 1 !== currentSlideIndex) {
+    currentSlideIndex = number - 1;
+    updateActiveSlide();
+  }
+  slideNumberInput.value = String(currentSlideIndex + 1);
 }
 
 function nextStepOrSlide() {
@@ -6229,6 +6247,15 @@ document.getElementById("btn-home").addEventListener("click", goHome);
 document.getElementById("btn-back-catalog").addEventListener("click", goHome);
 document.getElementById("btn-start-presentation").addEventListener("click", enterPresentationMode);
 document.getElementById("btn-banner-present").addEventListener("click", enterPresentationMode);
+
+slideNumberInput.addEventListener("focus", () => slideNumberInput.select());
+slideNumberInput.addEventListener("blur", jumpToSlideNumber);
+slideNumberInput.addEventListener("keydown", event => {
+  if (event.key !== "Enter" && event.key !== "Escape") return;
+  event.preventDefault();
+  if (event.key === "Escape") slideNumberInput.value = String(currentSlideIndex + 1);
+  slideNumberInput.blur();
+});
 
 document.getElementById("btn-prev-slide").addEventListener("click", prevStepOrSlide);
 document.getElementById("btn-next-slide").addEventListener("click", nextStepOrSlide);
