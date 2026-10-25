@@ -16,14 +16,29 @@
       request.onupgradeneeded = () => request.result.createObjectStore(STORE);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
-    });
+    }).catch(error => { database = undefined; throw error; });
     return database;
   }
 
   async function documentFingerprint(lectures) {
+    return partsFingerprint(root.LectureDocument.parts(lectures));
+  }
+
+  async function partsFingerprint(parts) {
     const hashes = [];
-    for (const part of root.LectureDocument.parts(lectures)) hashes.push(await fingerprint(part));
+    for (const part of parts) hashes.push(await fingerprint(part));
     return fingerprint(JSON.stringify(hashes));
+  }
+
+  /** Reads both original snapshots and compact, reference-preserving documents. */
+  function readRecord(record) {
+    if (Array.isArray(record.lectures)) return record.lectures;
+    if (record.format !== 2 || !Array.isArray(record.parts)) throw new Error("Invalid local lecture record");
+    const decoder = root.LectureDocument.decoder();
+    for (const part of record.parts) decoder.add(part);
+    const lectures = decoder.result();
+    if (!Array.isArray(lectures)) throw new Error("Invalid local lecture document");
+    return lectures;
   }
 
   /** Keeps one recovery copy per distinct document; all earlier backups remain intact. */
@@ -39,11 +54,12 @@
       await previous;
       const db = await open();
       const legacyFingerprint = await fingerprint(legacyText);
-      const digest = await documentFingerprint(snapshot);
+      const parts = Array.from(root.LectureDocument.parts(snapshot));
+      const digest = await partsFingerprint(parts);
       await new Promise((resolve, reject) => {
         const transaction = db.transaction(STORE, "readwrite");
         const store = transaction.objectStore(STORE);
-        const record = { savedAt: new Date().toISOString(), lectures: snapshot, legacyFingerprint };
+        const record = { savedAt: new Date().toISOString(), format: 2, parts, legacyFingerprint };
         const backupKey = `backup-sha256-${digest}`;
         const request = store.getKey(backupKey);
         request.onsuccess = () => {
@@ -71,17 +87,19 @@
         request.onerror = () => reject(request.error);
       });
       if (!record) return null;
+      const lectures = readRecord(record);
       let legacyText;
-      try { legacyText = localStorage.getItem(LEGACY_KEY); } catch { return record.lectures; }
-      if (!legacyText || await fingerprint(legacyText) === record.legacyFingerprint || legacyText === JSON.stringify(record.lectures)) return record.lectures;
+      try { legacyText = localStorage.getItem(LEGACY_KEY); } catch { return lectures; }
+      if (!legacyText || await fingerprint(legacyText) === record.legacyFingerprint) return lectures;
       let legacy;
-      try { legacy = JSON.parse(legacyText); } catch { return record.lectures; }
-      if (!Array.isArray(legacy)) return record.lectures;
-      const merged = structuredClone(record.lectures);
+      try { legacy = JSON.parse(legacyText); } catch { return lectures; }
+      if (!Array.isArray(legacy)) return lectures;
+      if (await documentFingerprint(legacy) === await documentFingerprint(lectures)) return lectures;
+      const merged = root.LectureDocument.snapshot(lectures);
       for (const lecture of legacy) {
-        const existing = record.lectures.find(item => item.id === lecture.id);
+        const existing = lectures.find(item => item.id === lecture.id);
         if (!existing) merged.push(lecture);
-        else if (JSON.stringify(existing) !== JSON.stringify(lecture)) merged.push({ ...lecture, id: `legacy-${crypto.randomUUID()}`, title: `${lecture.title} (Diğer yerel kayıt)` });
+        else if (await documentFingerprint(existing) !== await documentFingerprint(lecture)) merged.push({ ...lecture, id: `legacy-${crypto.randomUUID()}`, title: `${lecture.title} (Diğer yerel kayıt)` });
       }
       warning = "Bu tarayıcıda farklı iki yerel kayıt bulundu; her iki sürüm de korundu. ‘Diğer yerel kayıt’ derslerini inceleyebilirsiniz.";
       return merged;

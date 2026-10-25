@@ -109,3 +109,43 @@ test("a cached older tab cannot silently replace newer notes; both copies are pr
   assert.ok(loaded.some(lecture => lecture.slides[0].html === "Eski sekmede eklediğim not"));
   assert.ok(store.warning.includes("her iki sürüm"));
 });
+
+test("PDF page references store the original bytes once and survive a fresh load", async () => {
+  const source = "data:application/pdf;base64," + "A".repeat(64 * 1024);
+  const data = [{ id: "many-pages", pdfUrl: source, slides: Array.from({ length: 80 }, (_, index) => ({
+    title: `Page ${index + 1}`, html: "", pdf: { source, page: index + 1, width: 960, height: 540 }
+  })) }];
+  const { store, indexedDB } = storageHarness([]);
+  assert.equal(await store.save(data), true);
+  const db = await database(indexedDB);
+  const record = await new Promise(resolve => {
+    const request = db.transaction("lecture-snapshots").objectStore("lecture-snapshots").get("current");
+    request.onsuccess = () => resolve(request.result);
+  });
+  db.close();
+  assert.ok(JSON.stringify(record).length < source.length * 3, "page count must not multiply stored PDF bytes");
+  const restarted = storageHarness([], indexedDB).store;
+  const loaded = await restarted.load();
+  assert.equal(loaded[0].slides.length, 80);
+  assert.equal(loaded[0].pdfUrl, source);
+  assert.ok(loaded[0].slides.every(slide => slide.pdf.source === source));
+});
+
+test("legacy IndexedDB documents remain readable without rewriting their records", async () => {
+  const { store, indexedDB, values } = storageHarness([]);
+  values.clear();
+  const db = await database(indexedDB);
+  const old = { lectures: [note("old-current", "Existing saved notes")], savedAt: "2026-01-01" };
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction("lecture-snapshots", "readwrite");
+    tx.objectStore("lecture-snapshots").put(old, "current");
+    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+  });
+  assert.equal((await store.load())[0].slides[0].html, "Existing saved notes");
+  const after = await new Promise(resolve => {
+    const request = db.transaction("lecture-snapshots").objectStore("lecture-snapshots").get("current");
+    request.onsuccess = () => resolve(request.result);
+  });
+  assert.deepEqual(after, old);
+  db.close();
+});

@@ -90,9 +90,17 @@
       message("GitHub’daki mevcut kayıt kontrol ediliyor…");
       const current = await repository.readCurrent({ skipLecturesForVersion: synchronized ? version : null });
       if ((current.manifest?.id || null) !== version) throw new Error("Başka bir cihazdan yeni yayın var. Güncel yayını ayrı sekmede inceleyip bu sayfayı yenileyin; yerel değişiklikleriniz korundu.");
+      let driveBackupError = null;
+      let drivePrepared = false;
       if (root.DrivePublishing?.enabled()) {
         message("Derslerin bağımsız Drive yedeği hazırlanıyor…");
-        lectures = (await root.DrivePublishing.prepare(lectures, progress)).lectures;
+        try {
+          lectures = (await root.DrivePublishing.prepare(lectures, progress)).lectures;
+          drivePrepared = true;
+        } catch (error) {
+          driveBackupError = error.message;
+          message("Drive yedeği alınamadı · Özgün ders dosyaları GitHub’a yayımlanıyor…");
+        }
       }
       const manifest = await repository.publish(lectures, current, progress);
       version = manifest.id;
@@ -104,7 +112,8 @@
           if (saved && !pendingSave) rememberDigest(manifest.digest);
         }
       }
-      message(pendingSave ? "Önceki kayıt yayımlandı; aktarım sırasında yaptığınız değişiklikler yerelde korundu. Son değişiklikler için yeniden Yayımla düğmesine basın." : root.DrivePublishing?.enabled()
+      message(pendingSave ? "Önceki kayıt yayımlandı; aktarım sırasında yaptığınız değişiklikler yerelde korundu. Son değişiklikler için yeniden Yayımla düğmesine basın." : driveBackupError
+        ? `GitHub’a kaydedildi · Drive yedeği alınamadı: ${driveBackupError} · Pages yayını tamamlandığında tüm cihazlarda görünecek.` : drivePrepared
         ? "Drive dosyaları ve yedek kaydedildi · Ders listesi GitHub yayını tamamlandığında güncellenecek."
         : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
       showProgress(100);

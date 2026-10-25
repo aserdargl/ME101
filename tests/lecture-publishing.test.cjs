@@ -70,3 +70,38 @@ test("explicit publication replaces the list exactly, preserves edits during tra
   assert.deepEqual(local.map(lecture => lecture.id), ["new"]);
   assert.match(element("cloud-status-text").textContent, /Başka bir cihazdan yeni yayın/);
 });
+
+test("an unavailable optional Drive backup does not block publishing the original PDF to GitHub", async () => {
+  const source = "data:application/pdf;base64,c3ludGhldGljLW9ubHk=";
+  let local = [{ id: "pdf", pdfUrl: source, slides: [{ pdf: { source, page: 1 }, html: "Original note" }] }];
+  const before = structuredClone(local);
+  let published, backupError = "Drive bağlantısı hazır değil.";
+  let manifest = { id: "current", format: 2, partLength: 4 * 1024 * 1024, digest: "same-hash" };
+  const nodes = new Map();
+  const element = id => {
+    if (!nodes.has(id)) nodes.set(id, { textContent: "", value: 0, classList: { toggle() {} }, addEventListener() {} });
+    return nodes.get(id);
+  };
+  class Repository {
+    async readPublished() { return { manifest, lectures: local }; }
+    async readCurrent() { return { manifest }; }
+    async documentDigest() { return "same-hash"; }
+    async login() { return true; }
+    async publish(lectures) { published = structuredClone(lectures); manifest = { ...manifest, id: "next" }; return manifest; }
+  }
+  const root = { addEventListener() {}, LectureDocument: require("../lecture-document.js"),
+    DrivePublishing: { enabled: () => true, prepare: async () => { throw new Error(backupError); } } };
+  const context = { window: root, document: { getElementById: element }, InstructorLectureRepository: Repository,
+    localStorage: { getItem: () => null, setItem() {} }, LectureStorage: { save: async () => true } };
+  vm.runInNewContext(fs.readFileSync(require.resolve("../lecture-publishing.js"), "utf8"), context);
+  const service = root.LecturePublishing;
+  await service.initialize({ hasLocalData: true, getLectures: () => local, applyLectures: value => { local = value; } });
+  await service.login();
+  for (backupError of ["Drive bağlantısı hazır değil.", "Drive kotası yeterli değil."]) {
+    await service.publish();
+    assert.deepEqual(published, before);
+    assert.deepEqual(local, before);
+    assert.match(element("cloud-status-text").textContent, /GitHub’a kaydedildi/);
+    assert.ok(element("cloud-status-text").textContent.includes(backupError), "backup failure must remain visible");
+  }
+});

@@ -1,5 +1,11 @@
 # MEE 101 Ders Portalı
 
+PDF'lerin yerel yedekleri özgün dosyayı bir kez saklayan parçalardan oluşturulur;
+sayfa sayısı aynı dosyanın tekrar tekrar kaydedilmesine yol açmaz. Eski yerel
+kayıtlar ve kurtarma yedekleri okunmaya devam eder; kayıt anahtarları korunur.
+İsteğe bağlı Drive yedeği bağlantı veya kota hatası verirse özgün ders belgesi
+GitHub'a yayımlanır ve Drive yedeğinin alınamadığı açıkça gösterilir.
+
 ## Yayın listesinin değiştirilmesi ve dosya temizliği
 
 **Yayımla**, ekrandaki mevcut ders listesini aynen yayımlar: silinen dersler birleştirmeyle geri eklenmez, yeni dersler ve düzenlemeler güncel listeye aktarılır. Sunucu, manifest ile `data/snapshots/` klasörünü aynı Git işleminde değiştirir; bu klasörde yalnızca yeni yayının parçaları kalır. Artık kullanılmayan eski yayın dosyaları GitHub Pages üzerinden sunulmaz. Kaynak dosyalar, bu klasör dışındaki dosyalar, Git geçmişi ve bağımsız Drive yedekleri korunur. Başka cihazdan araya yeni yayın girerse işlem durur; yerel değişiklikler korunur. Güncel derslerde hiçbir referansı kalmadığı doğrulanan sekiz eski örnek PPTX dosyası da depodan kaldırılmıştır.

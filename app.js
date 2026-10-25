@@ -456,7 +456,8 @@ function saveCustomLectureToStorage(newLec) {
     const raw = localStorage.getItem(CUSTOM_LECTURES_KEY);
     const arr = raw ? JSON.parse(raw) : [];
     arr.push(newLec);
-    localStorage.setItem(CUSTOM_LECTURES_KEY, JSON.stringify(arr));
+    const legacy = LectureDocument.legacyJson(arr);
+    if (legacy !== null) localStorage.setItem(CUSTOM_LECTURES_KEY, legacy);
   } catch {
     // ignore
   }
