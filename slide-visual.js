@@ -6,7 +6,8 @@
     const hasNotes = Boolean(String(slide.html || "").trim());
     const hasOriginal = Boolean(slide.pptImageUrl || (!slide.sourceSlideEdited && slide.sourceSlideVisual) || root.PptxDisplay?.visualFor(slide));
     const hasMedia = Array.isArray(slide.extractedImages) && slide.extractedImages.length > 0;
-    return { web: mode !== "ppt" || hasNotes, ppt: mode === "ppt" && (hasOriginal || hasMedia || !hasNotes) };
+    const visualMode = mode === "ppt" || mode === "image";
+    return { web: !visualMode || hasNotes, ppt: visualMode && (hasOriginal || hasMedia || !hasNotes) };
   }
 
   /** Uses original slide geometry when available; never invents a technical image. */

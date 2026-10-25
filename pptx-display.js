@@ -109,6 +109,7 @@ window.PptxDisplay = (() => {
       await handle.ready;
       fit(host);
       host.dataset.rendered = "true";
+      SlideImage.setMode(host, mounted.get(host), host.dataset.displayMode || "ppt");
     } catch {
       host.textContent = "Slayt görüntülenemedi. Özgün PPTX’i indirerek açabilirsiniz.";
     } finally { delete host.dataset.mounting; }
@@ -131,5 +132,13 @@ window.PptxDisplay = (() => {
     if (!scheduled) { scheduled = true; requestAnimationFrame(scan); }
   }).observe(document.body, { childList: true, subtree: true });
 
-  return { prepareUpload, prepareLecture, visualFor };
+  /** Changes display state only; it never updates saved slide fields. */
+  function setImageMode(container, mode) {
+    container.querySelectorAll("[data-pptx-render]").forEach(host => {
+      host.dataset.displayMode = mode;
+      if (host.dataset.rendered === "true") SlideImage.setMode(host, mounted.get(host), mode);
+    });
+  }
+
+  return { prepareUpload, prepareLecture, visualFor, setImageMode };
 })();

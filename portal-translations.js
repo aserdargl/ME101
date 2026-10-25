@@ -1,5 +1,7 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Resim olarak göster": "Show as images",
+  "Resim görünümü açık": "Image view active",
   "Geniş Görünümden Çık": "Exit Expanded View",
   "Tam Ekrandan Çık": "Exit Full Screen",
   "Tam Ekran (F)": "Full Screen (F)",

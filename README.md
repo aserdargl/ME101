@@ -81,3 +81,7 @@ JavaScript modülleri değiştiğinde yayımlamadan önce `npm run build` çalı
 `PLAYWRIGHT_MODULE` Playwright kurulum yolunu gösterirken `node tests/startup-performance.cjs` ayrı localhost kaynağında beş soğuk açılış ölçer. `STARTUP_BEFORE=1` önceki yayını, `STARTUP_VERIFY=1` düzenleyicide açma/iptal/kaydetme/yenileme, kayıt koruma, ZIP içe aktarma ve katalog görünümü eşitliğini denetler. Sentetik veri kullanılır; canlı kayıtlara yazılmaz.
 
 Kullanıcı canlı açılış ölçümü istediğinde `node tests/live-startup.cjs`, gerçek siteyi temiz ve oturumsuz tarayıcılarda yalnız okuyarak ölçer; sentetik veri eklemez, düğmelere basmaz ve yazma isteklerini engeller. İlk ziyaret ve önbellekli tekrar ziyaret ayrı raporlanır. Sonuçlar `tests/live-startup-results.md` dosyasındadır.
+
+## Resim görünümü
+
+Ders görünümündeki **Resim olarak göster** düğmesi PPTX slaytlarını tarayıcıda PNG olarak gösterir. Kayıtlı bir görünüm tercihi yoksa varsayılan resim görünümüdür; mevcut tercihler korunur. Web/PPT görünümleri, HTML notları, etkileşimli içerik ve özgün PPTX dosyaları korunur. Resimler yalnız görüntüleme belleğinde üretilir; ders kaydı değiştirilmez. Dönüşüm mevcut PPTX görüntüleyicisini kullanır; PowerPoint masaüstü dışa aktarımı değildir. Dönüşüm başarısızsa mevcut slayt görünümü korunur.

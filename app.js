@@ -233,6 +233,7 @@ const LECTURES = [];
 // ============================================================================
 // UYGULAMA DURUMU (STATE)
 // ============================================================================
+const DEFAULT_SLIDE_VIEW_MODE = "image";
 const PREFERRED_VIEW_MODE_KEY = "mee101_preferred_view_mode_v1";
 let currentLecture = null;
 let isPresentationMode = false;
@@ -241,9 +242,9 @@ let animationFrameId = null;
 let preferredSlideViewMode = (function () {
   try {
     const saved = localStorage.getItem(PREFERRED_VIEW_MODE_KEY);
-    return saved === "ppt" || saved === "web" ? saved : null;
+    return ["ppt", "web", "image"].includes(saved) ? saved : DEFAULT_SLIDE_VIEW_MODE;
   } catch {
-    return null;
+    return DEFAULT_SLIDE_VIEW_MODE;
   }
 })();
 let allSlidesInPptVisualMode = preferredSlideViewMode === "ppt";
@@ -769,6 +770,7 @@ function openLecture(lectureId, startInPresentation = false) {
     slidesContainer.querySelectorAll('.slide-body-ppt[data-rendered="true"]').forEach(body => {
       const index = Number(body.closest(".slide").dataset.index);
       body.innerHTML = buildPptExactVisualHtml(lec.slides[index], index, lec.slides.length, lec.week);
+      PptxDisplay.setImageMode(body, body.closest(".slide").dataset.viewMode);
     });
     slidesContainer.querySelectorAll('.slide').forEach(slide => setSlideElementViewMode(slide, slide.dataset.viewMode));
   });
@@ -776,7 +778,7 @@ function openLecture(lectureId, startInPresentation = false) {
     const slideEl = document.createElement("section");
     slideEl.className = "slide";
     slideEl.dataset.index = idx;
-    const effectiveMode = preferredSlideViewMode || s.defaultViewMode || "web";
+    const effectiveMode = preferredSlideViewMode || DEFAULT_SLIDE_VIEW_MODE;
     slideEl.dataset.viewMode = effectiveMode;
 
     const isPptMode = effectiveMode === "ppt";
@@ -798,6 +800,7 @@ function openLecture(lectureId, startInPresentation = false) {
       <div class="slide-body-web ${visibility.web ? "" : "hidden"}" data-rendered="${needsWebBody}">${needsWebBody ? s.html || "" : ""}</div>
     `;
     slidesContainer.appendChild(slideEl);
+    PptxDisplay.setImageMode(slideEl, effectiveMode);
   });
 
   const toggleAllBtn = document.getElementById("btn-toggle-all-slide-modes");
@@ -824,6 +827,7 @@ function openLecture(lectureId, startInPresentation = false) {
     });
   });
 
+  updateImageViewButton();
   initSimulations();
 
   if (startInPresentation) {
@@ -855,6 +859,7 @@ function setSlideElementViewMode(slideEl, mode) {
   }
 
   slideEl.dataset.viewMode = mode;
+  PptxDisplay.setImageMode(pptBody, mode);
 
   if (mode === "ppt") {
     switchBtn.classList.add("ppt-visual-active");
@@ -866,7 +871,7 @@ function setSlideElementViewMode(slideEl, mode) {
 }
 
 function applyPersistentSlideViewMode(targetMode) {
-  const mode = targetMode === "ppt" ? "ppt" : "web";
+  const mode = ["ppt", "web", "image"].includes(targetMode) ? targetMode : DEFAULT_SLIDE_VIEW_MODE;
   preferredSlideViewMode = mode;
   allSlidesInPptVisualMode = mode === "ppt";
   try {
@@ -886,8 +891,18 @@ function applyPersistentSlideViewMode(targetMode) {
       : "Tümünü PPT Levha Görünümüne Al";
   }
 
+  updateImageViewButton();
   updatePresentationHUD();
 }
+
+function updateImageViewButton() {
+  const active = preferredSlideViewMode === "image";
+  const button = document.getElementById("btn-image-slide-mode");
+  button.setAttribute("aria-pressed", String(active));
+  button.textContent = active ? "Resim görünümü açık" : "Resim olarak göster";
+}
+
+document.getElementById("btn-image-slide-mode").addEventListener("click", () => applyPersistentSlideViewMode("image"));
 
 function toggleSingleSlideViewMode(slideIdx) {
   const slideEl = document.querySelector(`.slide[data-index="${slideIdx}"]`);

@@ -5,7 +5,7 @@ const { createHash } = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const sources = [
   'portal-translations.js', 'portal-language.js', 'catalog-order.js', 'catalog-ui.js',
-  'pptx-display.js', 'pptx-import.js', 'slide-visual.js', 'pptx-preview.js',
+  'slide-image.js', 'pptx-display.js', 'pptx-import.js', 'slide-visual.js', 'pptx-preview.js',
   'lecture-storage.js', 'lecture-document.js', 'google-drive-storage.js', 'drive-publishing.js', 'github-repository.js', 'instructor-repository.js', 'lecture-publishing.js', 'legacy-content.js',
   'student-numbers.js', 'firebase-student-service.js', 'firebase-enrollment.js',
   'approval-client.js', 'roster-edit-client.js', 'firebase-adapter.js', 'firebase-students.js', 'approval-ui.js',

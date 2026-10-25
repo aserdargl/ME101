@@ -3,6 +3,8 @@
 /* portal-translations.js */
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Resim olarak göster": "Show as images",
+  "Resim görünümü açık": "Image view active",
   "Geniş Görünümden Çık": "Exit Expanded View",
   "Tam Ekrandan Çık": "Exit Full Screen",
   "Tam Ekran (F)": "Full Screen (F)",
@@ -578,6 +580,101 @@ document.getElementById("catalog-search-form").addEventListener("submit", (event
 });
 ;
 
+/* slide-image.js */
+/* Creates display-only PNGs; lecture content and uploaded files remain untouched. */
+window.SlideImage = (() => {
+  const MAX_WIDTH = 1920;
+
+  async function embedResource(url) {
+    return dataUrl(await (await fetch(url)).blob());
+  }
+
+  function dataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function cloneVisual(source) {
+    if (source.nodeType !== Node.ELEMENT_NODE) return source.cloneNode();
+    if (source.tagName === "CANVAS") {
+      const image = new Image();
+      image.src = source.toDataURL("image/png");
+      image.style.cssText = source.style.cssText;
+      return image;
+    }
+    const clone = source.cloneNode(false);
+    const style = getComputedStyle(source);
+    for (const property of style) {
+      let value = style.getPropertyValue(property);
+      const resources = [...value.matchAll(/url\(["']?(blob:[^"')]+)["']?\)/g)];
+      for (const match of resources) value = value.replace(match[1], await embedResource(match[1]));
+      clone.style.setProperty(property, value);
+    }
+    if (source instanceof HTMLImageElement) {
+      await source.decode();
+      clone.src = await embedResource(source.currentSrc || source.src);
+      clone.removeAttribute("srcset");
+    }
+    for (const attribute of source.attributes) {
+      if (attribute.value.startsWith("blob:")) clone.setAttributeNS(attribute.namespaceURI, attribute.name, await embedResource(attribute.value));
+    }
+    for (const child of source.childNodes) clone.append(await cloneVisual(child));
+    return clone;
+  }
+
+  /** Captures a mounted PPT slide at its native ratio, independently of viewport size. */
+  async function capture(element, width, height) {
+    await document.fonts.ready;
+    const clone = await cloneVisual(element);
+    Object.assign(clone.style, { transform: "none", position: "relative", left: "0", top: "0" });
+    const markup = new XMLSerializer().serializeToString(clone);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="100%" height="100%">${markup}</foreignObject></svg>`;
+    const image = new Image();
+    image.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.min(MAX_WIDTH, Math.ceil(width * 2));
+    canvas.height = Math.round(canvas.width * height / width);
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/png");
+  }
+
+  /** Leaves the existing PPT rendering visible if image conversion is unavailable. */
+  async function replace(host, state) {
+    if (state.image || host.dataset.imagePending) return;
+    host.dataset.imagePending = "true";
+    try {
+      const src = await capture(state.handle.element, state.presentation.width, state.presentation.height);
+      if (!host.isConnected || host.dataset.displayMode !== "image") return;
+      const image = new Image();
+      image.alt = host.getAttribute("aria-label") || "Slayt";
+      image.src = src;
+      Object.assign(image.style, { width: "100%", height: "100%", objectFit: "contain" });
+      state.handle.element.style.visibility = "hidden";
+      host.shadowRoot.append(image);
+      state.image = image;
+      host.dataset.imageReady = "true";
+    } catch {
+      host.dataset.imageError = "true";
+      host.title = "Resim oluşturulamadı; özgün slayt görünümü gösteriliyor.";
+    } finally { delete host.dataset.imagePending; }
+  }
+
+  function setMode(host, state, mode) {
+    host.dataset.displayMode = mode;
+    if (state.image) state.image.hidden = mode !== "image";
+    state.handle.element.style.visibility = mode === "image" && state.image ? "hidden" : "visible";
+    if (mode === "image") replace(host, state);
+  }
+
+  return { capture, setMode };
+})();
+;
+
 /* pptx-display.js */
 /* Reads the uploaded PPTX for display; never rewrites lecture notes or settings. */
 window.PptxDisplay = (() => {
@@ -690,6 +787,7 @@ window.PptxDisplay = (() => {
       await handle.ready;
       fit(host);
       host.dataset.rendered = "true";
+      SlideImage.setMode(host, mounted.get(host), host.dataset.displayMode || "ppt");
     } catch {
       host.textContent = "Slayt görüntülenemedi. Özgün PPTX’i indirerek açabilirsiniz.";
     } finally { delete host.dataset.mounting; }
@@ -712,7 +810,15 @@ window.PptxDisplay = (() => {
     if (!scheduled) { scheduled = true; requestAnimationFrame(scan); }
   }).observe(document.body, { childList: true, subtree: true });
 
-  return { prepareUpload, prepareLecture, visualFor };
+  /** Changes display state only; it never updates saved slide fields. */
+  function setImageMode(container, mode) {
+    container.querySelectorAll("[data-pptx-render]").forEach(host => {
+      host.dataset.displayMode = mode;
+      if (host.dataset.rendered === "true") SlideImage.setMode(host, mounted.get(host), mode);
+    });
+  }
+
+  return { prepareUpload, prepareLecture, visualFor, setImageMode };
 })();
 ;
 
@@ -1038,7 +1144,8 @@ window.PptxDisplay = (() => {
     const hasNotes = Boolean(String(slide.html || "").trim());
     const hasOriginal = Boolean(slide.pptImageUrl || (!slide.sourceSlideEdited && slide.sourceSlideVisual) || root.PptxDisplay?.visualFor(slide));
     const hasMedia = Array.isArray(slide.extractedImages) && slide.extractedImages.length > 0;
-    return { web: mode !== "ppt" || hasNotes, ppt: mode === "ppt" && (hasOriginal || hasMedia || !hasNotes) };
+    const visualMode = mode === "ppt" || mode === "image";
+    return { web: !visualMode || hasNotes, ppt: visualMode && (hasOriginal || hasMedia || !hasNotes) };
   }
 
   /** Uses original slide geometry when available; never invents a technical image. */
@@ -3431,6 +3538,7 @@ const LECTURES = [];
 // ============================================================================
 // UYGULAMA DURUMU (STATE)
 // ============================================================================
+const DEFAULT_SLIDE_VIEW_MODE = "image";
 const PREFERRED_VIEW_MODE_KEY = "mee101_preferred_view_mode_v1";
 let currentLecture = null;
 let isPresentationMode = false;
@@ -3439,9 +3547,9 @@ let animationFrameId = null;
 let preferredSlideViewMode = (function () {
   try {
     const saved = localStorage.getItem(PREFERRED_VIEW_MODE_KEY);
-    return saved === "ppt" || saved === "web" ? saved : null;
+    return ["ppt", "web", "image"].includes(saved) ? saved : DEFAULT_SLIDE_VIEW_MODE;
   } catch {
-    return null;
+    return DEFAULT_SLIDE_VIEW_MODE;
   }
 })();
 let allSlidesInPptVisualMode = preferredSlideViewMode === "ppt";
@@ -3967,6 +4075,7 @@ function openLecture(lectureId, startInPresentation = false) {
     slidesContainer.querySelectorAll('.slide-body-ppt[data-rendered="true"]').forEach(body => {
       const index = Number(body.closest(".slide").dataset.index);
       body.innerHTML = buildPptExactVisualHtml(lec.slides[index], index, lec.slides.length, lec.week);
+      PptxDisplay.setImageMode(body, body.closest(".slide").dataset.viewMode);
     });
     slidesContainer.querySelectorAll('.slide').forEach(slide => setSlideElementViewMode(slide, slide.dataset.viewMode));
   });
@@ -3974,7 +4083,7 @@ function openLecture(lectureId, startInPresentation = false) {
     const slideEl = document.createElement("section");
     slideEl.className = "slide";
     slideEl.dataset.index = idx;
-    const effectiveMode = preferredSlideViewMode || s.defaultViewMode || "web";
+    const effectiveMode = preferredSlideViewMode || DEFAULT_SLIDE_VIEW_MODE;
     slideEl.dataset.viewMode = effectiveMode;
 
     const isPptMode = effectiveMode === "ppt";
@@ -3996,6 +4105,7 @@ function openLecture(lectureId, startInPresentation = false) {
       <div class="slide-body-web ${visibility.web ? "" : "hidden"}" data-rendered="${needsWebBody}">${needsWebBody ? s.html || "" : ""}</div>
     `;
     slidesContainer.appendChild(slideEl);
+    PptxDisplay.setImageMode(slideEl, effectiveMode);
   });
 
   const toggleAllBtn = document.getElementById("btn-toggle-all-slide-modes");
@@ -4022,6 +4132,7 @@ function openLecture(lectureId, startInPresentation = false) {
     });
   });
 
+  updateImageViewButton();
   initSimulations();
 
   if (startInPresentation) {
@@ -4053,6 +4164,7 @@ function setSlideElementViewMode(slideEl, mode) {
   }
 
   slideEl.dataset.viewMode = mode;
+  PptxDisplay.setImageMode(pptBody, mode);
 
   if (mode === "ppt") {
     switchBtn.classList.add("ppt-visual-active");
@@ -4064,7 +4176,7 @@ function setSlideElementViewMode(slideEl, mode) {
 }
 
 function applyPersistentSlideViewMode(targetMode) {
-  const mode = targetMode === "ppt" ? "ppt" : "web";
+  const mode = ["ppt", "web", "image"].includes(targetMode) ? targetMode : DEFAULT_SLIDE_VIEW_MODE;
   preferredSlideViewMode = mode;
   allSlidesInPptVisualMode = mode === "ppt";
   try {
@@ -4084,8 +4196,18 @@ function applyPersistentSlideViewMode(targetMode) {
       : "Tümünü PPT Levha Görünümüne Al";
   }
 
+  updateImageViewButton();
   updatePresentationHUD();
 }
+
+function updateImageViewButton() {
+  const active = preferredSlideViewMode === "image";
+  const button = document.getElementById("btn-image-slide-mode");
+  button.setAttribute("aria-pressed", String(active));
+  button.textContent = active ? "Resim görünümü açık" : "Resim olarak göster";
+}
+
+document.getElementById("btn-image-slide-mode").addEventListener("click", () => applyPersistentSlideViewMode("image"));
 
 function toggleSingleSlideViewMode(slideIdx) {
   const slideEl = document.querySelector(`.slide[data-index="${slideIdx}"]`);
