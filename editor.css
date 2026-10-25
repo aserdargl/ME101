@@ -1,6 +1,9 @@
 /* Course authoring appearance only. Storage and course content are unchanged. */
 body:has(> .course-editor:not(.hidden)) { overflow: hidden; }
 .course-editor { padding: 24px; }
+/* Lazy PDF previews must not pull the editor back to an earlier scroll anchor. */
+.course-editor .modal-body,
+.course-editor .edit-slide-filmstrip { overflow-anchor: none; }
 .course-editor .modal-card {
   display: flex;
   flex-direction: column;
