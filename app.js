@@ -938,9 +938,7 @@ function exitPresentationMode() {
   togglePen(false);
   clearCanvas();
 
-  if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {});
-  }
+  PresentationFullscreen.exit().catch(() => {});
 }
 
 function updateActiveSlide() {
@@ -3023,13 +3021,7 @@ document.getElementById("btn-toggle-pen").addEventListener("click", () => toggle
 document.getElementById("btn-clear-pen").addEventListener("click", clearCanvas);
 document.getElementById("btn-exit-presentation").addEventListener("click", exitPresentationMode);
 
-document.getElementById("btn-fullscreen").addEventListener("click", () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(() => {});
-  } else {
-    document.exitFullscreen().catch(() => {});
-  }
-});
+PresentationFullscreen.initialize(document.getElementById("btn-fullscreen"));
 
 slidesViewport.addEventListener("click", (e) => {
   if (!isPresentationMode || isPenActive) return;
@@ -3064,6 +3056,7 @@ window.addEventListener("keydown", (e) => {
   } else if (e.key.toLowerCase() === "d") {
     clearCanvas();
   } else if (e.key.toLowerCase() === "f") {
+    e.preventDefault();
     document.getElementById("btn-fullscreen").click();
   }
 });

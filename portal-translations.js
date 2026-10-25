@@ -1,5 +1,12 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Geniş Görünümden Çık": "Exit Expanded View",
+  "Tam Ekrandan Çık": "Exit Full Screen",
+  "Tam Ekran (F)": "Full Screen (F)",
+  "Tam Ekrandan Çık (F)": "Exit Full Screen (F)",
+  "Geniş Görünümden Çık (F)": "Exit Expanded View (F)",
+  "Tarayıcı tam ekrana izin vermedi. Geniş görünüm açıldı.": "Your browser blocked full screen. Expanded view is active.",
+  "Ayrı sekmede aç": "Open in a separate tab",
   "E-posta ve parolanızla giriş yapın. Dersleri düzenleyip yayımlayabilir, öğrenci listesini ve başvuruları yönetebilirsiniz.": "Sign in with your email and password to edit and publish lessons and manage students and applications.",
   "Hoca Girişi": "Instructor Sign In",
   "Yayımla": "Publish",

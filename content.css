@@ -66,3 +66,9 @@ body.presentation-mode .ppt-source-frame img { max-height: calc(100dvh - 130px);
   .slide-top-controls { flex-wrap: wrap; max-width: 100%; }
   body.presentation-mode .slides-viewport { padding: 10px; }
 }
+
+body.presentation-expanded .slides-viewport { padding: 8px; }
+body.presentation-expanded .slides-container { max-width: none; max-height: none; }
+.presentation-fullscreen-notice { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 450; width: max-content; max-width: calc(100vw - 24px); padding: 8px 12px; border-radius: 6px; background: #30251e; color: #fff; font-size: 13px; }
+.presentation-fullscreen-notice a { color: #fff; text-decoration: underline; }
+.presentation-fullscreen-notice[hidden] { display: none; }
