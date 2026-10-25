@@ -52,6 +52,12 @@ window.FirebaseStudents = (() => {
     signInInstructor: async token => { await ready; return service ? service.signInInstructor(token) : unavailable(); },
     get profile() { return service?.profile || null; },
     get isAdmin() { return service?.isAdmin === true; },
+    /** Returns the signed-in instructor identity without changing the account. */
+    get instructorName() {
+      if (!service?.isAdmin) return "";
+      const user = service.adapter.getUser();
+      return user?.displayName?.trim() || user?.email || "";
+    },
     get roster() { return service?.isAdmin ? service.roster : []; },
     get applications() { return service?.isAdmin ? service.applications : []; },
     register: async (email, password, number, name) => { await ready; return service ? service.register(email, password, number, name) : unavailable(); },

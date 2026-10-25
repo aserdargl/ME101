@@ -7,3 +7,5 @@
 - Keep the existing GitHub Pages address and preserve the compact vertical lecture list.
 - Host the site and shared lecture content on GitHub only. Do not introduce Netlify or another hosting/storage service without an explicit user request.
 - Published notes live under `data/`. Fetch the latest remote before source edits; retain these files and never force-push over published content.
+
+- Always publish completed website updates: run appropriate checks, commit and push to the existing GitHub Pages publication branch, and verify the live deployment before reporting completion. Do not leave completed changes unpublished. Preserve remote changes and published data; report any real publication blocker explicitly.

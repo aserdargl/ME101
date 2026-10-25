@@ -82,6 +82,9 @@ window.PORTAL_ENGLISH = {
   "Giriş Yap": "Sign In",
   "Hesap Oluştur": "Create Account",
   "Parolamı Unuttum": "Forgot Password",
+  "Şifremi Unuttum": "Forgot Password",
+  "E-posta adresinizi giriniz.": "Enter your email address.",
+  "Adresiniz için bir hesap varsa parola sıfırlama e-postası gönderilecektir.": "If an account exists for your address, a password reset email will be sent.",
   "Firebase Yönetici Girişi": "Firebase Administrator Sign In",
   "Öğrenci Listesi · e-posta;numara;ad soyad": "Student Roster · email;number;full name",
   "Makine Mühendisliğine Giriş, Tarihsel Gelişim ve Temel Disiplinler": "Introduction to Mechanical Engineering, Historical Development and Core Disciplines",
@@ -2605,6 +2608,12 @@ window.FirebaseStudents = (() => {
     signInInstructor: async token => { await ready; return service ? service.signInInstructor(token) : unavailable(); },
     get profile() { return service?.profile || null; },
     get isAdmin() { return service?.isAdmin === true; },
+    /** Returns the signed-in instructor identity without changing the account. */
+    get instructorName() {
+      if (!service?.isAdmin) return "";
+      const user = service.adapter.getUser();
+      return user?.displayName?.trim() || user?.email || "";
+    },
     get roster() { return service?.isAdmin ? service.roster : []; },
     get applications() { return service?.isAdmin ? service.applications : []; },
     register: async (email, password, number, name) => { await ready; return service ? service.register(email, password, number, name) : unavailable(); },
@@ -3457,7 +3466,12 @@ function updateAdminUI() {
     if (navEditBtn) navEditBtn.classList.remove("hidden");
     if (bannerEditBtn) bannerEditBtn.classList.remove("hidden");
     adminToggleBtn.classList.add("unlocked");
-    adminLockLabel.textContent = "Yönetici (Çıkış)";
+    const instructorName = FirebaseStudents.instructorName;
+    if (instructorName) {
+      const signOutLabel = document.createElement("span");
+      signOutLabel.textContent = "Çıkış";
+      adminLockLabel.replaceChildren(document.createTextNode(instructorName + " • "), signOutLabel);
+    } else adminLockLabel.textContent = "Yönetici (Çıkış)";
   } else {
     adminToolbar.classList.add("hidden");
     if (adminSectionActions) adminSectionActions.classList.add("hidden");
@@ -4368,6 +4382,21 @@ document.getElementById("btn-admin-toggle").addEventListener("click", () => {
 
 document.getElementById("btn-close-admin-login").addEventListener("click", closeAdminLoginModal);
 document.getElementById("btn-submit-admin-login").addEventListener("click", handleAdminLoginSubmit);
+document.getElementById("btn-instructor-reset-password").addEventListener("click", async event => {
+  const button = event.currentTarget;
+  if (button.disabled) return;
+  button.disabled = true;
+  try {
+    const email = document.getElementById("inp-instructor-email").value;
+    const result = await FirebaseStudents.resetPassword(email);
+    adminLoginError.textContent = result.ok
+      ? "Adresiniz için bir hesap varsa parola sıfırlama e-postası gönderilecektir." : result.error;
+    adminLoginError.classList.remove("hidden");
+  } finally {
+    button.disabled = false;
+  }
+});
+
 document.getElementById("inp-instructor-password").addEventListener("keydown", event => {
   if (event.key === "Enter") { event.preventDefault(); handleAdminLoginSubmit(); }
 });

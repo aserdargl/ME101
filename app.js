@@ -368,7 +368,12 @@ function updateAdminUI() {
     if (navEditBtn) navEditBtn.classList.remove("hidden");
     if (bannerEditBtn) bannerEditBtn.classList.remove("hidden");
     adminToggleBtn.classList.add("unlocked");
-    adminLockLabel.textContent = "Yönetici (Çıkış)";
+    const instructorName = FirebaseStudents.instructorName;
+    if (instructorName) {
+      const signOutLabel = document.createElement("span");
+      signOutLabel.textContent = "Çıkış";
+      adminLockLabel.replaceChildren(document.createTextNode(instructorName + " • "), signOutLabel);
+    } else adminLockLabel.textContent = "Yönetici (Çıkış)";
   } else {
     adminToolbar.classList.add("hidden");
     if (adminSectionActions) adminSectionActions.classList.add("hidden");
@@ -1279,6 +1284,21 @@ document.getElementById("btn-admin-toggle").addEventListener("click", () => {
 
 document.getElementById("btn-close-admin-login").addEventListener("click", closeAdminLoginModal);
 document.getElementById("btn-submit-admin-login").addEventListener("click", handleAdminLoginSubmit);
+document.getElementById("btn-instructor-reset-password").addEventListener("click", async event => {
+  const button = event.currentTarget;
+  if (button.disabled) return;
+  button.disabled = true;
+  try {
+    const email = document.getElementById("inp-instructor-email").value;
+    const result = await FirebaseStudents.resetPassword(email);
+    adminLoginError.textContent = result.ok
+      ? "Adresiniz için bir hesap varsa parola sıfırlama e-postası gönderilecektir." : result.error;
+    adminLoginError.classList.remove("hidden");
+  } finally {
+    button.disabled = false;
+  }
+});
+
 document.getElementById("inp-instructor-password").addEventListener("keydown", event => {
   if (event.key === "Enter") { event.preventDefault(); handleAdminLoginSubmit(); }
 });

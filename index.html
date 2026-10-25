@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="content.css?v=4" />
   <link rel="stylesheet" href="portal-ui.css?v=7" />
   <script defer src="firebase-config.js?v=2"></script>
-  <script defer src="portal-startup.js?v=fd27c3181324"></script>
+  <script defer src="portal-startup.js?v=bcde8eed942b"></script>
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -331,13 +331,16 @@
           <label for="inp-instructor-password">Parola</label>
           <input id="inp-instructor-password" type="password" autocomplete="current-password" />
         </div>
-        <p id="admin-login-error" class="hidden" style="color:#9b2226; font-size:0.78rem; margin-top:0.4rem; font-weight:600;">
+        <p id="admin-login-error" role="status" class="hidden" style="color:#9b2226; font-size:0.78rem; margin-top:0.4rem; font-weight:600;">
           Hatalı parola. Lütfen tekrar deneyiniz.
         </p>
         <div class="modal-footer-actions">
           <button id="btn-submit-admin-login" class="btn btn-primary" style="width:100%; justify-content:center;">
             Giriş Yap
           </button>
+        </div>
+        <div class="modal-footer-actions">
+          <button type="button" id="btn-instructor-reset-password" class="btn btn-outline">Şifremi Unuttum</button>
         </div>
       </div>
     </div>
