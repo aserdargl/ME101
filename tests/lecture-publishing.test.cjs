@@ -5,7 +5,7 @@ const vm = require("node:vm");
 const { webcrypto, createHash } = require("node:crypto");
 const digest = text => createHash("sha256").update(text).digest("hex");
 
-test("explicit publication replaces the list exactly, preserves edits during transfer, and rejects unseen remote changes", async () => {
+test("saving publishes automatically, queues edits during transfer, and rejects unseen remote changes", async () => {
   let local = [{ id: "same", title: "Ders", slides: [{ html: "Bu tarayıcıdaki özel not" }] }];
   let remote = [{ id: "same", title: "Ders", slides: [{ html: "Diğer cihazdaki özgün not" }] }];
   let manifest = { id: "published-id", digest: digest(JSON.stringify(remote)) };
@@ -36,7 +36,7 @@ test("explicit publication replaces the list exactly, preserves edits during tra
   assert.equal(applied, 0, "reading shared notes must not replace unsynced notes");
   assert.equal(local[0].slides[0].html, "Bu tarayıcıdaki özel not");
   await service.login("fixture-access-key");
-  await service.publish();
+  await service.save();
   assert.equal(published.length, 1);
   assert.equal(published.some(lecture => lecture.slides[0].html === "Diğer cihazdaki özgün not"), false);
   assert.ok(published.some(lecture => lecture.slides[0].html === "Bu tarayıcıdaki özel not"));
@@ -53,8 +53,9 @@ test("explicit publication replaces the list exactly, preserves edits during tra
   release();
   await inProgress;
   assert.equal(local[0].slides[0].html, "Aktarım sırasında eklenen yeni not");
-  assert.equal(applied, 1, "a completed upload cannot overwrite edits saved during the transfer");
-  assert.equal(saved, 2, "an unchanged upload is backed up once before transfer");
+  assert.equal(applied, 2, "only the queued latest publication may apply the latest saved edits");
+  assert.equal(published[0].slides[0].html, "Aktarım sırasında eklenen yeni not");
+  assert.equal(saved, 3, "the pending saved version is backed up and published in a second transfer");
   blockPublish = null;
   local = [];
   await service.publish();
@@ -69,6 +70,47 @@ test("explicit publication replaces the list exactly, preserves edits during tra
   assert.equal(published, previous, "unseen changes from another device must block publication");
   assert.deepEqual(local.map(lecture => lecture.id), ["new"]);
   assert.match(element("cloud-status-text").textContent, /Başka bir cihazdan yeni yayın/);
+});
+
+test("failed automatic publication stops without a retry loop and the next save can retry", async () => {
+  const local = [{ id: "unsynced", slides: [{ html: "Keep this note" }] }];
+  let calls = 0, fail = true, active = 0, maximumActive = 0;
+  const nodes = new Map();
+  const element = id => {
+    if (!nodes.has(id)) nodes.set(id, { textContent: "", value: 0, classList: { toggle() {} }, addEventListener() {} });
+    return nodes.get(id);
+  };
+  let manifest = null;
+  class Repository {
+    async login() { return true; }
+    async readPublished() { return { manifest: null, lectures: null }; }
+    async readCurrent() { return { manifest }; }
+    async publish() {
+      calls++; active++; maximumActive = Math.max(maximumActive, active);
+      await new Promise(resolve => setImmediate(resolve));
+      active--;
+      if (fail) throw new Error("Synthetic offline failure");
+      manifest = { id: `version-${calls}`, digest: "saved" };
+      return manifest;
+    }
+  }
+  const context = { document: { getElementById: element }, InstructorLectureRepository: Repository,
+    localStorage: { getItem: () => null, setItem() {} }, LectureStorage: { save: async () => true } };
+  context.window = { addEventListener() {}, LectureDocument: require("../lecture-document.js") };
+  vm.runInNewContext(fs.readFileSync(require.resolve("../lecture-publishing.js"), "utf8"), context);
+  const service = context.window.LecturePublishing;
+  await service.initialize({ hasLocalData: true, getLectures: () => local, applyLectures() {} });
+  await service.save();
+  assert.equal(calls, 0, "signed-out saves must not publish");
+  await service.login();
+  await Promise.all([service.save(), service.save(), service.save()]);
+  assert.equal(calls, 1, "failure must not drain queued saves into an endless retry");
+  assert.match(element("cloud-status-text").textContent, /Synthetic offline failure/);
+  assert.equal(local[0].slides[0].html, "Keep this note");
+  fail = false;
+  await service.save();
+  assert.equal(calls, 2);
+  assert.equal(maximumActive, 1);
 });
 
 test("an unavailable optional Drive backup does not block publishing the original PDF to GitHub", async () => {

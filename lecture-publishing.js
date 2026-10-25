@@ -9,6 +9,8 @@
   let version = null;
   let publishing = false;
   let pendingSave = false;
+  let queuedSave = false;
+  let activePublication = null;
   const status = document.getElementById("cloud-status-text");
   const button = document.getElementById("btn-cloud-publish");
 
@@ -76,9 +78,29 @@
     return visit(root.LectureDocument.snapshot(lectures));
   }
 
-  async function publish(explicit = false) {
+  /** Serializes completed saves; a failed transfer waits for a new save or retry. */
+  function publish(explicit = false) {
+    if (root.MEE101_GITHUB_ENABLED === false) return Promise.resolve(false);
+    if (activePublication) {
+      pendingSave = true;
+      queuedSave = true;
+      return activePublication;
+    }
+    activePublication = drainPublications(explicit);
+    return activePublication;
+  }
+
+  async function drainPublications(explicit) {
+    try {
+      do {
+        queuedSave = false;
+        if (!await publishOnce(explicit)) break;
+      } while (queuedSave && authenticated);
+    } finally { activePublication = null; queuedSave = false; }
+  }
+
+  async function publishOnce(explicit) {
     if (!authenticated) return message("GitHub’a yayımlamak için öğretim üyesi girişi yapın.", true);
-    if (publishing) { pendingSave = true; return; }
     if (!explicit && !synchronized) return;
     publishing = true;
     showProgress();
@@ -112,17 +134,19 @@
           if (saved && !pendingSave) rememberDigest(manifest.digest);
         }
       }
-      message(pendingSave ? "Önceki kayıt yayımlandı; aktarım sırasında yaptığınız değişiklikler yerelde korundu. Son değişiklikler için yeniden Yayımla düğmesine basın." : driveBackupError
+      message(pendingSave ? "Önceki kayıt yayımlandı · Yeni kaydedilen değişiklikler sırayla otomatik yayımlanıyor." : driveBackupError
         ? `GitHub’a kaydedildi · Drive yedeği alınamadı: ${driveBackupError} · Pages yayını tamamlandığında tüm cihazlarda görünecek.` : drivePrepared
         ? "Drive dosyaları ve yedek kaydedildi · Ders listesi GitHub yayını tamamlandığında güncellenecek."
         : "GitHub’a kaydedildi · Pages yayını tamamlandığında tüm cihazlarda görünecek.");
       showProgress(100);
+      return true;
     } catch (error) {
       synchronized = false;
       const bar = document.getElementById("cloud-transfer-progress");
       showProgress(bar?.value || 0);
       const reason = error.name === "TimeoutError" ? "GitHub yanıtı zaman aşımına uğradı." : error.name === "TypeError" ? "GitHub bağlantısı kesildi." : error.message;
       message(`${reason} · Yerel notlar korunuyor. Yeniden aktarırken tamamlanan parçalar kullanılacak.`, true);
+      return false;
     }
     finally { publishing = false; pendingSave = false; button.disabled = false; }
   }
@@ -132,7 +156,7 @@
     applyLectures = options.applyLectures;
     button.addEventListener("click", () => authenticated ? publish(true) : options.onLoginRequired());
     document.getElementById("btn-drive-connect")?.addEventListener("click", async () => {
-      try { await root.DrivePublishing.connect(); message("Drive bağlantısı hazır · Dersleri ve yedeği kaydetmek için Yayımla düğmesini kullanın."); }
+      try { await root.DrivePublishing.connect(); message("Drive bağlantısı hazır · Sonraki kayıtlar otomatik yayımlanır."); }
       catch (error) { message(error.message, true); }
     });
     root.addEventListener("lecture-storage-status", event => message(event.detail, true));
@@ -157,14 +181,14 @@
   }
 
   root.LecturePublishing = { configured: root.MEE101_GITHUB_ENABLED !== false, initialize,
-    login: async () => { await repository.login(); authenticated = true; message("Hoca oturumu açık · Dersleri Yayımla düğmesiyle paylaşabilirsiniz."); return true; },
+    login: async () => { await repository.login(); authenticated = true; message("Hoca oturumu açık · Kaydedilen değişiklikler otomatik yayımlanır."); return true; },
     isAuthenticated: () => authenticated,
     publish: () => publish(true),
     setLocalAdmin: enabled => { localAdmin = enabled; message(status.textContent); },
     markChanged: () => { if (publishing) pendingSave = true; },
     save: () => {
-      if (publishing) { pendingSave = true; return; }
-      message(authenticated ? "Yerel yedek kaydedildi · Değişiklikleri tüm cihazlara açmak için GitHub’a Yayımla düğmesini kullanın." : "Yerel notlar korundu · Tüm cihazlara açmak için GitHub’a bağlanıp yayımlayın.");
+      if (authenticated) return publish(true);
+      message("Yerel notlar korundu · Otomatik yayımlamak için öğretim üyesi girişi yapın.");
     },
     logout: () => { authenticated = false; repository.logout(); root.DrivePublishing?.logout(); message("Hoca oturumu kapatıldı · Yerel notlarınız korundu."); },
     changePassword: async () => { throw new Error("Erişim anahtarınızı GitHub hesap ayarlarından yönetebilirsiniz."); }

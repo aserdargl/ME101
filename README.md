@@ -1,5 +1,11 @@
 # MEE 101 Ders Portalı
 
+Öğretim üyesi oturumu açıkken ders eklemek veya düzenleyip kaydetmek, yerel
+yedekten sonra otomatik GitHub yayınını başlatır. Aktarım sırasında kaydedilen
+sonraki değişiklikler sırayla yayımlanır. İptal edilen taslaklar yayımlanmaz.
+Bağlantı hatasında yerel kayıt korunur; sonraki kaydetme veya Yayımla düğmesi
+yeniden dener. Başka cihazdan yeni yayın gelmişse üzerine yazılmadan işlem durur.
+
 PDF'lerin yerel yedekleri özgün dosyayı bir kez saklayan parçalardan oluşturulur;
 sayfa sayısı aynı dosyanın tekrar tekrar kaydedilmesine yol açmaz. Eski yerel
 kayıtlar ve kurtarma yedekleri okunmaya devam eder; kayıt anahtarları korunur.

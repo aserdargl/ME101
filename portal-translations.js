@@ -1,5 +1,9 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Önceki kayıt yayımlandı · Yeni kaydedilen değişiklikler sırayla otomatik yayımlanıyor.": "Previous save published · New saved changes are being published automatically in order.",
+  "Drive bağlantısı hazır · Sonraki kayıtlar otomatik yayımlanır.": "Drive connected · Future saves will publish automatically.",
+  "Hoca oturumu açık · Kaydedilen değişiklikler otomatik yayımlanır.": "Instructor session active · Saved changes publish automatically.",
+  "Yerel notlar korundu · Otomatik yayımlamak için öğretim üyesi girişi yapın.": "Local notes are preserved · Sign in as instructor to publish automatically.",
   "Başka bir cihazdan yeni yayın var. Güncel yayını ayrı sekmede inceleyip bu sayfayı yenileyin; yerel değişiklikleriniz korundu.": "Another device published changes. Review the latest publication in a separate tab and reload this page; your local changes are preserved.",
   "Önceki kayıt yayımlandı; aktarım sırasında yaptığınız değişiklikler yerelde korundu. Son değişiklikler için yeniden Yayımla düğmesine basın.": "The previous version was published; edits made during transfer remain local. Select Publish again for your latest changes.",
   "Öğretim üyesi bağlantısı kurulamadı; mevcut yerel veriler korundu.": "Instructor connection failed; existing local data is preserved.",
