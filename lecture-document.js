@@ -4,6 +4,28 @@
   const REFERENCE_LENGTH = 4096;
   const COMPRESSION_SAMPLE_LENGTH = 16 * 1024;
   const MIN_COMPRESSION_RATIO = 0.9;
+  const LEGACY_JSON_LENGTH = 2 * 1024 * 1024;
+
+  /** Avoids allocating a huge JSON string for the small localStorage fallback. */
+  function legacyJson(value, limit = LEGACY_JSON_LENGTH) {
+    const pending = [value];
+    let length = 0;
+    const seen = new WeakSet();
+    while (pending.length) {
+      const item = pending.pop();
+      if (typeof item === "string") length += item.length + 2;
+      else if (item && typeof item === "object") {
+        if (seen.has(item)) return null;
+        seen.add(item);
+        const keys = Object.keys(item);
+        length += keys.reduce((sum, key) => sum + key.length + 4, 2);
+        for (const key of keys) pending.push(item[key]);
+      } else length += 5;
+      if (length > limit) return null;
+    }
+    const json = JSON.stringify(value);
+    return json.length <= limit ? json : null;
+  }
 
   /** Copies editable containers while sharing immutable media strings. */
   function snapshot(value, seen = new WeakMap()) {
@@ -107,6 +129,6 @@
     return new Response(stream).text();
   }
 
-  root.LectureDocument = { snapshot, parts, decoder, pack, unpack, partLength: PART_LENGTH };
+  root.LectureDocument = { snapshot, legacyJson, parts, decoder, pack, unpack, partLength: PART_LENGTH };
   if (typeof module !== "undefined") module.exports = root.LectureDocument;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -1,5 +1,6 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Kayıt tamamlanamadı; düzenlemeleriniz açık tutuluyor.": "Save could not finish; your edits remain open.",
   "Resim": "Image",
   "Görünüm": "View",
   "Görünüm (V)": "View (V)",

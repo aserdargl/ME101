@@ -1,6 +1,24 @@
 /* Creates display-only PNGs; lecture content and uploaded files remain untouched. */
 window.SlideImage = (() => {
   const MAX_WIDTH = 1920;
+  const MAX_CACHED_IMAGES = 12;
+  const images = new Map();
+
+  function cachedCapture(host, state) {
+    const key = host.dataset.imageKey;
+    if (!key) return capture(state.handle.element, state.presentation.width, state.presentation.height);
+    if (images.has(key)) {
+      const existing = images.get(key);
+      images.delete(key);
+      images.set(key, existing);
+      return existing;
+    }
+    const pending = capture(state.handle.element, state.presentation.width, state.presentation.height);
+    images.set(key, pending);
+    pending.catch(() => { if (images.get(key) === pending) images.delete(key); });
+    while (images.size > MAX_CACHED_IMAGES) images.delete(images.keys().next().value);
+    return pending;
+  }
 
   async function embedResource(url) {
     return dataUrl(await (await fetch(url)).blob());
@@ -65,7 +83,7 @@ window.SlideImage = (() => {
     if (state.image || host.dataset.imagePending) return;
     host.dataset.imagePending = "true";
     try {
-      const src = await capture(state.handle.element, state.presentation.width, state.presentation.height);
+      const src = await cachedCapture(host, state);
       if (!host.isConnected || host.dataset.displayMode !== "image") return;
       const image = new Image();
       image.alt = host.getAttribute("aria-label") || "Slayt";

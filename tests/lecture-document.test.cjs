@@ -1,6 +1,15 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { snapshot, parts, decoder, partLength, pack, unpack } = require("../lecture-document.js");
+const { snapshot, legacyJson, parts, decoder, partLength, pack, unpack } = require("../lecture-document.js");
+
+test("small legacy backups preserve exact JSON and large media bypasses the bounded store", () => {
+  const small = [{ title: 'Özgün 😀', html: '<p>Keep "quoted" text</p>', metadata: { keep: true } }];
+  assert.equal(legacyJson(small), JSON.stringify(small));
+  const large = [{ slides: [{ image: 'A'.repeat(3 * 1024 * 1024) }] }];
+  assert.equal(legacyJson(large), null);
+  assert.equal(large[0].slides[0].image.length, 3 * 1024 * 1024);
+  assert.equal(legacyJson({ html: '\\'.repeat(60) }, 100), null, "escaped JSON also respects the limit");
+});
 
 test("media snapshots isolate nested edits while preserving Unicode, metadata and shared references", () => {
   const media = "data:image/png;base64," + "A".repeat(8 * 1024 * 1024);

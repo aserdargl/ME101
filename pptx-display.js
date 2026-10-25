@@ -30,6 +30,7 @@ window.PptxDisplay = (() => {
   }
 
   function bind(slides, deck) {
+    let changed = false;
     const paths = new Map(deck.presentation.slides.map((slide, index) => [slide.slidePath, index]));
     const titles = deck.presentation.slides.map(slide => {
       const xml = new DOMParser().parseFromString(slide.sourceXml || "<slide/>", "application/xml");
@@ -42,10 +43,15 @@ window.PptxDisplay = (() => {
       if (!slide.sourceSlidePath && title && titles.filter(item => item === title).length === 1 &&
           slides.filter(item => String(item.title || "").trim() === title).length === 1) index = titles.indexOf(title);
       if (index === undefined || slide.pptImageUrl) continue;
-      const token = bindings.get(slide) || crypto.randomUUID();
+      const previousToken = bindings.get(slide);
+      const previous = targets.get(previousToken);
+      const reusable = previous?.fingerprint === deck.fingerprint && previous.index === index;
+      const token = reusable ? previousToken : crypto.randomUUID();
+      changed ||= !reusable;
       bindings.set(slide, token);
       targets.set(token, { fingerprint: deck.fingerprint, index, width: deck.presentation.width, height: deck.presentation.height });
     }
+    return changed;
   }
 
   /** Prepares any uploaded deck without generating or publishing slide images. */
@@ -57,6 +63,7 @@ window.PptxDisplay = (() => {
   /** Reopens the saved original deck while retaining every existing note verbatim. */
   async function prepareLecture(lecture) {
     if (!lecture.pptxUrl || !lecture.slides.some(slide => !slide.pptImageUrl)) return false;
+    const availableDecks = new Set(decks.keys());
     try {
       if (!sources.has(lecture.pptxUrl)) {
         const pending = fetch(lecture.pptxUrl).then(response => {
@@ -68,9 +75,9 @@ window.PptxDisplay = (() => {
         while (sources.size > MAX_CACHED_DECKS) sources.delete(sources.keys().next().value);
       }
       const deck = await sources.get(lecture.pptxUrl);
-      if (!decks.has(deck.fingerprint)) decks.set(deck.fingerprint, Promise.resolve(deck.presentation));
-      bind(lecture.slides, deck);
-      return true;
+      const restored = !decks.has(deck.fingerprint);
+      if (restored) decks.set(deck.fingerprint, Promise.resolve(deck.presentation));
+      return bind(lecture.slides, deck) || restored || !availableDecks.has(deck.fingerprint);
     } catch { return false; }
   }
 
@@ -79,6 +86,14 @@ window.PptxDisplay = (() => {
     const token = bindings.get(slide);
     const target = targets.get(token);
     return target ? { token, ratio: `${target.width}/${target.height}` } : null;
+  }
+
+  /** Shares existing display bindings with a fresh editor draft without re-reading the deck. */
+  function inheritBindings(originals, copies) {
+    originals.forEach((slide, index) => {
+      const token = bindings.get(slide);
+      if (token && copies[index]) bindings.set(copies[index], token);
+    });
   }
 
   const resize = new ResizeObserver(entries => entries.forEach(({ target }) => fit(target)));
@@ -100,6 +115,7 @@ window.PptxDisplay = (() => {
       const [api, presentation] = await Promise.all([renderer(), decks.get(target.fingerprint)]);
       if (!host.isConnected) return;
       const handle = api.renderSlide(presentation, presentation.slides[target.index], { externalMedia: "block", pdfjs: false });
+      host.dataset.imageKey = `${target.fingerprint}:${target.index}`;
       const shadow = host.attachShadow({ mode: "open" });
       host.textContent = "";
       shadow.append(handle.element);
@@ -140,5 +156,5 @@ window.PptxDisplay = (() => {
     });
   }
 
-  return { prepareUpload, prepareLecture, visualFor, setImageMode };
+  return { prepareUpload, prepareLecture, visualFor, setImageMode, inheritBindings };
 })();

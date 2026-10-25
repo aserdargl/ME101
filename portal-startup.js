@@ -3,6 +3,7 @@
 /* portal-translations.js */
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Kayıt tamamlanamadı; düzenlemeleriniz açık tutuluyor.": "Save could not finish; your edits remain open.",
   "Resim": "Image",
   "Görünüm": "View",
   "Görünüm (V)": "View (V)",
@@ -588,6 +589,24 @@ document.getElementById("catalog-search-form").addEventListener("submit", (event
 /* Creates display-only PNGs; lecture content and uploaded files remain untouched. */
 window.SlideImage = (() => {
   const MAX_WIDTH = 1920;
+  const MAX_CACHED_IMAGES = 12;
+  const images = new Map();
+
+  function cachedCapture(host, state) {
+    const key = host.dataset.imageKey;
+    if (!key) return capture(state.handle.element, state.presentation.width, state.presentation.height);
+    if (images.has(key)) {
+      const existing = images.get(key);
+      images.delete(key);
+      images.set(key, existing);
+      return existing;
+    }
+    const pending = capture(state.handle.element, state.presentation.width, state.presentation.height);
+    images.set(key, pending);
+    pending.catch(() => { if (images.get(key) === pending) images.delete(key); });
+    while (images.size > MAX_CACHED_IMAGES) images.delete(images.keys().next().value);
+    return pending;
+  }
 
   async function embedResource(url) {
     return dataUrl(await (await fetch(url)).blob());
@@ -652,7 +671,7 @@ window.SlideImage = (() => {
     if (state.image || host.dataset.imagePending) return;
     host.dataset.imagePending = "true";
     try {
-      const src = await capture(state.handle.element, state.presentation.width, state.presentation.height);
+      const src = await cachedCapture(host, state);
       if (!host.isConnected || host.dataset.displayMode !== "image") return;
       const image = new Image();
       image.alt = host.getAttribute("aria-label") || "Slayt";
@@ -712,6 +731,7 @@ window.PptxDisplay = (() => {
   }
 
   function bind(slides, deck) {
+    let changed = false;
     const paths = new Map(deck.presentation.slides.map((slide, index) => [slide.slidePath, index]));
     const titles = deck.presentation.slides.map(slide => {
       const xml = new DOMParser().parseFromString(slide.sourceXml || "<slide/>", "application/xml");
@@ -724,10 +744,15 @@ window.PptxDisplay = (() => {
       if (!slide.sourceSlidePath && title && titles.filter(item => item === title).length === 1 &&
           slides.filter(item => String(item.title || "").trim() === title).length === 1) index = titles.indexOf(title);
       if (index === undefined || slide.pptImageUrl) continue;
-      const token = bindings.get(slide) || crypto.randomUUID();
+      const previousToken = bindings.get(slide);
+      const previous = targets.get(previousToken);
+      const reusable = previous?.fingerprint === deck.fingerprint && previous.index === index;
+      const token = reusable ? previousToken : crypto.randomUUID();
+      changed ||= !reusable;
       bindings.set(slide, token);
       targets.set(token, { fingerprint: deck.fingerprint, index, width: deck.presentation.width, height: deck.presentation.height });
     }
+    return changed;
   }
 
   /** Prepares any uploaded deck without generating or publishing slide images. */
@@ -739,6 +764,7 @@ window.PptxDisplay = (() => {
   /** Reopens the saved original deck while retaining every existing note verbatim. */
   async function prepareLecture(lecture) {
     if (!lecture.pptxUrl || !lecture.slides.some(slide => !slide.pptImageUrl)) return false;
+    const availableDecks = new Set(decks.keys());
     try {
       if (!sources.has(lecture.pptxUrl)) {
         const pending = fetch(lecture.pptxUrl).then(response => {
@@ -750,9 +776,9 @@ window.PptxDisplay = (() => {
         while (sources.size > MAX_CACHED_DECKS) sources.delete(sources.keys().next().value);
       }
       const deck = await sources.get(lecture.pptxUrl);
-      if (!decks.has(deck.fingerprint)) decks.set(deck.fingerprint, Promise.resolve(deck.presentation));
-      bind(lecture.slides, deck);
-      return true;
+      const restored = !decks.has(deck.fingerprint);
+      if (restored) decks.set(deck.fingerprint, Promise.resolve(deck.presentation));
+      return bind(lecture.slides, deck) || restored || !availableDecks.has(deck.fingerprint);
     } catch { return false; }
   }
 
@@ -761,6 +787,14 @@ window.PptxDisplay = (() => {
     const token = bindings.get(slide);
     const target = targets.get(token);
     return target ? { token, ratio: `${target.width}/${target.height}` } : null;
+  }
+
+  /** Shares existing display bindings with a fresh editor draft without re-reading the deck. */
+  function inheritBindings(originals, copies) {
+    originals.forEach((slide, index) => {
+      const token = bindings.get(slide);
+      if (token && copies[index]) bindings.set(copies[index], token);
+    });
   }
 
   const resize = new ResizeObserver(entries => entries.forEach(({ target }) => fit(target)));
@@ -782,6 +816,7 @@ window.PptxDisplay = (() => {
       const [api, presentation] = await Promise.all([renderer(), decks.get(target.fingerprint)]);
       if (!host.isConnected) return;
       const handle = api.renderSlide(presentation, presentation.slides[target.index], { externalMedia: "block", pdfjs: false });
+      host.dataset.imageKey = `${target.fingerprint}:${target.index}`;
       const shadow = host.attachShadow({ mode: "open" });
       host.textContent = "";
       shadow.append(handle.element);
@@ -822,7 +857,7 @@ window.PptxDisplay = (() => {
     });
   }
 
-  return { prepareUpload, prepareLecture, visualFor, setImageMode };
+  return { prepareUpload, prepareLecture, visualFor, setImageMode, inheritBindings };
 })();
 ;
 
@@ -1343,6 +1378,28 @@ window.PptxPreview = (() => {
   const REFERENCE_LENGTH = 4096;
   const COMPRESSION_SAMPLE_LENGTH = 16 * 1024;
   const MIN_COMPRESSION_RATIO = 0.9;
+  const LEGACY_JSON_LENGTH = 2 * 1024 * 1024;
+
+  /** Avoids allocating a huge JSON string for the small localStorage fallback. */
+  function legacyJson(value, limit = LEGACY_JSON_LENGTH) {
+    const pending = [value];
+    let length = 0;
+    const seen = new WeakSet();
+    while (pending.length) {
+      const item = pending.pop();
+      if (typeof item === "string") length += item.length + 2;
+      else if (item && typeof item === "object") {
+        if (seen.has(item)) return null;
+        seen.add(item);
+        const keys = Object.keys(item);
+        length += keys.reduce((sum, key) => sum + key.length + 4, 2);
+        for (const key of keys) pending.push(item[key]);
+      } else length += 5;
+      if (length > limit) return null;
+    }
+    const json = JSON.stringify(value);
+    return json.length <= limit ? json : null;
+  }
 
   /** Copies editable containers while sharing immutable media strings. */
   function snapshot(value, seen = new WeakMap()) {
@@ -1446,7 +1503,7 @@ window.PptxPreview = (() => {
     return new Response(stream).text();
   }
 
-  root.LectureDocument = { snapshot, parts, decoder, pack, unpack, partLength: PART_LENGTH };
+  root.LectureDocument = { snapshot, legacyJson, parts, decoder, pack, unpack, partLength: PART_LENGTH };
   if (typeof module !== "undefined") module.exports = root.LectureDocument;
 })(typeof window !== "undefined" ? window : globalThis);
 ;
@@ -3784,8 +3841,11 @@ function saveAllLecturesToStorage() {
   LecturePublishing.markChanged();
   let legacySaved = false;
   try {
-    localStorage.setItem(ALL_LECTURES_STORAGE_KEY, JSON.stringify(LECTURES));
-    legacySaved = true;
+    const legacy = LectureDocument.legacyJson(LECTURES);
+    if (legacy !== null) {
+      localStorage.setItem(ALL_LECTURES_STORAGE_KEY, legacy);
+      legacySaved = true;
+    }
   } catch {
     // Large embedded images are saved to IndexedDB below instead.
   }
@@ -5035,6 +5095,22 @@ function updateSlideImageStatusUI(imageUrl) {
 }
 
 let pendingImageInsertIndex = null;
+let editPreviewFrame = null;
+const editPreviewMarkup = new WeakMap();
+
+function renderEditPreview(container, html) {
+  if (editPreviewMarkup.get(container) === html) return;
+  container.innerHTML = html;
+  editPreviewMarkup.set(container, html);
+}
+
+function scheduleEditLivePreview() {
+  if (editPreviewFrame !== null) return;
+  editPreviewFrame = requestAnimationFrame(() => {
+    editPreviewFrame = null;
+    updateEditLivePreview();
+  });
+}
 
 function updateEditLivePreview() {
   const stage = document.getElementById("edit-live-preview-stage");
@@ -5091,14 +5167,14 @@ function updateEditLivePreview() {
     editingLectureDraft.slides.length,
     weekVal
   );
-  stage.innerHTML = renderedVisual;
+  renderEditPreview(stage, renderedVisual);
 
   const activeThumbCard = document.querySelector("#edit-slide-tabs .edit-thumb-card.active");
   if (activeThumbCard) {
     const thumbPrev = activeThumbCard.querySelector(".edit-thumb-preview");
     const thumbTitle = activeThumbCard.querySelector(".edit-thumb-title");
     if (thumbPrev) editThumbnailObserver?.unobserve(thumbPrev);
-    if (thumbPrev) thumbPrev.innerHTML = renderedVisual;
+    if (thumbPrev) renderEditPreview(thumbPrev, renderedVisual);
     if (thumbTitle) thumbTitle.textContent = title;
   }
 }
@@ -5293,6 +5369,9 @@ function commitCurrentSlideFormToDraft() {
   const formulaSub = document.getElementById("edit-slide-formula-sub").value.trim();
   const rawHtml = document.getElementById("edit-slide-raw-html").value;
 
+  const contentUnchanged = simType === snap.simType && lead === snap.lead &&
+    bulletsRaw.trim() === snap.bulletsText.trim() && formula === snap.formula && formulaSub === snap.formulaSub;
+  if (contentUnchanged && !editingSlideRawHtmlTouched && !slide._imageChanged) return;
   slide.pptSummaryBullets = bulletLines;
 
   // Kullanıcı doğrudan Gelişmiş HTML alanını düzenlediyse onu esas al
@@ -5407,7 +5486,8 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
   const targetLec = LECTURES.find((l) => l.id === lecId);
   if (!targetLec) return;
 
-  editingLectureDraft = structuredClone(targetLec);
+  editingLectureDraft = LectureDocument.snapshot(targetLec);
+  PptxDisplay.inheritBindings(targetLec.slides || [], editingLectureDraft.slides || []);
   if (!Array.isArray(editingLectureDraft.slides) || editingLectureDraft.slides.length === 0) {
     editingLectureDraft.slides = [
       {
@@ -5443,6 +5523,8 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
 }
 
 function closeEditLectureModal() {
+  if (editPreviewFrame !== null) cancelAnimationFrame(editPreviewFrame);
+  editPreviewFrame = null;
   editThumbnailObserver?.disconnect();
   if (editLectureBackdrop) {
     editLectureBackdrop.classList.add("hidden");
@@ -5478,7 +5560,7 @@ document.getElementById("edit-slide-simtype").addEventListener("change", (e) => 
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener("input", () => {
-      updateEditLivePreview();
+      scheduleEditLivePreview();
     });
   }
 });
@@ -5675,49 +5757,58 @@ document.getElementById("inp-edit-pptx-file").addEventListener("change", async (
 // Değişiklikleri Kaydet
 document.getElementById("btn-save-edit-lecture").addEventListener("click", async () => {
   if (!isAdminAuthenticated || !editingLectureDraft) return;
-  commitCurrentSlideFormToDraft();
+  const saveButton = document.getElementById("btn-save-edit-lecture");
+  if (saveButton.disabled) return;
+  saveButton.disabled = true;
+  document.getElementById("edit-save-feedback").textContent = "Kaydediliyor…";
+  try {
+    commitCurrentSlideFormToDraft();
 
-  editingLectureDraft.week =
-    document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week;
-  editingLectureDraft.title =
-    document.getElementById("edit-lec-title").value.trim() || editingLectureDraft.title;
-  editingLectureDraft.description =
-    document.getElementById("edit-lec-desc").value.trim() || editingLectureDraft.description;
+    editingLectureDraft.week =
+      document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week;
+    editingLectureDraft.title =
+      document.getElementById("edit-lec-title").value.trim() || editingLectureDraft.title;
+    editingLectureDraft.description =
+      document.getElementById("edit-lec-desc").value.trim() || editingLectureDraft.description;
 
-  const manualPptxUrl = document.getElementById("edit-lec-pptx-url").value.trim();
-  const embeddedSource = /^(blob:|data:)/.test(String(editingLectureDraft.pptxUrl || ""));
-  const embeddedLabel = editingLectureDraft.pptxFileName ? `pptx/${editingLectureDraft.pptxFileName}` : "";
-  if (manualPptxUrl && (!embeddedSource || manualPptxUrl !== embeddedLabel)) {
-    editingLectureDraft.pptxUrl = manualPptxUrl;
-  }
-
-  // Geçici düzenleme alanlarını temizle
-  editingLectureDraft.slides.forEach((s) => {
-    delete s._currentImageUrl;
-    delete s._imageChanged;
-  });
-
-  const idx = LECTURES.findIndex((l) => l.id === editingLectureDraft.id);
-  if (idx !== -1) {
-    LECTURES[idx] = editingLectureDraft;
-  } else {
-    LECTURES.push(editingLectureDraft);
-  }
-
-  const savedId = editingLectureDraft.id;
-  const savedSlideIdx = editingSlideIndex;
-  if (!await saveAllLecturesToStorage()) return;
-  renderCatalog();
-  if (editingLectureDraft?.id !== savedId) return;
-  closeEditLectureModal();
-
-  if (currentLecture && currentLecture.id === savedId) {
-    openLecture(savedId, isPresentationMode);
-    currentSlideIndex = Math.min(savedSlideIdx, currentLecture.slides.length - 1);
-    if (isPresentationMode) {
-      updateActiveSlide();
+    const manualPptxUrl = document.getElementById("edit-lec-pptx-url").value.trim();
+    const embeddedSource = /^(blob:|data:)/.test(String(editingLectureDraft.pptxUrl || ""));
+    const embeddedLabel = editingLectureDraft.pptxFileName ? `pptx/${editingLectureDraft.pptxFileName}` : "";
+    if (manualPptxUrl && (!embeddedSource || manualPptxUrl !== embeddedLabel)) {
+      editingLectureDraft.pptxUrl = manualPptxUrl;
     }
-  }
+
+    // Geçici düzenleme alanlarını temizle
+    editingLectureDraft.slides.forEach((s) => {
+      delete s._currentImageUrl;
+      delete s._imageChanged;
+    });
+
+    const idx = LECTURES.findIndex((l) => l.id === editingLectureDraft.id);
+    if (idx !== -1) {
+      LECTURES[idx] = editingLectureDraft;
+    } else {
+      LECTURES.push(editingLectureDraft);
+    }
+
+    const savedId = editingLectureDraft.id;
+    const savedSlideIdx = editingSlideIndex;
+    if (!await saveAllLecturesToStorage()) {
+      document.getElementById("edit-save-feedback").textContent = "Kayıt tamamlanamadı; düzenlemeleriniz açık tutuluyor.";
+      return;
+    }
+    renderCatalog();
+    if (editingLectureDraft?.id !== savedId) return;
+    closeEditLectureModal();
+
+    if (currentLecture && currentLecture.id === savedId) {
+      openLecture(savedId, isPresentationMode);
+      currentSlideIndex = Math.min(savedSlideIdx, currentLecture.slides.length - 1);
+      if (isPresentationMode) {
+        updateActiveSlide();
+      }
+    }
+  } finally { saveButton.disabled = false; }
 });
 
 // ============================================================================
