@@ -34,3 +34,7 @@ function normalizeCatalogSearch(text) {
 }
 
 document.getElementById("lecture-search").addEventListener("input", filterCatalog);
+document.getElementById("catalog-search-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  filterCatalog();
+});

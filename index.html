@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="content.css?v=4" />
   <link rel="stylesheet" href="portal-ui.css?v=7" />
   <script defer src="firebase-config.js?v=2"></script>
-  <script defer src="portal-startup.js?v=c1e0c3156460"></script>
+  <script defer src="portal-startup.js?v=fd27c3181324"></script>
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -158,10 +158,10 @@
           <span class="section-eyebrow">DERS İÇERİKLERİ</span>
           <h2>Haftalık Ders Programı</h2>
         </div>
-        <label class="catalog-search" for="lecture-search">
+        <form id="catalog-search-form" class="catalog-search" role="search" autocomplete="off">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
-          <input id="lecture-search" type="search" placeholder="Ders veya konu ara…" autocomplete="off" />
-        </label>
+          <input id="lecture-search" name="lecture-query" type="search" aria-label="Ders veya konu ara" placeholder="Ders veya konu ara…" autocomplete="off" />
+        </form>
         <div id="admin-section-actions" class="admin-toolbar hidden">
           <button id="btn-section-student-roster" class="btn btn-secondary" title="Derse kayıtlı öğrenci numaralarını tanımla veya düzenle">
             Öğrenci Listesi
