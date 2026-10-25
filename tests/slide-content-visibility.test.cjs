@@ -18,3 +18,19 @@ test("original images and complete notes coexist without rewriting either", () =
   }
   assert.deepEqual(contentVisibility({ html: "", pptSummaryBullets: ["Summary"] }, "ppt"), { web: false, ppt: true });
 });
+
+test("image mode shows only the whole slide and keeps duplicate extracted content for Web", () => {
+  for (const source of [{ pptImageUrl: "slide.png" }, { sourceSlideVisual: "whole-slide.svg" }]) {
+    const slide = { ...source, html: '<p>Saved notes</p><img src="embedded.png"/>', extractedImages: ["embedded.png"] };
+    const before = structuredClone(slide);
+    assert.deepEqual(contentVisibility(slide, "image"), { web: false, ppt: true });
+    assert.deepEqual(contentVisibility(slide, "web"), { web: true, ppt: false });
+    assert.deepEqual(slide, before);
+  }
+});
+
+test("image mode preserves HTML-only interactive slides and never adds a recovered-image collage beside HTML", () => {
+  for (const source of [{}, { extractedImages: ["embedded.png"] }]) {
+    assert.deepEqual(contentVisibility({ ...source, html: '<button>Simulation</button>' }, "image"), { web: true, ppt: false });
+  }
+});

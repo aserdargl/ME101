@@ -98,3 +98,6 @@ body.presentation-mode .presentation-toolbar {
   height: auto; min-height: 54px; flex-wrap: wrap; gap: 8px; padding: 8px 12px;
 }
 body.presentation-mode :is(.toolbar-left, .toolbar-center, .toolbar-right) { flex-wrap: wrap; min-width: 0; }
+
+/* A complete slide image already includes its own title, text and pictures. */
+.slide[data-view-mode="image"]:has(.slide-body-ppt:not(.hidden) .ppt-source-frame) .slide-content > :is(.slide-kicker, h2) { display: none; }

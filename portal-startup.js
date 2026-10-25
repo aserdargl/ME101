@@ -1143,12 +1143,13 @@ window.PptxDisplay = (() => {
 (function (root) {
   const escape = value => String(value || "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 
-  /** Keeps complete notes visible alongside an original slide in PPT mode. */
+  /** Image mode shows one complete slide; Web and PPT retain the original notes. */
   function contentVisibility(slide, mode) {
     const hasNotes = Boolean(String(slide.html || "").trim());
     const hasOriginal = Boolean(slide.pptImageUrl || (!slide.sourceSlideEdited && slide.sourceSlideVisual) || root.PptxDisplay?.visualFor(slide));
     const hasMedia = Array.isArray(slide.extractedImages) && slide.extractedImages.length > 0;
-    const visualMode = mode === "ppt" || mode === "image";
+    if (mode === "image") return { web: !hasOriginal && hasNotes, ppt: hasOriginal || !hasNotes };
+    const visualMode = mode === "ppt";
     return { web: !visualMode || hasNotes, ppt: visualMode && (hasOriginal || hasMedia || !hasNotes) };
   }
 
