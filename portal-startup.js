@@ -589,7 +589,7 @@ window.PORTAL_ENGLISH = {
 function updateCatalogOverview() {
   const cards = Array.from(document.querySelectorAll(".lecture-card"));
   const slideCount = cards.reduce((total, card) => {
-    return total + (Number.parseInt(card.querySelector(".slide-count-tag").textContent, 10) || 0);
+    return total + Number.parseInt(card.querySelector(".slide-count-tag").textContent, 10);
   }, 0);
   document.getElementById("catalog-lecture-count").textContent = cards.length;
   document.getElementById("catalog-slide-count").textContent = slideCount;
@@ -791,80 +791,6 @@ window.PdfSlides = (() => {
   }).observe(document.body, { childList: true, subtree: true });
   return { parse, render };
 })();
-;
-
-/* weekly-files.js */
-(function (root) {
-  const SUPPORTED = /\.(pdf|html?|pptx)$/i;
-  let lectures = [];
-  const loading = new Map();
-
-  /** Validates the dedicated catalog without merging it into stored user notes. */
-  function decode(manifest) {
-    if (manifest?.version !== 1 || !Array.isArray(manifest.files)) throw new Error("Hafta dosya listesi okunamadı.");
-    const seen = new Set();
-    return manifest.files.map(file => {
-      if (!Number.isInteger(file.week) || file.week < 1 || typeof file.name !== "string"
-        || !/^week-file-[a-f0-9]{64}$/.test(file.id) || seen.has(file.id)
-        || !/^weeks\/files\/[a-f0-9]{64}\.(pdf|html?|pptx)$/.test(file.path)
-        || !SUPPORTED.test(file.name) || !/^[a-f0-9]{64}$/.test(file.sha256)
-        || file.path.split("/").pop().split(".")[0] !== file.sha256) throw new Error("Geçersiz hafta dosyası.");
-      seen.add(file.id);
-      const url = new URL(file.path, root.location.href).href;
-      const isPdf = /\.pdf$/i.test(file.name);
-      return { id: file.id, week: `${file.week}. Hafta`, title: file.name.split("/").pop().replace(SUPPORTED, ""),
-        description: file.name, slides: [], managedWeek: true, loaded: false, file,
-        ...(isPdf ? { pdfUrl: url, pdfFileName: file.name.split("/").pop() }
-          : { pptxUrl: url, pptxFileName: file.name.split("/").pop() }) };
-    });
-  }
-
-  async function initialize(onChange) {
-    try {
-      const response = await root.fetch(new URL(`weeks/manifest.json?v=${Date.now()}`, root.location.href), { cache: "no-store" });
-      if (response.status === 404) return;
-      if (!response.ok) throw new Error("Hafta listesi yüklenemedi.");
-      lectures = decode(await response.json());
-      onChange();
-    } catch (error) {
-      const status = root.document.getElementById("weekly-files-status");
-      if (status) { status.textContent = error.message; status.hidden = false; }
-    }
-  }
-
-  /** Loads and verifies a file only when opened; the manifest remains independent. */
-  async function load(lecture) {
-    if (lecture.loaded) return lecture;
-    if (!loading.has(lecture.id)) loading.set(lecture.id, loadFile(lecture).finally(() => loading.delete(lecture.id)));
-    return loading.get(lecture.id);
-  }
-
-  async function loadFile(lecture) {
-    const url = lecture.pdfUrl || lecture.pptxUrl;
-    const response = await root.fetch(url);
-    if (!response.ok) throw new Error("Ders dosyası henüz hazır değil. Sayfayı yenileyip tekrar deneyin.");
-    const bytes = await response.arrayBuffer();
-    const digest = await root.crypto.subtle.digest("SHA-256", bytes);
-    const hash = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, "0")).join("");
-    if (hash !== lecture.file.sha256) throw new Error("Ders dosyasının bütünlüğü doğrulanamadı.");
-    let slides;
-    if (lecture.pdfUrl) {
-      slides = await root.PdfSlides.parse(new File([bytes], lecture.pdfFileName, { type: "application/pdf" }), lecture.week, lecture.title);
-      slides.forEach(slide => { slide.pdf.source = url; });
-    } else if (/\.html?$/i.test(lecture.file.name)) {
-      slides = [{ title: lecture.title, kicker: lecture.week, html: "", htmlDocument: new TextDecoder().decode(bytes), defaultViewMode: "web" }];
-    } else {
-      slides = [{ title: lecture.title, kicker: lecture.week, defaultViewMode: "web",
-        html: '<p class="lead">PowerPoint dosyasını üstteki PPTX düğmesiyle indirebilirsiniz. Tarayıcıda slaytları görüntülemek için aynı sunumun PDF kopyasını da klasöre ekleyin.</p>' }];
-    }
-    lecture.slides = slides;
-    lecture.loaded = true;
-    return lecture;
-  }
-
-  root.WeeklyFiles = { initialize, decode, load, all: () => lectures, find: id => lectures.find(lecture => lecture.id === id) };
-  if (typeof module !== "undefined") module.exports = root.WeeklyFiles;
-})(typeof window !== "undefined" ? window : globalThis);
 ;
 
 /* html-slides.js */
@@ -3555,8 +3481,8 @@ function updateAdminUI() {
   if (isAdminAuthenticated) {
     adminToolbar.classList.remove("hidden");
     if (adminSectionActions) adminSectionActions.classList.remove("hidden");
-    if (navEditBtn) navEditBtn.classList.toggle("hidden", Boolean(currentLecture?.managedWeek));
-    if (bannerEditBtn) bannerEditBtn.classList.toggle("hidden", Boolean(currentLecture?.managedWeek));
+    if (navEditBtn) navEditBtn.classList.remove("hidden");
+    if (bannerEditBtn) bannerEditBtn.classList.remove("hidden");
     adminToggleBtn.classList.add("unlocked");
     const instructorName = FirebaseStudents.instructorName;
     if (instructorName) {
@@ -3764,7 +3690,7 @@ function renderCatalog() {
   updateStudentUI();
   lectureGrid.innerHTML = "";
 
-  [...LECTURES, ...WeeklyFiles.all()].sort((a, b) => CatalogOrder.compareWeeks(a.week, b.week)).forEach((lec) => {
+  [...LECTURES].sort((a, b) => CatalogOrder.compareWeeks(a.week, b.week)).forEach((lec) => {
     const card = document.createElement("article");
     card.className = "lecture-card";
     const pptxHref = lec.pdfUrl || lec.pptxUrl || "";
@@ -3787,9 +3713,9 @@ function renderCatalog() {
           <h4>${escapeXml(lec.title)}</h4>
         </div>
         <div class="lecture-meta-right">
-          <span class="slide-count-tag">${lec.managedWeek && !lec.loaded ? "Dosya" : lec.slides.length + " Slayt"}</span>
-          ${isAdminAuthenticated && !lec.managedWeek ? `<button type="button" class="btn-edit-lecture" data-edit-lec="${lec.id}" title="Bu dersi ve slaytlarını düzenle">&#9998; Düzenle</button>` : ""}
-          ${isAdminAuthenticated && !lec.managedWeek ? `<button type="button" class="btn-delete-lecture" data-del-lec="${lec.id}" title="Bu dersi sil">Dersi Sil</button>` : ""}
+          <span class="slide-count-tag">${lec.slides.length} Slayt</span>
+          ${isAdminAuthenticated ? `<button type="button" class="btn-edit-lecture" data-edit-lec="${lec.id}" title="Bu dersi ve slaytlarını düzenle">&#9998; Düzenle</button>` : ""}
+          ${isAdminAuthenticated ? `<button type="button" class="btn-delete-lecture" data-del-lec="${lec.id}" title="Bu dersi sil">Dersi Sil</button>` : ""}
         </div>
       </div>
 
@@ -3810,7 +3736,7 @@ function renderCatalog() {
           </div>
 
           <div class="card-actions-3">
-            ${isAdminAuthenticated && !lec.managedWeek ? `<button type="button" class="btn btn-outline btn-edit-card-action" data-edit-lec="${lec.id}" title="Bu dersi ve slaytlarını düzenle">&#9998; Düzenle</button>` : ""}
+            ${isAdminAuthenticated ? `<button type="button" class="btn btn-outline btn-edit-card-action" data-edit-lec="${lec.id}" title="Bu dersi ve slaytlarını düzenle">&#9998; Düzenle</button>` : ""}
             <button class="btn btn-secondary btn-read" data-id="${lec.id}">
               Ders Notu
             </button>
@@ -3818,7 +3744,7 @@ function renderCatalog() {
               Sunum
             </button>
             <a ${pptxHref ? "" : "hidden"} href="${escapeXml(pptxHref)}" download="${escapeXml(downloadFileName)}" class="btn btn-outline btn-protected-pptx${pptxHref ? "" : " hidden"}" data-pptx-href="${escapeXml(pptxHref)}" data-pptx-name="${escapeXml(downloadFileName)}" title="Kaynak dosyayı indir">
-              ${lec.pdfUrl ? "PDF" : lec.managedWeek && /\.html?$/i.test(lec.file.name) ? "HTML" : "PPTX"}
+              ${lec.pdfUrl ? "PDF" : "PPTX"}
             </a>
           </div>
         </div>
@@ -3918,15 +3844,9 @@ function openLecture(lectureId, startInPresentation = false) {
     openStudentLoginModal({ type: "lecture", lecId: lectureId, startInPresentation });
     return;
   }
-  const lec = LECTURES.find((l) => l.id === lectureId) || WeeklyFiles.find(lectureId);
-  if (lec?.managedWeek && !lec.loaded) {
-    WeeklyFiles.load(lec).then(() => { renderCatalog(); openLecture(lectureId, startInPresentation); })
-      .catch(error => alert(error.message));
-    return;
-  }
+  const lec = LECTURES.find((l) => l.id === lectureId);
   if (!lec) return;
   currentLecture = lec;
-  updateAdminUI();
   preferredSlideViewMode = DEFAULT_SLIDE_VIEW_MODE;
   currentSlideIndex = 0;
 
@@ -3975,7 +3895,7 @@ function openLecture(lectureId, startInPresentation = false) {
 
     slideEl.innerHTML = `
       <div class="slide-top-controls interactive-zone">
-        ${isAdminAuthenticated && !lec.managedWeek ? `<button type="button" class="btn-edit-lecture btn-edit-this-slide" data-edit-slide-idx="${idx}" title="Bu slaytı düzenle">&#9998; Slaytı Düzenle</button>` : ""}
+        ${isAdminAuthenticated ? `<button type="button" class="btn-edit-lecture btn-edit-this-slide" data-edit-slide-idx="${idx}" title="Bu slaytı düzenle">&#9998; Slaytı Düzenle</button>` : ""}
         <select class="btn-slide-mode-switch slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="pdf">Slayt</option><option value="web">Notlar</option></select>
         <span class="slide-number-badge">Slayt ${idx + 1} / ${lec.slides.length}</span>
       </div>
@@ -6232,7 +6152,6 @@ async function initializeLectures() {
   LECTURES.splice(0, LECTURES.length, ...visibleLectures);
   const hasLocalData = Array.isArray(stored) || Boolean(localStorage.getItem(ALL_LECTURES_STORAGE_KEY) || localStorage.getItem(CUSTOM_LECTURES_KEY));
   renderCatalog();
-  await WeeklyFiles.initialize(renderCatalog);
   await LecturePublishing.initialize({
     getLectures: () => LECTURES,
     hasLocalData,

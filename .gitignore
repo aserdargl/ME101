@@ -11,4 +11,3 @@ approval-worker/target/
 approval-worker/build/
 approval-worker/.wrangler/
 approval-worker/.dev.vars*
-/tools/week-sync/target/

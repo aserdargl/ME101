@@ -2,7 +2,7 @@
 function updateCatalogOverview() {
   const cards = Array.from(document.querySelectorAll(".lecture-card"));
   const slideCount = cards.reduce((total, card) => {
-    return total + (Number.parseInt(card.querySelector(".slide-count-tag").textContent, 10) || 0);
+    return total + Number.parseInt(card.querySelector(".slide-count-tag").textContent, 10);
   }, 0);
   document.getElementById("catalog-lecture-count").textContent = cards.length;
   document.getElementById("catalog-slide-count").textContent = slideCount;
