@@ -90,6 +90,16 @@
     }
 
     /** Never creates enrollment or roster entries when signing in an instructor. */
+    async signInInstructorWithPassword(email, password) {
+      const result = await this.perform(() => this.adapter.signInInstructorWithPassword(normalizeEmail(email), password));
+      if (!result.ok) return result;
+      await this.applyUser(this.adapter.getUser());
+      if (this.isAdmin) return { ok: true };
+      await this.signOut();
+      return failure("Öğretim üyesi yetkisi doğrulanamadı.");
+    }
+
+    /** Never creates enrollment or roster entries when signing in an instructor. */
     async signInInstructor(token) {
       const result = await this.perform(() => this.adapter.signInInstructor(token));
       if (!result.ok) return result;

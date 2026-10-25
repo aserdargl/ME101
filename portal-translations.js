@@ -1,5 +1,12 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "E-posta ve parolanızla giriş yapın. Dersleri düzenleyip yayımlayabilir, öğrenci listesini ve başvuruları yönetebilirsiniz.": "Sign in with your email and password to edit and publish lessons and manage students and applications.",
+  "Hoca Girişi": "Instructor Sign In",
+  "Yayımla": "Publish",
+  "Giriş yapılıyor…": "Signing in…",
+  "Hoca oturumu açık · Dersleri Yayımla düğmesiyle paylaşabilirsiniz.": "Instructor session active · Select Publish to share your lessons.",
+  "Hoca oturumu kapatıldı · Yerel notlarınız korundu.": "Signed out · Your local notes are preserved.",
+  "E-posta veya parola hatalı. Yeniden deneyiniz.": "Incorrect email or password. Please try again.",
   "Öğrenci ara: numara, isim, soyisim": "Search students: ID, first name, surname",
   "Öğrenci ara": "Search students",
   "Öğrencileri sırala": "Sort students",

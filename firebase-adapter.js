@@ -16,6 +16,11 @@ window.createFirebaseStudentAdapter = async config => {
   const enrollment = createNumberEnrollment({ db, sdk: dbSdk });
   return {
     getUser: () => auth.currentUser,
+    async signInInstructorWithPassword(email, password) {
+      const { user } = await authSdk.signInWithEmailAndPassword(auth, email, password);
+      const registered = user.emailVerified && (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", user.uid))).exists();
+      if (!registered) { await authSdk.signOut(auth); throw { code: "permission-denied" }; }
+    },
     async signInInstructor(token) {
       const { user } = await authSdk.signInWithCustomToken(auth, token);
       const registered = (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", user.uid))).exists();
@@ -80,6 +85,9 @@ window.createFirebaseStudentAdapter = async config => {
     signOut: () => authSdk.signOut(auth),
     errorMessage(error) {
       const messages = {
+        "auth/invalid-credential": "E-posta veya parola hatalı. Yeniden deneyiniz.",
+        "auth/invalid-login-credentials": "E-posta veya parola hatalı. Yeniden deneyiniz.",
+        "auth/wrong-password": "E-posta veya parola hatalı. Yeniden deneyiniz.",
         "enrollment/mismatch": "Öğrenci numarası ve ad-soyad eşleşmedi, kayıt kapalı veya numara başka bir hesaba bağlı. Bilgilerinizi kontrol edin; gerekirse öğretim üyesine başvurun.",
         "enrollment/rejected": "Başvurunuz yönetici tarafından reddedildi. Erişiminiz kapatıldı.",
         "approval/unavailable": "Onay hizmeti henüz hazır değil veya yönetici oturumu kapalı.",

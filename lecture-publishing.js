@@ -1,5 +1,6 @@
 (function (root) {
-  const repository = new GitHubLectureRepository({ owner: "aserdargl", repository: "ME101" });
+  const repository = new InstructorLectureRepository({ owner: "aserdargl", repository: "ME101",
+    serviceUrl: root.MEE101_APPROVAL_URL || root.location?.origin, getIdToken: () => root.FirebaseStudents.getIdToken(false) });
   const SYNC_KEY = "mee101_github_fingerprint_v1";
   let getLectures, applyLectures;
   let authenticated = false;
@@ -41,9 +42,7 @@
     button.classList.toggle("hidden", !authenticated && !localAdmin);
     document.getElementById("btn-drive-connect")?.classList.toggle("hidden", !root.DrivePublishing?.enabled() || !authenticated);
     button.disabled = publishing;
-    button.textContent = !authenticated ? "GitHub’a Bağlan" : root.DrivePublishing?.enabled()
-      ? synchronized ? "Dersleri Yayımla" : "Yerel Dersleri Drive’a Aktar"
-      : synchronized ? "GitHub’a Yayımla" : "Yerel Notları GitHub’a Aktar";
+    button.textContent = !authenticated ? "Hoca Girişi" : "Yayımla";
   }
 
   /** Conflicting versions become separate lessons, keeping every original note. */
@@ -158,7 +157,7 @@
   }
 
   root.LecturePublishing = { configured: root.MEE101_GITHUB_ENABLED !== false, initialize,
-    login: async key => { await repository.login(key); authenticated = true; message("GitHub girişi başarılı · Mevcut notları Aktar düğmesiyle yayımlayabilirsiniz."); return true; },
+    login: async () => { await repository.login(); authenticated = true; message("Hoca oturumu açık · Dersleri Yayımla düğmesiyle paylaşabilirsiniz."); return true; },
     isAuthenticated: () => authenticated,
     publish: () => publish(true),
     setLocalAdmin: enabled => { localAdmin = enabled; message(status.textContent); },
@@ -167,7 +166,7 @@
       if (publishing) { pendingSave = true; return; }
       message(authenticated ? "Yerel yedek kaydedildi · Değişiklikleri tüm cihazlara açmak için GitHub’a Yayımla düğmesini kullanın." : "Yerel notlar korundu · Tüm cihazlara açmak için GitHub’a bağlanıp yayımlayın.");
     },
-    logout: () => { authenticated = false; repository.logout(); root.DrivePublishing?.logout(); message("GitHub düzenleme oturumu kapatıldı."); },
+    logout: () => { authenticated = false; repository.logout(); root.DrivePublishing?.logout(); message("Hoca oturumu kapatıldı · Yerel notlarınız korundu."); },
     changePassword: async () => { throw new Error("Erişim anahtarınızı GitHub hesap ayarlarından yönetebilirsiniz."); }
   };
 })(window);

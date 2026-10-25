@@ -25,6 +25,13 @@ async function setup() {
   const secret = { project_id: "demo-lecturenotes", client_email: "synthetic@demo-lecturenotes.iam.gserviceaccount.com", private_key: privateKey };
   fs.writeFileSync("approval-worker/.dev.vars.test", `FIREBASE_ADMIN_UID=${JSON.stringify(uid)}\nFIREBASE_SERVICE_ACCOUNT=${JSON.stringify(secret)}\n`);
   const codes = new Map();
+  const blobs = new Map(), trees = new Map(), commits = new Map();
+  const sha = text => createHash("sha1").update(text).digest("hex");
+  const initialTree = sha("initial tree"), initialCommit = sha("initial commit");
+  let head = initialCommit;
+  blobs.set(sha("source"), "Preserved source");
+  trees.set(initialTree, { "index.html": sha("source") });
+  commits.set(head, { tree: { sha: initialTree }, parents: [] });
   http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://127.0.0.1:4198");
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:4197");
@@ -48,9 +55,35 @@ async function setup() {
       codes.delete(data.code);
       return send({ access_token: proof.identity === "owner" ? "synthetic-github-token" : `synthetic-${proof.identity}` });
     }
-    if (!["Bearer synthetic-github-token", "Bearer synthetic-other", "Bearer synthetic-readonly"].includes(req.headers.authorization)) return send({ error: "unauthorized" }, 401);
+    if (url.pathname.startsWith("/raw/")) {
+      const [, , revision, ...parts] = url.pathname.split("/");
+      const tree = trees.get(commits.get(revision)?.tree.sha);
+      const text = blobs.get(tree?.[parts.join("/")]);
+      if (text === undefined) return send({ error: "missing" }, 404);
+      return res.end(text);
+    }
+    if (!["Bearer synthetic-github-token", "Bearer synthetic-installation-token", "Bearer synthetic-other", "Bearer synthetic-readonly"].includes(req.headers.authorization)) return send({ error: "unauthorized" }, 401);
     if (url.pathname === "/user") return send({ login: req.headers.authorization === "Bearer synthetic-other" ? "other" : "aserdargl", id: 34934960 });
     if (url.pathname === "/repos/aserdargl/ME101") return send({ permissions: { push: req.headers.authorization !== "Bearer synthetic-readonly" } });
+    const path = url.pathname.replace("/repos/aserdargl/ME101", "");
+    let body = ""; for await (const bytes of req) body += bytes;
+    const data = body ? JSON.parse(body) : {};
+    if (path === "/git/ref/heads/main") return send({ object: { sha: head } });
+    if (path.startsWith("/git/commits/")) return send(commits.get(path.split("/").pop()));
+    if (path === "/git/blobs") { const id = sha(data.content); blobs.set(id, data.content); return send({ sha: id }, 201); }
+    if (path === "/git/trees") {
+      const tree = { ...trees.get(data.base_tree) };
+      data.tree.forEach(entry => { tree[entry.path] = entry.sha; });
+      const id = sha(JSON.stringify(tree)); trees.set(id, tree); return send({ sha: id }, 201);
+    }
+    if (path === "/git/commits") {
+      const id = sha(body); commits.set(id, { tree: { sha: data.tree }, parents: data.parents }); return send({ sha: id }, 201);
+    }
+    if (path === "/git/refs/heads/main") {
+      if (data.force !== false || commits.get(data.sha)?.parents[0] !== head) return send({ error: "non-fast-forward" }, 422);
+      if (trees.get(commits.get(data.sha).tree.sha)["index.html"] !== sha("source")) return send({ error: "source changed" }, 422);
+      head = data.sha; return send({ object: { sha: head } });
+    }
     send({ error: "unimplemented synthetic endpoint" }, 404);
   }).listen(4198, "127.0.0.1", () => process.stdout.write("Synthetic instructor and GitHub fixtures ready\n"));
 }

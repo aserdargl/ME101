@@ -13,20 +13,24 @@
       this.restoring = null;
     }
 
-    async login({ token, firebaseToken }) {
+    async login({ token, firebaseToken, email, password }) {
       if (this.busy) return { ok: false, error: "Önceki giriş tamamlanıyor. Yeniden deneyiniz." };
       this.busy = true;
       this.restoring = null;
       const generation = ++this.generation;
       try {
-        if (!token || !firebaseToken) throw new Error("Giriş bilgileri eksik. Yeniden deneyiniz.");
-        const result = await this.students.signInInstructor(firebaseToken);
+        if ((!email || !password) && (!token || !firebaseToken)) throw new Error("E-posta ve parolanızı giriniz.");
+        const result = email ? await this.students.signInInstructorWithPassword(email, password) : await this.students.signInInstructor(firebaseToken);
         if (!result.ok) throw new Error(result.error);
         if (generation !== this.generation) throw new Error("Giriş iptal edildi.");
-        await this.publishing.login(token);
+        if (email) await this.publishing.login();
+        else await this.publishing.login(token);
         if (generation !== this.generation) throw new Error("Giriş iptal edildi.");
         if (this.students.isAdmin === false) throw new Error("Öğretim üyesi yetkisi artık etkin değil.");
-        try { this.storage?.setItem(SESSION_KEY, JSON.stringify({ token, expiresAt: this.now() + SESSION_DURATION_MS })); }
+        try {
+          if (email) this.storage?.removeItem(SESSION_KEY);
+          else this.storage?.setItem(SESSION_KEY, JSON.stringify({ token, expiresAt: this.now() + SESSION_DURATION_MS }));
+        }
         catch { /* Login remains available if browser tab storage is disabled. */ }
         return { ok: true };
       } catch (error) {
@@ -48,6 +52,11 @@
     async restoreToken() {
       const generation = this.generation;
       try {
+        if (typeof this.students.signInInstructorWithPassword === "function") {
+          await this.publishing.login();
+          if (generation !== this.generation || !this.students.isAdmin) { this.publishing.logout(); return { ok: false }; }
+          return { ok: true };
+        }
         const saved = JSON.parse(this.storage?.getItem(SESSION_KEY) || "null");
         if (!saved || typeof saved.token !== "string" || !Number.isFinite(saved.expiresAt) || saved.expiresAt <= this.now()) {
           this.storage?.removeItem(SESSION_KEY);

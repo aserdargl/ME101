@@ -31,6 +31,10 @@ pub async fn main(mut req:Request, env:Env, _ctx:Context) -> Result<Response> {
         return Response::error("Forbidden",403);
     }
     if req.method()==Method::Options { return respond(204,Value::Null,&origin); }
+    if req.path().starts_with("/publisher/") {
+        let (status,value)=crate::publisher::handle(&mut req,&env).await;
+        return respond(status,value,&origin);
+    }
     if !matches!(req.path().as_str(), "/review" | "/roster-update") || req.method()!=Method::Post { return respond(404,json!({"error":"Bulunamadı."}),&origin); }
     let Some(authorization)=req.headers().get("Authorization")? else { return respond(401,json!({"error":"Yönetici girişi gerekli."}),&origin); };
     let Some(token)=authorization.strip_prefix("Bearer ") else { return respond(401,json!({"error":"Geçersiz oturum."}),&origin); };

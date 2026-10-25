@@ -1207,45 +1207,62 @@ function openAdminLoginModal(targetTab) {
   pendingAdminTab = typeof targetTab === "string" ? targetTab : null;
   adminLoginError.classList.add("hidden");
   adminLoginBackdrop.classList.remove("hidden");
-  document.getElementById("btn-submit-admin-login").focus();
+  document.getElementById("inp-instructor-email").focus();
 }
 
 function closeAdminLoginModal() {
-  if (instructorSignIn.isProcessing()) instructorSession.logout();
-  instructorSignIn.cancel();
+  if (instructorLoginBusy) instructorSession.logout();
+  document.getElementById("inp-instructor-password").value = "";
   adminLoginBackdrop.classList.add("hidden");
 }
 
 const instructorSession = new InstructorSession({ publishing: LecturePublishing, students: FirebaseStudents });
-const instructorSignIn = createGitHubSignIn({
-  host: window,
-  serviceUrl: window.MEE101_APPROVAL_URL || location.origin,
-  onCredentials: credentials => instructorSession.login(credentials),
-  onState: (busy, error, complete) => {
-    document.getElementById("btn-submit-admin-login").disabled = busy;
-    adminLoginError.textContent = error || "";
-    adminLoginError.classList.toggle("hidden", !error);
-    if (!complete) return;
+let instructorLoginBusy = false;
+let instructorRestore = null;
+
+async function handleAdminLoginSubmit() {
+  if (instructorLoginBusy) return;
+  instructorLoginBusy = true;
+  const button = document.getElementById("btn-submit-admin-login");
+  button.disabled = true;
+  button.textContent = "Giriş yapılıyor…";
+  const result = await instructorSession.login({ email: document.getElementById("inp-instructor-email").value.trim(),
+    password: document.getElementById("inp-instructor-password").value });
+  instructorLoginBusy = false;
+  button.disabled = false;
+  button.textContent = "Giriş Yap";
+  document.getElementById("inp-instructor-password").value = "";
+  adminLoginError.textContent = result.error || "";
+  adminLoginError.classList.toggle("hidden", result.ok);
+  if (!result.ok) return;
+  isAdminAuthenticated = true;
+  firebaseAdminSession = true;
+  closeAdminLoginModal();
+  renderCatalog();
+  if (currentLecture) openLecture(currentLecture.id, isPresentationMode);
+  if (pendingAdminTab) {
+    const tab = pendingAdminTab;
+    pendingAdminTab = null;
+    openPptxModal(tab);
+  }
+}
+
+/** Restores publishing from the existing verified Firebase session after a reload. */
+function restoreInstructorAccess() {
+  if (instructorRestore || instructorSession.busy || LecturePublishing.isAuthenticated()) return;
+  instructorRestore = LecturePublishing.login().then(() => {
+    if (!FirebaseStudents.isAdmin) { LecturePublishing.logout(); return; }
     isAdminAuthenticated = true;
     firebaseAdminSession = true;
-    closeAdminLoginModal();
     renderCatalog();
-    if (currentLecture) openLecture(currentLecture.id, isPresentationMode);
-    if (pendingAdminTab) {
-      const tab = pendingAdminTab;
-      pendingAdminTab = null;
-      openPptxModal(tab);
-    }
-  }
-});
-
-function handleAdminLoginSubmit() {
-  instructorSignIn.start();
+  }).catch(() => {
+    isAdminAuthenticated = false;
+    renderCatalog();
+  }).finally(() => { instructorRestore = null; });
 }
 
 document.getElementById("btn-admin-toggle").addEventListener("click", () => {
   if (isAdminAuthenticated) {
-    instructorSignIn.cancel();
     instructorSession.logout();
     isAdminAuthenticated = false;
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
@@ -1262,6 +1279,9 @@ document.getElementById("btn-admin-toggle").addEventListener("click", () => {
 
 document.getElementById("btn-close-admin-login").addEventListener("click", closeAdminLoginModal);
 document.getElementById("btn-submit-admin-login").addEventListener("click", handleAdminLoginSubmit);
+document.getElementById("inp-instructor-password").addEventListener("keydown", event => {
+  if (event.key === "Enter") { event.preventDefault(); handleAdminLoginSubmit(); }
+});
 
 function switchModalTab(tabId) {
   document.querySelectorAll(".modal-tab").forEach((b) => {
@@ -3035,18 +3055,11 @@ async function initializeLectures() {
   FirebaseStudents.initialize(state => {
     const hadStudentAccess = Boolean(activeStudentNo);
     activeStudentNo = state.profile ? state.profile.accessKey || state.profile.no || state.profile.email : null;
-    if (state.isAdmin && !LecturePublishing.isAuthenticated()) {
-      instructorSession.restore().then(result => {
-        if (!result.ok || !FirebaseStudents.isAdmin || !LecturePublishing.isAuthenticated()) return;
+    if (state.isAdmin) {
+      if (LecturePublishing.isAuthenticated()) {
         isAdminAuthenticated = true;
         firebaseAdminSession = true;
-        renderCatalog();
-        renderRosterAdminList();
-      });
-    }
-    if (state.isAdmin && LecturePublishing.isAuthenticated()) {
-      isAdminAuthenticated = true;
-      firebaseAdminSession = true;
+      } else restoreInstructorAccess();
     } else if (firebaseAdminSession && state.accessResolved) {
       isAdminAuthenticated = false;
       firebaseAdminSession = false;

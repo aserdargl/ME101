@@ -43,10 +43,11 @@ window.FirebaseStudents = (() => {
 
   return {
     initialize, signIn, saveText,
-    getIdToken: async () => {
+    signInInstructorWithPassword: async (email, password) => { await ready; return service ? service.signInInstructorWithPassword(email, password) : unavailable(); },
+    getIdToken: async (forceRefresh = true) => {
       await ready;
       if (!service?.isAdmin) throw new Error("Öğretim üyesi girişi gerekli.");
-      return service.adapter.getUser().getIdToken(true);
+      return service.adapter.getUser().getIdToken(forceRefresh);
     },
     signInInstructor: async token => { await ready; return service ? service.signInInstructor(token) : unavailable(); },
     get profile() { return service?.profile || null; },

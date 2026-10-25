@@ -3,6 +3,13 @@
 /* portal-translations.js */
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "E-posta ve parolanızla giriş yapın. Dersleri düzenleyip yayımlayabilir, öğrenci listesini ve başvuruları yönetebilirsiniz.": "Sign in with your email and password to edit and publish lessons and manage students and applications.",
+  "Hoca Girişi": "Instructor Sign In",
+  "Yayımla": "Publish",
+  "Giriş yapılıyor…": "Signing in…",
+  "Hoca oturumu açık · Dersleri Yayımla düğmesiyle paylaşabilirsiniz.": "Instructor session active · Select Publish to share your lessons.",
+  "Hoca oturumu kapatıldı · Yerel notlarınız korundu.": "Signed out · Your local notes are preserved.",
+  "E-posta veya parola hatalı. Yeniden deneyiniz.": "Incorrect email or password. Please try again.",
   "Öğrenci ara: numara, isim, soyisim": "Search students: ID, first name, surname",
   "Öğrenci ara": "Search students",
   "Öğrencileri sırala": "Sort students",
@@ -1745,9 +1752,84 @@ window.PptxPreview = (() => {
 })(typeof window !== "undefined" ? window : globalThis);
 ;
 
+/* instructor-repository.js */
+(function (root) {
+  const Base = typeof module !== "undefined" ? require("./github-repository.js").GitHubLectureRepository : root.GitHubLectureRepository;
+
+  /** Publishes through the authenticated service; GitHub credentials never reach the browser. */
+  class InstructorLectureRepository extends Base {
+    constructor({ serviceUrl, getIdToken, ...options }) {
+      super(options);
+      this.serviceUrl = serviceUrl;
+      this.getIdToken = getIdToken;
+      this.connected = false;
+      this.generation = 0;
+    }
+
+    async request(operation, body = {}) {
+      const generation = this.generation;
+      const token = await this.getIdToken();
+      if (generation !== this.generation || !token) throw new Error("Öğretim üyesi oturumu kapandı. Yeniden giriş yapın.");
+      const response = await this.fetch(new URL(`publisher/${operation}`, this.serviceUrl), {
+        method: "POST", cache: "no-store", signal: AbortSignal.timeout(90000),
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (generation !== this.generation) throw new Error("Öğretim üyesi oturumu kapandı.");
+      const result = await response.json().catch(() => ({ error: "Yayın hizmetine ulaşılamadı. Yerel notlarınız korundu." }));
+      if (!response.ok) throw new Error(result.error || "Yayın hizmetine ulaşılamadı. Yerel notlarınız korundu.");
+      return result;
+    }
+
+    async login() {
+      await this.request("session");
+      this.connected = true;
+      return true;
+    }
+
+    async api(path, { body } = {}) {
+      if (path === `${this.prefix}/git/blobs` && typeof body?.content === "string" && body.encoding === "utf-8") return this.request("blob", { content: body.content });
+      throw new Error("Desteklenmeyen yayın işlemi.");
+    }
+
+    async readCurrent({ skipLecturesForVersion = null } = {}) {
+      if (!this.connected) throw new Error("Yayımlamak için öğretim üyesi girişi yapın.");
+      const current = await this.request("current");
+      if (current.manifest?.id === skipLecturesForVersion) return { ...current, lectures: null };
+      const result = await this.decode(current.manifest, async path => {
+        const response = await this.fetch(new URL(`https://raw.githubusercontent.com/${this.owner}/${this.repository}/${current.head}/${path}`), { cache: "no-store" });
+        if (!response.ok) throw new Error("Ortak ders kaydı okunamadı. Yerel notlarınız korundu.");
+        return response.text();
+      });
+      return { ...current, ...result };
+    }
+
+    async publish(lectures, current, onProgress = () => {}) {
+      if (!this.connected) throw new Error("Yayımlamak için öğretim üyesi girişi yapın.");
+      const hashes = await this.documentHashes(lectures, onProgress);
+      const digest = await this.digest(JSON.stringify(hashes));
+      if (current.manifest?.format === 2 && current.manifest.digest === digest) return current.manifest;
+      const checkpoint = this.checkpoint(digest);
+      this.rememberCheckpoint(checkpoint);
+      const entries = await this.uploadParts(lectures, hashes, checkpoint, onProgress, current.manifest);
+      onProgress({ stage: "commit", completed: hashes.length, total: hashes.length });
+      return this.request("commit", { head: current.head, id: checkpoint.id, parts: entries.map(entry => entry.sha),
+        digest, hashes, encodings: entries.map((_, index) => checkpoint.encodings[index] || "plain"),
+        format: 2, partLength: root.LectureDocument?.partLength || 4 * 1024 * 1024, lectureCount: lectures.length });
+    }
+
+    logout() { ++this.generation; this.connected = false; super.logout(); }
+  }
+
+  root.InstructorLectureRepository = InstructorLectureRepository;
+  if (typeof module !== "undefined") module.exports = { InstructorLectureRepository };
+})(typeof window !== "undefined" ? window : globalThis);
+;
+
 /* lecture-publishing.js */
 (function (root) {
-  const repository = new GitHubLectureRepository({ owner: "aserdargl", repository: "ME101" });
+  const repository = new InstructorLectureRepository({ owner: "aserdargl", repository: "ME101",
+    serviceUrl: root.MEE101_APPROVAL_URL || root.location?.origin, getIdToken: () => root.FirebaseStudents.getIdToken(false) });
   const SYNC_KEY = "mee101_github_fingerprint_v1";
   let getLectures, applyLectures;
   let authenticated = false;
@@ -1789,9 +1871,7 @@ window.PptxPreview = (() => {
     button.classList.toggle("hidden", !authenticated && !localAdmin);
     document.getElementById("btn-drive-connect")?.classList.toggle("hidden", !root.DrivePublishing?.enabled() || !authenticated);
     button.disabled = publishing;
-    button.textContent = !authenticated ? "GitHub’a Bağlan" : root.DrivePublishing?.enabled()
-      ? synchronized ? "Dersleri Yayımla" : "Yerel Dersleri Drive’a Aktar"
-      : synchronized ? "GitHub’a Yayımla" : "Yerel Notları GitHub’a Aktar";
+    button.textContent = !authenticated ? "Hoca Girişi" : "Yayımla";
   }
 
   /** Conflicting versions become separate lessons, keeping every original note. */
@@ -1906,7 +1986,7 @@ window.PptxPreview = (() => {
   }
 
   root.LecturePublishing = { configured: root.MEE101_GITHUB_ENABLED !== false, initialize,
-    login: async key => { await repository.login(key); authenticated = true; message("GitHub girişi başarılı · Mevcut notları Aktar düğmesiyle yayımlayabilirsiniz."); return true; },
+    login: async () => { await repository.login(); authenticated = true; message("Hoca oturumu açık · Dersleri Yayımla düğmesiyle paylaşabilirsiniz."); return true; },
     isAuthenticated: () => authenticated,
     publish: () => publish(true),
     setLocalAdmin: enabled => { localAdmin = enabled; message(status.textContent); },
@@ -1915,7 +1995,7 @@ window.PptxPreview = (() => {
       if (publishing) { pendingSave = true; return; }
       message(authenticated ? "Yerel yedek kaydedildi · Değişiklikleri tüm cihazlara açmak için GitHub’a Yayımla düğmesini kullanın." : "Yerel notlar korundu · Tüm cihazlara açmak için GitHub’a bağlanıp yayımlayın.");
     },
-    logout: () => { authenticated = false; repository.logout(); root.DrivePublishing?.logout(); message("GitHub düzenleme oturumu kapatıldı."); },
+    logout: () => { authenticated = false; repository.logout(); root.DrivePublishing?.logout(); message("Hoca oturumu kapatıldı · Yerel notlarınız korundu."); },
     changePassword: async () => { throw new Error("Erişim anahtarınızı GitHub hesap ayarlarından yönetebilirsiniz."); }
   };
 })(window);
@@ -2066,6 +2146,16 @@ window.PptxPreview = (() => {
       if (password.length < 12) return failure("En az 12 karakterli bir parola belirleyiniz.");
       if (!numbers.normalize(number) || !numbers.nameKey(name)) return failure("Öğrenci numaranızı ve ad-soyadınızı giriniz.");
       return this.perform(() => this.adapter.register(normalizeEmail(email), password, number, name));
+    }
+
+    /** Never creates enrollment or roster entries when signing in an instructor. */
+    async signInInstructorWithPassword(email, password) {
+      const result = await this.perform(() => this.adapter.signInInstructorWithPassword(normalizeEmail(email), password));
+      if (!result.ok) return result;
+      await this.applyUser(this.adapter.getUser());
+      if (this.isAdmin) return { ok: true };
+      await this.signOut();
+      return failure("Öğretim üyesi yetkisi doğrulanamadı.");
     }
 
     /** Never creates enrollment or roster entries when signing in an instructor. */
@@ -2332,6 +2422,11 @@ window.createFirebaseStudentAdapter = async config => {
   const enrollment = createNumberEnrollment({ db, sdk: dbSdk });
   return {
     getUser: () => auth.currentUser,
+    async signInInstructorWithPassword(email, password) {
+      const { user } = await authSdk.signInWithEmailAndPassword(auth, email, password);
+      const registered = user.emailVerified && (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", user.uid))).exists();
+      if (!registered) { await authSdk.signOut(auth); throw { code: "permission-denied" }; }
+    },
     async signInInstructor(token) {
       const { user } = await authSdk.signInWithCustomToken(auth, token);
       const registered = (await dbSdk.getDocFromServer(dbSdk.doc(db, "admins", user.uid))).exists();
@@ -2396,6 +2491,9 @@ window.createFirebaseStudentAdapter = async config => {
     signOut: () => authSdk.signOut(auth),
     errorMessage(error) {
       const messages = {
+        "auth/invalid-credential": "E-posta veya parola hatalı. Yeniden deneyiniz.",
+        "auth/invalid-login-credentials": "E-posta veya parola hatalı. Yeniden deneyiniz.",
+        "auth/wrong-password": "E-posta veya parola hatalı. Yeniden deneyiniz.",
         "enrollment/mismatch": "Öğrenci numarası ve ad-soyad eşleşmedi, kayıt kapalı veya numara başka bir hesaba bağlı. Bilgilerinizi kontrol edin; gerekirse öğretim üyesine başvurun.",
         "enrollment/rejected": "Başvurunuz yönetici tarafından reddedildi. Erişiminiz kapatıldı.",
         "approval/unavailable": "Onay hizmeti henüz hazır değil veya yönetici oturumu kapalı.",
@@ -2459,10 +2557,11 @@ window.FirebaseStudents = (() => {
 
   return {
     initialize, signIn, saveText,
-    getIdToken: async () => {
+    signInInstructorWithPassword: async (email, password) => { await ready; return service ? service.signInInstructorWithPassword(email, password) : unavailable(); },
+    getIdToken: async (forceRefresh = true) => {
       await ready;
       if (!service?.isAdmin) throw new Error("Öğretim üyesi girişi gerekli.");
-      return service.adapter.getUser().getIdToken(true);
+      return service.adapter.getUser().getIdToken(forceRefresh);
     },
     signInInstructor: async token => { await ready; return service ? service.signInInstructor(token) : unavailable(); },
     get profile() { return service?.profile || null; },
@@ -2537,20 +2636,24 @@ window.renderApprovalApplications = () => {
       this.restoring = null;
     }
 
-    async login({ token, firebaseToken }) {
+    async login({ token, firebaseToken, email, password }) {
       if (this.busy) return { ok: false, error: "Önceki giriş tamamlanıyor. Yeniden deneyiniz." };
       this.busy = true;
       this.restoring = null;
       const generation = ++this.generation;
       try {
-        if (!token || !firebaseToken) throw new Error("Giriş bilgileri eksik. Yeniden deneyiniz.");
-        const result = await this.students.signInInstructor(firebaseToken);
+        if ((!email || !password) && (!token || !firebaseToken)) throw new Error("E-posta ve parolanızı giriniz.");
+        const result = email ? await this.students.signInInstructorWithPassword(email, password) : await this.students.signInInstructor(firebaseToken);
         if (!result.ok) throw new Error(result.error);
         if (generation !== this.generation) throw new Error("Giriş iptal edildi.");
-        await this.publishing.login(token);
+        if (email) await this.publishing.login();
+        else await this.publishing.login(token);
         if (generation !== this.generation) throw new Error("Giriş iptal edildi.");
         if (this.students.isAdmin === false) throw new Error("Öğretim üyesi yetkisi artık etkin değil.");
-        try { this.storage?.setItem(SESSION_KEY, JSON.stringify({ token, expiresAt: this.now() + SESSION_DURATION_MS })); }
+        try {
+          if (email) this.storage?.removeItem(SESSION_KEY);
+          else this.storage?.setItem(SESSION_KEY, JSON.stringify({ token, expiresAt: this.now() + SESSION_DURATION_MS }));
+        }
         catch { /* Login remains available if browser tab storage is disabled. */ }
         return { ok: true };
       } catch (error) {
@@ -2572,6 +2675,11 @@ window.renderApprovalApplications = () => {
     async restoreToken() {
       const generation = this.generation;
       try {
+        if (typeof this.students.signInInstructorWithPassword === "function") {
+          await this.publishing.login();
+          if (generation !== this.generation || !this.students.isAdmin) { this.publishing.logout(); return { ok: false }; }
+          return { ok: true };
+        }
         const saved = JSON.parse(this.storage?.getItem(SESSION_KEY) || "null");
         if (!saved || typeof saved.token !== "string" || !Number.isFinite(saved.expiresAt) || saved.expiresAt <= this.now()) {
           this.storage?.removeItem(SESSION_KEY);
@@ -4149,45 +4257,62 @@ function openAdminLoginModal(targetTab) {
   pendingAdminTab = typeof targetTab === "string" ? targetTab : null;
   adminLoginError.classList.add("hidden");
   adminLoginBackdrop.classList.remove("hidden");
-  document.getElementById("btn-submit-admin-login").focus();
+  document.getElementById("inp-instructor-email").focus();
 }
 
 function closeAdminLoginModal() {
-  if (instructorSignIn.isProcessing()) instructorSession.logout();
-  instructorSignIn.cancel();
+  if (instructorLoginBusy) instructorSession.logout();
+  document.getElementById("inp-instructor-password").value = "";
   adminLoginBackdrop.classList.add("hidden");
 }
 
 const instructorSession = new InstructorSession({ publishing: LecturePublishing, students: FirebaseStudents });
-const instructorSignIn = createGitHubSignIn({
-  host: window,
-  serviceUrl: window.MEE101_APPROVAL_URL || location.origin,
-  onCredentials: credentials => instructorSession.login(credentials),
-  onState: (busy, error, complete) => {
-    document.getElementById("btn-submit-admin-login").disabled = busy;
-    adminLoginError.textContent = error || "";
-    adminLoginError.classList.toggle("hidden", !error);
-    if (!complete) return;
+let instructorLoginBusy = false;
+let instructorRestore = null;
+
+async function handleAdminLoginSubmit() {
+  if (instructorLoginBusy) return;
+  instructorLoginBusy = true;
+  const button = document.getElementById("btn-submit-admin-login");
+  button.disabled = true;
+  button.textContent = "Giriş yapılıyor…";
+  const result = await instructorSession.login({ email: document.getElementById("inp-instructor-email").value.trim(),
+    password: document.getElementById("inp-instructor-password").value });
+  instructorLoginBusy = false;
+  button.disabled = false;
+  button.textContent = "Giriş Yap";
+  document.getElementById("inp-instructor-password").value = "";
+  adminLoginError.textContent = result.error || "";
+  adminLoginError.classList.toggle("hidden", result.ok);
+  if (!result.ok) return;
+  isAdminAuthenticated = true;
+  firebaseAdminSession = true;
+  closeAdminLoginModal();
+  renderCatalog();
+  if (currentLecture) openLecture(currentLecture.id, isPresentationMode);
+  if (pendingAdminTab) {
+    const tab = pendingAdminTab;
+    pendingAdminTab = null;
+    openPptxModal(tab);
+  }
+}
+
+/** Restores publishing from the existing verified Firebase session after a reload. */
+function restoreInstructorAccess() {
+  if (instructorRestore || instructorSession.busy || LecturePublishing.isAuthenticated()) return;
+  instructorRestore = LecturePublishing.login().then(() => {
+    if (!FirebaseStudents.isAdmin) { LecturePublishing.logout(); return; }
     isAdminAuthenticated = true;
     firebaseAdminSession = true;
-    closeAdminLoginModal();
     renderCatalog();
-    if (currentLecture) openLecture(currentLecture.id, isPresentationMode);
-    if (pendingAdminTab) {
-      const tab = pendingAdminTab;
-      pendingAdminTab = null;
-      openPptxModal(tab);
-    }
-  }
-});
-
-function handleAdminLoginSubmit() {
-  instructorSignIn.start();
+  }).catch(() => {
+    isAdminAuthenticated = false;
+    renderCatalog();
+  }).finally(() => { instructorRestore = null; });
 }
 
 document.getElementById("btn-admin-toggle").addEventListener("click", () => {
   if (isAdminAuthenticated) {
-    instructorSignIn.cancel();
     instructorSession.logout();
     isAdminAuthenticated = false;
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
@@ -4204,6 +4329,9 @@ document.getElementById("btn-admin-toggle").addEventListener("click", () => {
 
 document.getElementById("btn-close-admin-login").addEventListener("click", closeAdminLoginModal);
 document.getElementById("btn-submit-admin-login").addEventListener("click", handleAdminLoginSubmit);
+document.getElementById("inp-instructor-password").addEventListener("keydown", event => {
+  if (event.key === "Enter") { event.preventDefault(); handleAdminLoginSubmit(); }
+});
 
 function switchModalTab(tabId) {
   document.querySelectorAll(".modal-tab").forEach((b) => {
@@ -5977,18 +6105,11 @@ async function initializeLectures() {
   FirebaseStudents.initialize(state => {
     const hadStudentAccess = Boolean(activeStudentNo);
     activeStudentNo = state.profile ? state.profile.accessKey || state.profile.no || state.profile.email : null;
-    if (state.isAdmin && !LecturePublishing.isAuthenticated()) {
-      instructorSession.restore().then(result => {
-        if (!result.ok || !FirebaseStudents.isAdmin || !LecturePublishing.isAuthenticated()) return;
+    if (state.isAdmin) {
+      if (LecturePublishing.isAuthenticated()) {
         isAdminAuthenticated = true;
         firebaseAdminSession = true;
-        renderCatalog();
-        renderRosterAdminList();
-      });
-    }
-    if (state.isAdmin && LecturePublishing.isAuthenticated()) {
-      isAdminAuthenticated = true;
-      firebaseAdminSession = true;
+      } else restoreInstructorAccess();
     } else if (firebaseAdminSession && state.accessResolved) {
       isAdminAuthenticated = false;
       firebaseAdminSession = false;

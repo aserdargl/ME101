@@ -25,7 +25,7 @@ test("unsynced browser notes stay local until an explicit merge; conflicts prese
     logout() {}
   }
   const context = {
-    document: { getElementById: element }, GitHubLectureRepository: FakeRepository, crypto: webcrypto,
+    document: { getElementById: element }, InstructorLectureRepository: FakeRepository, crypto: webcrypto,
     localStorage: { getItem: key => metadata.get(key) || null, setItem: (key, value) => metadata.set(key, value) },
     structuredClone, LectureStorage: { save: async () => true }, fetch: async () => { throw Error("Unexpected media fetch"); }
   };

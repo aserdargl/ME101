@@ -34,7 +34,8 @@ http.createServer(async (req, res) => {
   if (url.pathname === "/portal-startup.js") {
     res.setHeader("Content-Type", "text/javascript; charset=utf-8");
     let bundle = fs.readFileSync(path.join(root, "portal-startup.js"), "utf8");
-    if (instructorFixture) bundle = bundle.replaceAll("https://api.github.com", "http://127.0.0.1:4198");
+    if (instructorFixture) bundle = bundle.replaceAll("https://api.github.com", "http://127.0.0.1:4198")
+      .replace("https://raw.githubusercontent.com/${this.owner}/${this.repository}", "http://127.0.0.1:4198/raw");
     if (baselineApp) bundle = bundle.slice(0, bundle.indexOf("\n/* app.js */\n")) + "\n/* app.js */\n" + baselineApp + "\n;\n";
     return res.end(bundle);
   }
