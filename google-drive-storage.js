@@ -100,13 +100,15 @@
     }
 
     async externalize(lectures, onProgress = () => {}) {
-      const document = structuredClone(lectures), addresses = new Set();
+      const addresses = new Set();
       const urls = text => text.startsWith("data:") ? [text] : [...text.matchAll(/(["'])(data:[\s\S]*?)\1/g)].map(match => match[2]);
       const collect = value => {
         if (typeof value === "string") urls(value).filter(url => url.length >= MIN_ASSET_LENGTH).forEach(url => addresses.add(url));
         else if (value && typeof value === "object") Object.values(value).forEach(collect);
       };
-      collect(document);
+      collect(lectures);
+      if (!addresses.size) return lectures;
+      const document = this.codec.snapshot(lectures);
       const replacements = new Map(), iterator = addresses.values();
       let completed = 0;
       const worker = async () => {

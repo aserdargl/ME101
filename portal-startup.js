@@ -1110,6 +1110,7 @@ window.PptxPreview = (() => {
   const STORE = "lecture-snapshots";
   let database;
   let pending = 0;
+  let saveQueue = Promise.resolve();
   let warning = "";
   const LEGACY_KEY = "me101_all_lectures_v2";
   const report = message => root.dispatchEvent(new CustomEvent("lecture-storage-status", { detail: message }));
@@ -1126,21 +1127,36 @@ window.PptxPreview = (() => {
     return database;
   }
 
-  /** Keeps the latest local document and an append-only recovery copy. */
+  async function documentFingerprint(lectures) {
+    const hashes = [];
+    for (const part of root.LectureDocument.parts(lectures)) hashes.push(await fingerprint(part));
+    return fingerprint(JSON.stringify(hashes));
+  }
+
+  /** Keeps one recovery copy per distinct document; all earlier backups remain intact. */
   async function save(lectures) {
-    const snapshot = structuredClone(lectures);
-    let legacyText = "";
-    try { legacyText = localStorage.getItem(LEGACY_KEY) || ""; } catch { /* IndexedDB remains independent. */ }
     pending += 1;
+    const previous = saveQueue;
+    let release;
+    saveQueue = new Promise(resolve => { release = resolve; });
     try {
+      const snapshot = root.LectureDocument.snapshot(lectures);
+      let legacyText = "";
+      try { legacyText = localStorage.getItem(LEGACY_KEY) || ""; } catch { /* IndexedDB remains independent. */ }
+      await previous;
       const db = await open();
       const legacyFingerprint = await fingerprint(legacyText);
+      const digest = await documentFingerprint(snapshot);
       await new Promise((resolve, reject) => {
         const transaction = db.transaction(STORE, "readwrite");
         const store = transaction.objectStore(STORE);
         const record = { savedAt: new Date().toISOString(), lectures: snapshot, legacyFingerprint };
-        store.put(record, `backup-${crypto.randomUUID()}`);
-        store.put(record, "current");
+        const backupKey = `backup-sha256-${digest}`;
+        const request = store.getKey(backupKey);
+        request.onsuccess = () => {
+          if (request.result === undefined) store.put(record, backupKey);
+          store.put(record, "current");
+        };
         transaction.oncomplete = resolve;
         transaction.onerror = () => reject(transaction.error);
         transaction.onabort = () => reject(transaction.error);
@@ -1149,7 +1165,7 @@ window.PptxPreview = (() => {
     } catch {
       report("Yerel yedek kaydedilemedi. Bu sayfayı kapatmadan ders verisini dışa aktarın veya GitHub’a yayımlayın.");
       return false;
-    } finally { pending -= 1; }
+    } finally { await previous; pending -= 1; release(); }
   }
 
   /** Reads saved data without removing or rewriting legacy browser records. */
@@ -1193,6 +1209,20 @@ window.PptxPreview = (() => {
   const REFERENCE_LENGTH = 4096;
   const COMPRESSION_SAMPLE_LENGTH = 16 * 1024;
   const MIN_COMPRESSION_RATIO = 0.9;
+
+  /** Copies editable containers while sharing immutable media strings. */
+  function snapshot(value, seen = new WeakMap()) {
+    if (!value || typeof value !== "object") return value;
+    if (seen.has(value)) return seen.get(value);
+    const kind = Object.prototype.toString.call(value);
+    if (kind !== "[object Object]" && kind !== "[object Array]") return structuredClone(value);
+    const copy = Array.isArray(value) ? new Array(value.length) : {};
+    seen.set(value, copy);
+    for (const key of Object.keys(value)) {
+      Object.defineProperty(copy, key, { value: snapshot(value[key], seen), enumerable: true, writable: true, configurable: true });
+    }
+    return copy;
+  }
 
   /** Encodes bounded records, sharing repeated media without changing the document. */
   function* records(value, path = [], strings = new Map()) {
@@ -1282,7 +1312,7 @@ window.PptxPreview = (() => {
     return new Response(stream).text();
   }
 
-  root.LectureDocument = { parts, decoder, pack, unpack, partLength: PART_LENGTH };
+  root.LectureDocument = { snapshot, parts, decoder, pack, unpack, partLength: PART_LENGTH };
   if (typeof module !== "undefined") module.exports = root.LectureDocument;
 })(typeof window !== "undefined" ? window : globalThis);
 ;
@@ -1390,13 +1420,15 @@ window.PptxPreview = (() => {
     }
 
     async externalize(lectures, onProgress = () => {}) {
-      const document = structuredClone(lectures), addresses = new Set();
+      const addresses = new Set();
       const urls = text => text.startsWith("data:") ? [text] : [...text.matchAll(/(["'])(data:[\s\S]*?)\1/g)].map(match => match[2]);
       const collect = value => {
         if (typeof value === "string") urls(value).filter(url => url.length >= MIN_ASSET_LENGTH).forEach(url => addresses.add(url));
         else if (value && typeof value === "object") Object.values(value).forEach(collect);
       };
-      collect(document);
+      collect(lectures);
+      if (!addresses.size) return lectures;
+      const document = this.codec.snapshot(lectures);
       const replacements = new Map(), iterator = addresses.values();
       let completed = 0;
       const worker = async () => {
@@ -1876,11 +1908,11 @@ window.PptxPreview = (() => {
 
   /** Conflicting versions become separate lessons, keeping every original note. */
   async function mergePreservingNotes(remote, local) {
-    const merged = structuredClone(remote);
+    const merged = remote.slice();
     for (const lecture of local) {
       const existing = remote.find(item => item.id === lecture.id);
-      if (!existing) merged.push(structuredClone(lecture));
-      else if (await repository.documentDigest(existing) !== await repository.documentDigest(lecture)) merged.push({ ...structuredClone(lecture), id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
+      if (!existing) merged.push(lecture);
+      else if (await repository.documentDigest(existing) !== await repository.documentDigest(lecture)) merged.push({ ...lecture, id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
     }
     return merged;
   }
@@ -1913,7 +1945,7 @@ window.PptxPreview = (() => {
       }
       return value;
     }
-    return visit(structuredClone(lectures));
+    return visit(root.LectureDocument.snapshot(lectures));
   }
 
   async function publish(explicit = false) {
@@ -1925,7 +1957,8 @@ window.PptxPreview = (() => {
     message("Dersler GitHub’a kaydediliyor…");
     try {
       let lectures = await portableDocument(getLectures());
-      await LectureStorage.save(lectures);
+      const backedUpLectures = lectures;
+      const backedUp = await LectureStorage.save(lectures);
       message("GitHub’daki mevcut kayıt kontrol ediliyor…");
       const current = await repository.readCurrent({ skipLecturesForVersion: synchronized ? version : null });
       if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
@@ -1938,9 +1971,11 @@ window.PptxPreview = (() => {
       version = manifest.id;
       synchronized = !pendingSave;
       if (!pendingSave) {
-        await applyLectures(lectures);
-        await LectureStorage.save(lectures);
-        rememberDigest(manifest.digest);
+        const saved = (backedUp && lectures === backedUpLectures) || await LectureStorage.save(lectures);
+        if (!pendingSave) {
+          await applyLectures(lectures);
+          if (saved && !pendingSave) rememberDigest(manifest.digest);
+        }
       }
       message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : root.DrivePublishing?.enabled()
         ? "Drive dosyaları ve yedek kaydedildi · Ders listesi GitHub yayını tamamlandığında güncellenecek."

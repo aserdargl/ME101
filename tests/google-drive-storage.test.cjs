@@ -29,6 +29,7 @@ test("Drive backup remains self-contained and verified before large assets repla
   const url = external[0].slides[0].extractedImages[0];
   assert.ok(url.startsWith(service.assetBase));
   assert.equal(external[0].slides[0].html, `<p>Özgün açıklama</p><img src="${url}">`);
+  assert.equal(await service.externalize(external), external, "already uploaded assets do not copy the full document again");
   const secondBackup = await service.backup(external);
   assert.equal(secondBackup.manifest.assets.length, 1);
   const copy = secondBackup.manifest.assets[0], source = server.registered.get(copy.hash);

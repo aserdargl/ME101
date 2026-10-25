@@ -1,6 +1,21 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { parts, decoder, partLength, pack, unpack } = require("../lecture-document.js");
+const { snapshot, parts, decoder, partLength, pack, unpack } = require("../lecture-document.js");
+
+test("media snapshots isolate nested edits while preserving Unicode, metadata and shared references", () => {
+  const media = "data:image/png;base64," + "A".repeat(8 * 1024 * 1024);
+  const shared = { image: media, html: "Özgün not 😀" };
+  const original = [{ id: "notes", metadata: { custom: [false, null, 42] }, slides: [shared, shared] }];
+  const copy = snapshot(original);
+  assert.deepEqual(copy, original);
+  assert.notEqual(copy[0].slides[0], shared);
+  assert.equal(copy[0].slides[0], copy[0].slides[1]);
+  copy[0].slides[0].html = "Changed only in snapshot";
+  copy[0].metadata.custom.push("new");
+  assert.equal(shared.html, "Özgün not 😀");
+  assert.equal(original[0].metadata.custom.length, 3);
+  assert.equal(copy[0].slides[0].image, media);
+});
 
 function roundTrip(document) {
   const reader = decoder();

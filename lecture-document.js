@@ -5,6 +5,20 @@
   const COMPRESSION_SAMPLE_LENGTH = 16 * 1024;
   const MIN_COMPRESSION_RATIO = 0.9;
 
+  /** Copies editable containers while sharing immutable media strings. */
+  function snapshot(value, seen = new WeakMap()) {
+    if (!value || typeof value !== "object") return value;
+    if (seen.has(value)) return seen.get(value);
+    const kind = Object.prototype.toString.call(value);
+    if (kind !== "[object Object]" && kind !== "[object Array]") return structuredClone(value);
+    const copy = Array.isArray(value) ? new Array(value.length) : {};
+    seen.set(value, copy);
+    for (const key of Object.keys(value)) {
+      Object.defineProperty(copy, key, { value: snapshot(value[key], seen), enumerable: true, writable: true, configurable: true });
+    }
+    return copy;
+  }
+
   /** Encodes bounded records, sharing repeated media without changing the document. */
   function* records(value, path = [], strings = new Map()) {
     if (typeof value === "string") {
@@ -93,6 +107,6 @@
     return new Response(stream).text();
   }
 
-  root.LectureDocument = { parts, decoder, pack, unpack, partLength: PART_LENGTH };
+  root.LectureDocument = { snapshot, parts, decoder, pack, unpack, partLength: PART_LENGTH };
   if (typeof module !== "undefined") module.exports = root.LectureDocument;
 })(typeof window !== "undefined" ? window : globalThis);

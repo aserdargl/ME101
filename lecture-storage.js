@@ -3,6 +3,7 @@
   const STORE = "lecture-snapshots";
   let database;
   let pending = 0;
+  let saveQueue = Promise.resolve();
   let warning = "";
   const LEGACY_KEY = "me101_all_lectures_v2";
   const report = message => root.dispatchEvent(new CustomEvent("lecture-storage-status", { detail: message }));
@@ -19,21 +20,36 @@
     return database;
   }
 
-  /** Keeps the latest local document and an append-only recovery copy. */
+  async function documentFingerprint(lectures) {
+    const hashes = [];
+    for (const part of root.LectureDocument.parts(lectures)) hashes.push(await fingerprint(part));
+    return fingerprint(JSON.stringify(hashes));
+  }
+
+  /** Keeps one recovery copy per distinct document; all earlier backups remain intact. */
   async function save(lectures) {
-    const snapshot = structuredClone(lectures);
-    let legacyText = "";
-    try { legacyText = localStorage.getItem(LEGACY_KEY) || ""; } catch { /* IndexedDB remains independent. */ }
     pending += 1;
+    const previous = saveQueue;
+    let release;
+    saveQueue = new Promise(resolve => { release = resolve; });
     try {
+      const snapshot = root.LectureDocument.snapshot(lectures);
+      let legacyText = "";
+      try { legacyText = localStorage.getItem(LEGACY_KEY) || ""; } catch { /* IndexedDB remains independent. */ }
+      await previous;
       const db = await open();
       const legacyFingerprint = await fingerprint(legacyText);
+      const digest = await documentFingerprint(snapshot);
       await new Promise((resolve, reject) => {
         const transaction = db.transaction(STORE, "readwrite");
         const store = transaction.objectStore(STORE);
         const record = { savedAt: new Date().toISOString(), lectures: snapshot, legacyFingerprint };
-        store.put(record, `backup-${crypto.randomUUID()}`);
-        store.put(record, "current");
+        const backupKey = `backup-sha256-${digest}`;
+        const request = store.getKey(backupKey);
+        request.onsuccess = () => {
+          if (request.result === undefined) store.put(record, backupKey);
+          store.put(record, "current");
+        };
         transaction.oncomplete = resolve;
         transaction.onerror = () => reject(transaction.error);
         transaction.onabort = () => reject(transaction.error);
@@ -42,7 +58,7 @@
     } catch {
       report("Yerel yedek kaydedilemedi. Bu sayfayı kapatmadan ders verisini dışa aktarın veya GitHub’a yayımlayın.");
       return false;
-    } finally { pending -= 1; }
+    } finally { await previous; pending -= 1; release(); }
   }
 
   /** Reads saved data without removing or rewriting legacy browser records. */

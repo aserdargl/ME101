@@ -47,11 +47,11 @@
 
   /** Conflicting versions become separate lessons, keeping every original note. */
   async function mergePreservingNotes(remote, local) {
-    const merged = structuredClone(remote);
+    const merged = remote.slice();
     for (const lecture of local) {
       const existing = remote.find(item => item.id === lecture.id);
-      if (!existing) merged.push(structuredClone(lecture));
-      else if (await repository.documentDigest(existing) !== await repository.documentDigest(lecture)) merged.push({ ...structuredClone(lecture), id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
+      if (!existing) merged.push(lecture);
+      else if (await repository.documentDigest(existing) !== await repository.documentDigest(lecture)) merged.push({ ...lecture, id: `local-${crypto.randomUUID()}`, title: `${lecture.title} (Bu tarayıcıdaki kopya)` });
     }
     return merged;
   }
@@ -84,7 +84,7 @@
       }
       return value;
     }
-    return visit(structuredClone(lectures));
+    return visit(root.LectureDocument.snapshot(lectures));
   }
 
   async function publish(explicit = false) {
@@ -96,7 +96,8 @@
     message("Dersler GitHub’a kaydediliyor…");
     try {
       let lectures = await portableDocument(getLectures());
-      await LectureStorage.save(lectures);
+      const backedUpLectures = lectures;
+      const backedUp = await LectureStorage.save(lectures);
       message("GitHub’daki mevcut kayıt kontrol ediliyor…");
       const current = await repository.readCurrent({ skipLecturesForVersion: synchronized ? version : null });
       if ((current.manifest?.id || null) !== version && !explicit) throw new Error("GitHub’da başka bir cihazdan yeni kayıt var. Yerel notlar korundu; ‘Yerel Notları GitHub’a Aktar’ ile birleştirin.");
@@ -109,9 +110,11 @@
       version = manifest.id;
       synchronized = !pendingSave;
       if (!pendingSave) {
-        await applyLectures(lectures);
-        await LectureStorage.save(lectures);
-        rememberDigest(manifest.digest);
+        const saved = (backedUp && lectures === backedUpLectures) || await LectureStorage.save(lectures);
+        if (!pendingSave) {
+          await applyLectures(lectures);
+          if (saved && !pendingSave) rememberDigest(manifest.digest);
+        }
       }
       message(pendingSave ? "Önceki kayıt GitHub’a gönderildi; yeni yerel notlar da korundu. Aktar düğmesiyle birleştirin." : root.DrivePublishing?.enabled()
         ? "Drive dosyaları ve yedek kaydedildi · Ders listesi GitHub yayını tamamlandığında güncellenecek."
