@@ -102,4 +102,6 @@ Kullanıcı canlı açılış ölçümü istediğinde `node tests/live-startup.c
 
 ## Çalışan HTML slaytları
 
-Düzenleyicide sayfaların arasındaki **+HTML** düğmesine basın. Tam HTML/CSS/JavaScript kodunu **HTML / CSS / JavaScript Sayfası** alanına yapıştırın, **Önizlemeyi Çalıştır** ile deneyin ve dersi kaydedin. HTML sayfası PDF sayfalarıyla aynı sırada ilerler. Kod ayrı bir iframe içinde çalışır; portalın kayıtlarına ve yönetici oturumuna erişmez. Küçük önizlemeler kodu çalıştırmaz. PDF dosyasının kendisi değiştirilmez; ek sayfa ders kaydında saklanır.
+Düzenleyicide istediğiniz iki slayt arasındaki **+ → HTML Dosyası** seçeneğiyle `.html` veya `.htm` dosyanızı seçin. Sayfa o araya eklenir, dosya adı slayt başlığı olur ve canlı önizleme açılır. **Değişiklikleri Kaydet** ile saklayın. **HTML Kodu** seçeneği de tam HTML/CSS/JavaScript kodu yapıştırmak için kullanılabilir. **Önizlemeyi Çalıştır** sayfayı yeniden başlatır.
+
+HTML dosyasının tamamı, gömülü CSS, JavaScript, görseller ve animasyonlarla birlikte korunur. İnternetteki kaynaklar bağlantı ve kaynağın erişim izinlerini gerektirir; bilgisayarınızdaki ayrı görsel, CSS ve JavaScript dosyalarını HTML içine gömün. HTML sayfası PDF sayfalarıyla aynı sırada ilerler. Kod ayrı bir iframe içinde çalışır; portalın kayıtlarına ve yönetici oturumuna erişmez. Küçük önizlemeler kodu çalıştırmaz. PDF dosyasının kendisi değiştirilmez; ek sayfa ders kaydında saklanır. Vazgeç işlemi içe aktarılan sayfayı kaydetmez.

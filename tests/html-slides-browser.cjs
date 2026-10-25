@@ -2,14 +2,37 @@
 const assert = require("node:assert/strict");
 const { fork } = require("node:child_process");
 const path = require("node:path");
+require("node:fs").mkdirSync(path.join(__dirname, "../.jtmp"), { recursive: true });
 const { chromium } = require("playwright");
 const { pdfFixture } = require("./pdf-fixture.cjs");
 const origin = "http://127.0.0.1:4212";
-const source = `<!doctype html><meta charset="utf-8"><style>body{background:rgb(220,240,230);font:20px system-ui}button{padding:12px}</style>
+const source = `<!doctype html><meta charset="utf-8"><style>body{background:rgb(220,240,230);font:20px system-ui}button{padding:12px}
+@keyframes spin{to{transform:rotate(360deg)}}#animated{width:30px;height:30px;background:red;animation:spin 1s linear infinite}</style>
+<div id="animated"></div><canvas id="canvas" width="20" height="20"></canvas><output id="ticks">0</output>
 <button id="run">Calculate</button><output id="result">Ready</output><p id="isolation"></p>
 <script>document.getElementById('run').onclick=()=>document.getElementById('result').textContent=6*7;
 try { parent.localStorage.setItem('qa-isolation','changed'); document.getElementById('isolation').textContent='FAILED'; }
-catch { document.getElementById('isolation').textContent='Isolated'; }</script>`;
+catch { document.getElementById('isolation').textContent='Isolated'; }
+const ctx=document.getElementById('canvas').getContext('2d');ctx.fillStyle='blue';ctx.fillRect(0,0,20,20);
+let ticks=0;function animate(){document.getElementById('ticks').textContent=++ticks;requestAnimationFrame(animate)}animate();</script>`;
+
+async function selectHtmlFile(page, position, name = "Animation.html", content = source) {
+  await page.locator(`.btn-slide-insert-toggle[aria-controls="slide-insert-menu-${position}"]`).click();
+  const picker = page.waitForEvent("filechooser");
+  await page.locator(`.btn-insert-here[data-ins-type="html-file"][data-ins-pos="${position}"]`).click();
+  await (await picker).setFiles({ name, mimeType: "text/html", buffer: Buffer.from(content) });
+  await page.waitForFunction(() => !document.getElementById("btn-save-edit-lecture").disabled);
+}
+
+async function verifyAnimations(frame) {
+  await frame.locator("#ticks").evaluate(element => new Promise(resolve => {
+    const before = Number(element.textContent);
+    const check = () => Number(element.textContent) > before + 2 ? resolve() : requestAnimationFrame(check);
+    check();
+  }));
+  assert.equal(await frame.locator("#canvas").evaluate(canvas => canvas.getContext("2d").getImageData(0, 0, 1, 1).data[2]), 255);
+  assert.equal(await frame.locator("#animated").evaluate(element => element.getAnimations()[0].playState), "running");
+}
 
 (async () => {
   const server = fork(path.join(__dirname, "preview-server.cjs"), { env: { ...process.env, MEE101_QA_PORT: "4212" }, silent: true });
@@ -31,24 +54,44 @@ catch { document.getElementById('isolation').textContent='Isolated'; }</script>`
         { id: "qa-legacy", custom: { preserve: true }, title: "Legacy", week: "QA", slides: [{ html: "<p>Original notes</p>" }] });
       localStorage.setItem("qa-isolation", "preserved");
       window.qaBefore = JSON.stringify(LECTURES);
+      sessionStorage.setItem("qa-before", qaBefore);
       await saveAllLecturesToStorage();
       openEditLectureModal("qa-mixed");
     }, [...pdfFixture()]);
-    await page.locator('.btn-insert-here[data-ins-type="html"][data-ins-pos="1"]').click();
-    await page.locator("#edit-html-document").fill(source);
-    await page.locator("#btn-run-html-preview").click();
+    await selectHtmlFile(page, 1, "empty.html", "");
+    assert.equal(await page.evaluate(() => editingLectureDraft.slides.length), 2);
+    assert.match(await page.locator("#edit-html-import-status").textContent(), /empty|boş/);
+    await selectHtmlFile(page, 1);
+    assert.equal(await page.locator("#edit-html-document").inputValue(), source);
+    assert.equal(await page.locator("#edit-slide-title").inputValue(), "Animation");
     const preview = page.frameLocator("#edit-live-preview-stage iframe");
     await preview.locator("#isolation").filter({ hasText: "Isolated" }).waitFor();
     await page.screenshot({path:".jtmp/html-editor.png"});
     await preview.locator("#run").click();
     await preview.locator("#result").filter({hasText:"42"}).waitFor();
     assert.equal(await preview.locator("body").evaluate(body => getComputedStyle(body).backgroundColor), "rgb(220, 240, 230)");
+    await verifyAnimations(preview);
     assert.equal(await page.locator(".edit-thumb-preview iframe").count(), 0);
     await page.locator("#btn-cancel-edit-lecture").click();
-    assert.equal(await page.evaluate(() => JSON.stringify(LECTURES) === qaBefore), true);
+    assert.equal(await page.evaluate(() => JSON.stringify(LECTURES) === sessionStorage.getItem("qa-before")), true);
+    await page.reload();
+    await page.waitForFunction(() => typeof LECTURES !== "undefined" && LECTURES[0]?.id === "qa-mixed");
+    assert.equal(await page.evaluate(() => JSON.stringify(LECTURES) === sessionStorage.getItem("qa-before")), true);
+    await page.evaluate(() => { isAdminAuthenticated = true; });
     await page.evaluate(() => openEditLectureModal("qa-mixed"));
-    await page.locator('.btn-insert-here[data-ins-type="html"][data-ins-pos="1"]').click();
-    await page.locator("#edit-html-document").fill(source);
+    await selectHtmlFile(page, 0, "Beginning.HTM");
+    await selectHtmlFile(page, 3, "End.html");
+    assert.deepEqual(await page.evaluate(() => editingLectureDraft.slides.map(slide => slide.pdf?.page || slide.title)), ["Beginning", 1, 2, "End"]);
+    await page.locator("#btn-cancel-edit-lecture").click();
+    assert.equal(await page.evaluate(() => JSON.stringify(LECTURES) === sessionStorage.getItem("qa-before")), true);
+    await page.evaluate(() => openEditLectureModal("qa-mixed"));
+    await selectHtmlFile(page, 0, "Cancelled.html", "");
+    await page.evaluate(() => {
+      pendingHtmlInsert = { draft: editingLectureDraft, position: 0 };
+      document.getElementById("inp-edit-html-file").dispatchEvent(new Event("cancel"));
+    });
+    assert.equal(await page.evaluate(() => pendingHtmlInsert), null);
+    await selectHtmlFile(page, 1);
     await page.locator("#edit-slide-title").fill("Interactive page");
     await page.locator("#btn-save-edit-lecture").click();
     await page.waitForFunction(() => editingLectureDraft === null);
@@ -69,6 +112,7 @@ catch { document.getElementById('isolation').textContent='Isolated'; }</script>`
     await active.locator("#run").click();
     await active.locator("#result").filter({hasText:"42"}).waitFor();
     assert.equal(await active.locator("#isolation").textContent(), "Isolated");
+    await verifyAnimations(active);
     assert.equal(await page.evaluate(() => localStorage.getItem("qa-isolation")), "preserved");
     await page.evaluate(() => applyPersistentSlideViewMode("web"));
     assert.equal(await active.locator("#result").textContent(), "42");
@@ -83,6 +127,6 @@ catch { document.getElementById('isolation').textContent='Isolated'; }</script>`
     await page.waitForFunction(() => document.querySelector(".active-slide [data-pdf-page='2'][data-pdf-ready='true']"));
     assert.equal(await page.evaluate(() => currentSlideIndex), 2);
     assert.deepEqual(errors, []);
-    console.info("Passed: PDF → HTML/JavaScript → PDF, CSS, preview, isolated execution, cancel/save/reload, unchanged legacy notes, view switching and mobile.");
+    console.info("Passed: file picker and exact insertion, empty-file recovery, CSS/JS animations, canvas, preview, isolated execution, cancel/save/reload, unchanged legacy notes, PDF navigation, view switching and mobile.");
   } finally { await browser?.close(); server.kill(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

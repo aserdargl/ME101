@@ -15,6 +15,14 @@ window.PORTAL_ENGLISH = {
   "Oturum kapatılamadı. Tarayıcı depolama izinlerini kontrol ediniz.": "Could not sign out. Check your browser storage permissions.",
   "Öğrenciler yalnızca öğrenci numaralarını girerek erişebilir. Bu liste giriş için zorunlu değildir. Mevcut öğrenci kayıtları gizli tutulur ve korunur.": "Students can enter using only their student ID. This roster is optional for entry. Existing student records remain private and preserved.",
   "HTML Sayfası": "HTML Page",
+  "HTML Dosyası": "HTML File",
+  "HTML Kodu": "HTML Code",
+  "Bu araya HTML dosyası ekle": "Insert an HTML file here",
+  "Bir .html veya .htm dosyası seçin.": "Select an .html or .htm file.",
+  "HTML dosyası okunamadı. Dosyayı yeniden seçin.": "Could not read the HTML file. Select the file again.",
+  "Seçilen HTML dosyası boş.": "The selected HTML file is empty.",
+  "HTML dosyası okunuyor…": "Reading HTML file…",
+  "HTML dosyasını slaytlar arasındaki + menüsünden seçebilir veya kodunu buraya yapıştırabilirsiniz. Gömülü CSS ve JavaScript çalışır. İnternet bağlantıları erişim gerektirir; bilgisayarınızdaki ayrı görsel, CSS ve JS dosyalarını HTML içine gömün.": "Select an HTML file from the + menu between slides, or paste its code here. Embedded CSS and JavaScript run in the slide. Online resources require access; embed separate local images, CSS and JS files into the HTML.",
   "Bu araya çalışan HTML sayfası ekle": "Insert an interactive HTML page here",
   "HTML / CSS / JavaScript Sayfası": "HTML / CSS / JavaScript Page",
   "Tam HTML sayfanızı buraya yapıştırın. Kod, sunumda ayrı bir sayfa olarak çalışır.": "Paste your complete HTML page here. It runs as a separate page in the presentation.",
@@ -467,6 +475,7 @@ window.PORTAL_ENGLISH = {
   function english(text) {
     if (Object.hasOwn(translations, text)) return translations[text];
     const patterns = [
+      [/^(.+) · HTML eklendi\. Kalıcı olması için Değişiklikleri Kaydet düğmesine basın\.$/, "$1 · HTML inserted. Select Save Changes to keep it."],
       [/^Drive yedeği kaydediliyor · (\d+)\/(\d+) parça$/, "Saving Drive backup · $1/$2 parts"],
       [/^Drive ders dosyaları kaydediliyor · (\d+)\/(\d+) dosya$/, "Saving lesson files to Drive · $1/$2 files"],
       [/^Drive’a yükleniyor · %(\d+)$/, "Uploading to Drive · $1%"],
@@ -829,6 +838,16 @@ window.PdfSlides = (() => {
     return { title: "HTML Sayfası", kicker: week, defaultViewMode: "web", html: "", htmlDocument: STARTER, pptSummaryBullets: [] };
   }
 
+  /** Imports the complete document verbatim so embedded styles and scripts survive saves. */
+  async function fromFile(file, week) {
+    if (!/\.html?$/i.test(file.name)) return { ok: false, error: "Bir .html veya .htm dosyası seçin." };
+    let source;
+    try { source = await file.text(); }
+    catch { return { ok: false, error: "HTML dosyası okunamadı. Dosyayı yeniden seçin." }; }
+    if (!source.trim()) return { ok: false, error: "Seçilen HTML dosyası boş." };
+    return { ok: true, slide: { ...create(week), title: file.name.replace(/\.html?$/i, ""), htmlDocument: source } };
+  }
+
   /** Scripts run in an opaque-origin frame without access to portal storage or controls. */
   function render(slide) {
     return `<div class="html-slide-frame interactive-zone"><iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="${escape(slide.title || "HTML")}" srcdoc="${escape(slide.htmlDocument)}"></iframe></div>`;
@@ -845,7 +864,7 @@ window.PdfSlides = (() => {
     stage.innerHTML = render({ htmlDocument: source, title });
   }
 
-  root.HtmlSlides = { isHtmlSlide, create, render, thumbnail, preview };
+  root.HtmlSlides = { isHtmlSlide, create, fromFile, render, thumbnail, preview };
   if (typeof module !== "undefined") module.exports = root.HtmlSlides;
 })(typeof window !== "undefined" ? window : globalThis);
 ;
@@ -4935,7 +4954,8 @@ function createInsertBetweenBar(insertPos, totalSlides) {
     <button type="button" class="btn-slide-insert-toggle" aria-label="${posLabel}" title="${posLabel}" aria-expanded="false" aria-controls="slide-insert-menu-${insertPos}">+</button>
     <div id="slide-insert-menu-${insertPos}" class="slide-insert-menu" popover="auto">
       <button type="button" class="btn-insert-here" data-ins-type="pdf" data-ins-pos="${insertPos}" title="Bu araya PDF sayfaları ekle">PDF</button>
-      <button type="button" class="btn-insert-here" data-ins-type="html" data-ins-pos="${insertPos}" title="Bu araya çalışan HTML sayfası ekle">HTML</button>
+      <button type="button" class="btn-insert-here" data-ins-type="html-file" data-ins-pos="${insertPos}" title="Bu araya HTML dosyası ekle">HTML Dosyası</button>
+      <button type="button" class="btn-insert-here" data-ins-type="html" data-ins-pos="${insertPos}" title="Bu araya çalışan HTML sayfası ekle">HTML Kodu</button>
       <button type="button" class="btn-insert-here" data-ins-type="slide" data-ins-pos="${insertPos}" title="Bu araya yeni konu/metin slaytı ekle">İçerik</button>
       <button type="button" class="btn-insert-here" data-ins-type="sim" data-ins-pos="${insertPos}" title="Bu araya teknik simülasyon slaytı ekle">Sim</button>
       <button type="button" class="btn-insert-here" data-ins-type="img" data-ins-pos="${insertPos}" title="Bu araya görsel (PNG/JPG) slayt ekle">Görsel</button>
@@ -4958,6 +4978,8 @@ function createInsertBetweenBar(insertPos, totalSlides) {
         document.getElementById("inp-edit-pdf-file").click();
       } else if (type === "html") {
         insertHtmlSlideAt(pos);
+      } else if (type === "html-file") {
+        chooseHtmlFileAt(pos);
       } else if (type === "slide") {
         insertContentSlideAt(pos);
       } else if (type === "sim") {
@@ -5223,6 +5245,7 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
     ? (editingLectureDraft.pdfFileName ? `pdf/${editingLectureDraft.pdfFileName}` : "")
     : sourceUrl;
   document.getElementById("edit-pdf-status").textContent = "";
+  document.getElementById("edit-html-import-status").textContent = "";
   document.getElementById("edit-save-feedback").textContent = "";
   document.getElementById("inp-edit-pdf-file").value = "";
 
@@ -5235,6 +5258,8 @@ function closeEditLectureModal() {
   editPreviewFrame = null;
   editThumbnailObserver?.disconnect();
   pendingPdfInsertIndex = null;
+  pendingHtmlInsert = null;
+  htmlImportGeneration++;
   pdfImportGeneration++;
   document.getElementById("btn-save-edit-lecture").disabled = false;
   if (editLectureBackdrop) {
@@ -5319,6 +5344,44 @@ function insertHtmlSlideAt(insertPos) {
   editingLectureDraft.slides.splice(position, 0, HtmlSlides.create(editingLectureDraft.week || "Ders"));
   loadSlideIntoEditForm(position);
 }
+
+let pendingHtmlInsert = null;
+let htmlImportGeneration = 0;
+
+/** Remembers both the target gap and draft before opening the native file picker. */
+function chooseHtmlFileAt(position) {
+  if (!editingLectureDraft || document.getElementById("btn-save-edit-lecture").disabled) return;
+  pendingHtmlInsert = { draft: editingLectureDraft, position };
+  document.getElementById("inp-edit-html-file").click();
+}
+
+const htmlFileInput = document.getElementById("inp-edit-html-file");
+htmlFileInput.addEventListener("cancel", () => { pendingHtmlInsert = null; });
+htmlFileInput.addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  const target = pendingHtmlInsert;
+  pendingHtmlInsert = null;
+  event.target.value = "";
+  if (!file || !target || editingLectureDraft !== target.draft) return;
+  const generation = ++htmlImportGeneration;
+  const saveButton = document.getElementById("btn-save-edit-lecture");
+  const status = document.getElementById("edit-html-import-status");
+  saveButton.disabled = true;
+  status.textContent = "HTML dosyası okunuyor…";
+  try {
+    const week = document.getElementById("edit-lec-week").value.trim() || target.draft.week || "Ders";
+    const result = await HtmlSlides.fromFile(file, week);
+    if (editingLectureDraft !== target.draft || generation !== htmlImportGeneration) return;
+    if (!result.ok) { status.textContent = result.error; return; }
+    commitCurrentSlideFormToDraft();
+    const position = Math.max(0, Math.min(target.position, target.draft.slides.length));
+    target.draft.slides.splice(position, 0, result.slide);
+    loadSlideIntoEditForm(position);
+    status.textContent = `${file.name} · HTML eklendi. Kalıcı olması için Değişiklikleri Kaydet düğmesine basın.`;
+  } finally {
+    if (generation === htmlImportGeneration) saveButton.disabled = false;
+  }
+});
 
 function insertContentSlideAt(insertPos) {
   if (!editingLectureDraft) return;

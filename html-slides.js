@@ -26,6 +26,16 @@
     return { title: "HTML Sayfası", kicker: week, defaultViewMode: "web", html: "", htmlDocument: STARTER, pptSummaryBullets: [] };
   }
 
+  /** Imports the complete document verbatim so embedded styles and scripts survive saves. */
+  async function fromFile(file, week) {
+    if (!/\.html?$/i.test(file.name)) return { ok: false, error: "Bir .html veya .htm dosyası seçin." };
+    let source;
+    try { source = await file.text(); }
+    catch { return { ok: false, error: "HTML dosyası okunamadı. Dosyayı yeniden seçin." }; }
+    if (!source.trim()) return { ok: false, error: "Seçilen HTML dosyası boş." };
+    return { ok: true, slide: { ...create(week), title: file.name.replace(/\.html?$/i, ""), htmlDocument: source } };
+  }
+
   /** Scripts run in an opaque-origin frame without access to portal storage or controls. */
   function render(slide) {
     return `<div class="html-slide-frame interactive-zone"><iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="${escape(slide.title || "HTML")}" srcdoc="${escape(slide.htmlDocument)}"></iframe></div>`;
@@ -42,6 +52,6 @@
     stage.innerHTML = render({ htmlDocument: source, title });
   }
 
-  root.HtmlSlides = { isHtmlSlide, create, render, thumbnail, preview };
+  root.HtmlSlides = { isHtmlSlide, create, fromFile, render, thumbnail, preview };
   if (typeof module !== "undefined") module.exports = root.HtmlSlides;
 })(typeof window !== "undefined" ? window : globalThis);

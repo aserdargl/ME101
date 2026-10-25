@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="content.css?v=html-slides-1" />
   <link rel="stylesheet" href="portal-ui.css?v=8" />
   <script defer src="firebase-config.js?v=2"></script>
-  <script defer src="portal-startup.js?v=5d8d6f01a760"></script>
+  <script defer src="portal-startup.js?v=d85296a65dd2"></script>
 </head>
 <body>
   <!-- ÜST NAVİGASYON -->
@@ -591,6 +591,8 @@
             </div>
           </div>
 
+          <input type="file" id="inp-edit-html-file" accept=".html,.htm,text/html" class="hidden" />
+          <small id="edit-html-import-status" role="status" aria-live="polite"></small>
           <div class="edit-slides-workspace">
             <!-- SOL KENAR: GÖRSEL SLAYT ÖNİZLEME ŞERİDİ (POWERPOINT TARZI FILMSTRIP) -->
             <aside class="edit-slides-sidebar">
@@ -663,7 +665,7 @@
                 <div class="form-field" style="margin-top:0.55rem;">
                   <label for="edit-html-document">HTML / CSS / JavaScript Sayfası</label>
                   <textarea id="edit-html-document" class="html-source-editor" rows="12" spellcheck="false" aria-describedby="html-slide-help"></textarea>
-                  <small id="html-slide-help">Tam HTML sayfanızı buraya yapıştırın. Kod, sunumda ayrı bir sayfa olarak çalışır.</small>
+                  <small id="html-slide-help">HTML dosyasını slaytlar arasındaki + menüsünden seçebilir veya kodunu buraya yapıştırabilirsiniz. Gömülü CSS ve JavaScript çalışır. İnternet bağlantıları erişim gerektirir; bilgisayarınızdaki ayrı görsel, CSS ve JS dosyalarını HTML içine gömün.</small>
                 </div>
                 <button type="button" id="btn-run-html-preview" class="btn btn-secondary">Önizlemeyi Çalıştır</button>
               </div>

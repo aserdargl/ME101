@@ -15,6 +15,7 @@
   function english(text) {
     if (Object.hasOwn(translations, text)) return translations[text];
     const patterns = [
+      [/^(.+) · HTML eklendi\. Kalıcı olması için Değişiklikleri Kaydet düğmesine basın\.$/, "$1 · HTML inserted. Select Save Changes to keep it."],
       [/^Drive yedeği kaydediliyor · (\d+)\/(\d+) parça$/, "Saving Drive backup · $1/$2 parts"],
       [/^Drive ders dosyaları kaydediliyor · (\d+)\/(\d+) dosya$/, "Saving lesson files to Drive · $1/$2 files"],
       [/^Drive’a yükleniyor · %(\d+)$/, "Uploading to Drive · $1%"],

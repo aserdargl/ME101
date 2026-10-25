@@ -1759,7 +1759,8 @@ function createInsertBetweenBar(insertPos, totalSlides) {
     <button type="button" class="btn-slide-insert-toggle" aria-label="${posLabel}" title="${posLabel}" aria-expanded="false" aria-controls="slide-insert-menu-${insertPos}">+</button>
     <div id="slide-insert-menu-${insertPos}" class="slide-insert-menu" popover="auto">
       <button type="button" class="btn-insert-here" data-ins-type="pdf" data-ins-pos="${insertPos}" title="Bu araya PDF sayfaları ekle">PDF</button>
-      <button type="button" class="btn-insert-here" data-ins-type="html" data-ins-pos="${insertPos}" title="Bu araya çalışan HTML sayfası ekle">HTML</button>
+      <button type="button" class="btn-insert-here" data-ins-type="html-file" data-ins-pos="${insertPos}" title="Bu araya HTML dosyası ekle">HTML Dosyası</button>
+      <button type="button" class="btn-insert-here" data-ins-type="html" data-ins-pos="${insertPos}" title="Bu araya çalışan HTML sayfası ekle">HTML Kodu</button>
       <button type="button" class="btn-insert-here" data-ins-type="slide" data-ins-pos="${insertPos}" title="Bu araya yeni konu/metin slaytı ekle">İçerik</button>
       <button type="button" class="btn-insert-here" data-ins-type="sim" data-ins-pos="${insertPos}" title="Bu araya teknik simülasyon slaytı ekle">Sim</button>
       <button type="button" class="btn-insert-here" data-ins-type="img" data-ins-pos="${insertPos}" title="Bu araya görsel (PNG/JPG) slayt ekle">Görsel</button>
@@ -1782,6 +1783,8 @@ function createInsertBetweenBar(insertPos, totalSlides) {
         document.getElementById("inp-edit-pdf-file").click();
       } else if (type === "html") {
         insertHtmlSlideAt(pos);
+      } else if (type === "html-file") {
+        chooseHtmlFileAt(pos);
       } else if (type === "slide") {
         insertContentSlideAt(pos);
       } else if (type === "sim") {
@@ -2047,6 +2050,7 @@ function openEditLectureModal(lecId, initialSlideIdx = 0) {
     ? (editingLectureDraft.pdfFileName ? `pdf/${editingLectureDraft.pdfFileName}` : "")
     : sourceUrl;
   document.getElementById("edit-pdf-status").textContent = "";
+  document.getElementById("edit-html-import-status").textContent = "";
   document.getElementById("edit-save-feedback").textContent = "";
   document.getElementById("inp-edit-pdf-file").value = "";
 
@@ -2059,6 +2063,8 @@ function closeEditLectureModal() {
   editPreviewFrame = null;
   editThumbnailObserver?.disconnect();
   pendingPdfInsertIndex = null;
+  pendingHtmlInsert = null;
+  htmlImportGeneration++;
   pdfImportGeneration++;
   document.getElementById("btn-save-edit-lecture").disabled = false;
   if (editLectureBackdrop) {
@@ -2143,6 +2149,44 @@ function insertHtmlSlideAt(insertPos) {
   editingLectureDraft.slides.splice(position, 0, HtmlSlides.create(editingLectureDraft.week || "Ders"));
   loadSlideIntoEditForm(position);
 }
+
+let pendingHtmlInsert = null;
+let htmlImportGeneration = 0;
+
+/** Remembers both the target gap and draft before opening the native file picker. */
+function chooseHtmlFileAt(position) {
+  if (!editingLectureDraft || document.getElementById("btn-save-edit-lecture").disabled) return;
+  pendingHtmlInsert = { draft: editingLectureDraft, position };
+  document.getElementById("inp-edit-html-file").click();
+}
+
+const htmlFileInput = document.getElementById("inp-edit-html-file");
+htmlFileInput.addEventListener("cancel", () => { pendingHtmlInsert = null; });
+htmlFileInput.addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  const target = pendingHtmlInsert;
+  pendingHtmlInsert = null;
+  event.target.value = "";
+  if (!file || !target || editingLectureDraft !== target.draft) return;
+  const generation = ++htmlImportGeneration;
+  const saveButton = document.getElementById("btn-save-edit-lecture");
+  const status = document.getElementById("edit-html-import-status");
+  saveButton.disabled = true;
+  status.textContent = "HTML dosyası okunuyor…";
+  try {
+    const week = document.getElementById("edit-lec-week").value.trim() || target.draft.week || "Ders";
+    const result = await HtmlSlides.fromFile(file, week);
+    if (editingLectureDraft !== target.draft || generation !== htmlImportGeneration) return;
+    if (!result.ok) { status.textContent = result.error; return; }
+    commitCurrentSlideFormToDraft();
+    const position = Math.max(0, Math.min(target.position, target.draft.slides.length));
+    target.draft.slides.splice(position, 0, result.slide);
+    loadSlideIntoEditForm(position);
+    status.textContent = `${file.name} · HTML eklendi. Kalıcı olması için Değişiklikleri Kaydet düğmesine basın.`;
+  } finally {
+    if (generation === htmlImportGeneration) saveButton.disabled = false;
+  }
+});
 
 function insertContentSlideAt(insertPos) {
   if (!editingLectureDraft) return;
