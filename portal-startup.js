@@ -591,7 +591,7 @@ window.PptxDisplay = (() => {
   let scheduled = false;
 
   function renderer() {
-    library ||= import("./vendor/pptx-renderer/renderer-1.4.0.js");
+    library ||= import("./vendor/pptx-renderer/renderer-1.4.0.js?v=office-math-1");
     return library;
   }
 
@@ -4034,6 +4034,7 @@ function openLecture(lectureId, startInPresentation = false) {
 
 function setSlideElementViewMode(slideEl, mode) {
   if (!slideEl) return;
+  if (slideEl.dataset.viewMode !== mode) slideEl.scrollTop = 0;
   const webBody = slideEl.querySelector(".slide-body-web");
   const pptBody = slideEl.querySelector(".slide-body-ppt");
   const switchBtn = slideEl.querySelector(".btn-slide-mode-switch");

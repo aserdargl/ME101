@@ -1,5 +1,13 @@
 # Third-Party Notices
 
+## Local presentation compatibility patch
+
+The renderer bundle parses OMML `m:acc` accents and renders them as MathML
+`mover` elements. Its existing compatibility check can then select Office 2010
+equation branches containing prediction hats, instead of a fallback image fill
+that leaves the entire text placeholder blank.
+No uploaded presentation files are modified.
+
 The published ESM, CommonJS, and standalone browser bundles include the following
 third-party software.
 

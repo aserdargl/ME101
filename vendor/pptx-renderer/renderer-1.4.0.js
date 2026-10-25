@@ -3222,9 +3222,19 @@ function UF(t) {
   const e = Oa(t, "fName"), n = Oa(t, "e");
   return e && n ? { kind: "function", name: e, argument: n } : void 0;
 }
+// Local compatibility fix: an unsupported prediction accent rejected its entire Office math branch.
+function parseOfficeAccent(node) {
+  if (!na(node, new Set(["accPr", "e"]))) return;
+  const base = Oa(node, "e");
+  if (!base) return;
+  const properties = dl(node, "accPr");
+  return { kind: "accent", base, character: properties?.child("chr").attr("val") ?? "̂" };
+}
 function HF(t) {
   if (Rr(t))
     switch (t.localName) {
+      case "acc":
+        return parseOfficeAccent(t);
       case "r":
         return EF(t);
       case "f":
@@ -6023,6 +6033,13 @@ function rz(t) {
 }
 function Ht(t) {
   switch (t.kind) {
+    case "accent": {
+      const mark = Ct("mo", t.character);
+      mark.setAttribute("stretchy", "true");
+      const accented = nr(Ct("mover"), Ht(t.base), mark);
+      accented.setAttribute("accent", "true");
+      return accented;
+    }
     case "row":
       return nr(Ct("mrow"), ...t.children.map(Ht));
     case "text":

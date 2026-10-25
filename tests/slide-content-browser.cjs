@@ -16,7 +16,7 @@ async function seed(page) {
     const html = '<p data-added-note="keep">Added explanation absent from summary</p>' +
       '<textarea id="qa-input">Retained input</textarea>' + '<p>Long explanation</p>'.repeat(65);
     const image = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540"><text x="20" y="60">Original PPTX title</text></svg>');
-    LECTURES.splice(0, LECTURES.length, { id: "qa-content", week: "QA", title: "Synthetic", description: "QA", pptxUrl: "/fixture.pptx", slides: [
+    LECTURES.splice(0, LECTURES.length, { id: "qa-content", week: "QA", title: "Synthetic", description: "QA", pptxUrl: "/math-fixture.pptx", slides: [
       { title: "Complete title", kicker: "QA", html, pptSummaryBullets: [], defaultViewMode: "ppt" },
       { title: "Original and added text", kicker: "QA", html: '<p data-added-note="keep">Supplementary notes</p>', pptImageUrl: image, defaultViewMode: "ppt" },
       { title: "Bullet title", kicker: "QA", html: '<ul class="bullet-list"><li class="fragment">Saved bullet</li></ul>', defaultViewMode: "ppt" },
@@ -43,6 +43,13 @@ async function verify(page) {
   await native.locator('[data-rendered="true"][data-pptx-render]').waitFor();
   assert.equal(await native.locator('[data-native-note]').isVisible(), true);
   assert.equal(await native.locator('h2').isVisible(), true);
+  assert.equal(await native.locator('[data-pptx-render]').evaluate(host => {
+    const shadow = host.shadowRoot;
+    return shadow.textContent.includes('Complete equation explanation') &&
+      shadow.textContent.includes('Last equation paragraph') && Boolean(shadow.querySelector('math mfrac mover[accent="true"]'));
+  }), true, 'original equation text and editable math must render inside the PPTX frame');
+  fs.mkdirSync(path.join(root, '.jtmp'), { recursive: true });
+  await native.screenshot({ path: path.join(root, '.jtmp/native-equations.png') });
   await page.locator('#qa-input').fill("Kept while switching");
   await page.evaluate(() => { applyPersistentSlideViewMode("web"); applyPersistentSlideViewMode("ppt"); });
   assert.equal(await page.locator('#qa-input').inputValue(), "Kept while switching");
@@ -57,7 +64,6 @@ async function verify(page) {
     assert.equal(await first.locator('[data-added-note]').isVisible(), true);
     await first.evaluate(slide => { slide.scrollTop = slide.scrollHeight; });
     assert.equal(await first.locator('.slide-body-web p').last().evaluate(last => last.getBoundingClientRect().bottom <= innerHeight), true);
-    await first.evaluate(slide => { slide.scrollTop = 0; });
   }
   await page.evaluate(() => { applyPersistentSlideViewMode("ppt"); currentSlideIndex = 2; updateActiveSlide(); });
   assert.equal(await page.locator('.active-slide .fragment').evaluate(node => getComputedStyle(node).opacity), "1");

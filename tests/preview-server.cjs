@@ -1,7 +1,7 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { fixture } = require("./pptx-fixture.cjs");
+const { fixture, mathFixture } = require("./pptx-fixture.cjs");
 const root = path.resolve(__dirname, "..");
 const port = Number(process.env.MEE101_QA_PORT || 4189);
 const instructorFixture = process.env.MEE101_QA_INSTRUCTOR === "1";
@@ -22,6 +22,7 @@ setInterval(()=>{const saved=LECTURES.find(lecture=>lecture.id==='qa-original');
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${port}`);
+  if (url.pathname === "/math-fixture.pptx") { res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation"); return res.end(await mathFixture()); }
   res.setHeader("Cache-Control", "no-store");
   if (url.pathname === "/firebase-config.js") {
     res.setHeader("Content-Type", "text/javascript; charset=utf-8");

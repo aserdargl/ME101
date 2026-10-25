@@ -10,7 +10,7 @@ window.PptxDisplay = (() => {
   let scheduled = false;
 
   function renderer() {
-    library ||= import("./vendor/pptx-renderer/renderer-1.4.0.js");
+    library ||= import("./vendor/pptx-renderer/renderer-1.4.0.js?v=office-math-1");
     return library;
   }
 
