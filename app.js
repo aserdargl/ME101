@@ -363,8 +363,8 @@ function updateAdminUI() {
   if (isAdminAuthenticated) {
     adminToolbar.classList.remove("hidden");
     if (adminSectionActions) adminSectionActions.classList.remove("hidden");
-    if (navEditBtn) navEditBtn.classList.remove("hidden");
-    if (bannerEditBtn) bannerEditBtn.classList.remove("hidden");
+    if (navEditBtn) navEditBtn.classList.toggle("hidden", Boolean(currentLecture?.managedWeek));
+    if (bannerEditBtn) bannerEditBtn.classList.toggle("hidden", Boolean(currentLecture?.managedWeek));
     adminToggleBtn.classList.add("unlocked");
     const instructorName = FirebaseStudents.instructorName;
     if (instructorName) {
@@ -572,7 +572,7 @@ function renderCatalog() {
   updateStudentUI();
   lectureGrid.innerHTML = "";
 
-  [...LECTURES].sort((a, b) => CatalogOrder.compareWeeks(a.week, b.week)).forEach((lec) => {
+  [...LECTURES, ...WeeklyFiles.all()].sort((a, b) => CatalogOrder.compareWeeks(a.week, b.week)).forEach((lec) => {
     const card = document.createElement("article");
     card.className = "lecture-card";
     const pptxHref = lec.pdfUrl || lec.pptxUrl || "";
@@ -595,9 +595,9 @@ function renderCatalog() {
           <h4>${escapeXml(lec.title)}</h4>
         </div>
         <div class="lecture-meta-right">
-          <span class="slide-count-tag">${lec.slides.length} Slayt</span>
-          ${isAdminAuthenticated ? `<button type="button" class="btn-edit-lecture" data-edit-lec="${lec.id}" title="Bu dersi ve slaytlarını düzenle">&#9998; Düzenle</button>` : ""}
-          ${isAdminAuthenticated ? `<button type="button" class="btn-delete-lecture" data-del-lec="${lec.id}" title="Bu dersi sil">Dersi Sil</button>` : ""}
+          <span class="slide-count-tag">${lec.managedWeek && !lec.loaded ? "Dosya" : lec.slides.length + " Slayt"}</span>
+          ${isAdminAuthenticated && !lec.managedWeek ? `<button type="button" class="btn-edit-lecture" data-edit-lec="${lec.id}" title="Bu dersi ve slaytlarını düzenle">&#9998; Düzenle</button>` : ""}
+          ${isAdminAuthenticated && !lec.managedWeek ? `<button type="button" class="btn-delete-lecture" data-del-lec="${lec.id}" title="Bu dersi sil">Dersi Sil</button>` : ""}
         </div>
       </div>
 
@@ -618,7 +618,7 @@ function renderCatalog() {
           </div>
 
           <div class="card-actions-3">
-            ${isAdminAuthenticated ? `<button type="button" class="btn btn-outline btn-edit-card-action" data-edit-lec="${lec.id}" title="Bu dersi ve slaytlarını düzenle">&#9998; Düzenle</button>` : ""}
+            ${isAdminAuthenticated && !lec.managedWeek ? `<button type="button" class="btn btn-outline btn-edit-card-action" data-edit-lec="${lec.id}" title="Bu dersi ve slaytlarını düzenle">&#9998; Düzenle</button>` : ""}
             <button class="btn btn-secondary btn-read" data-id="${lec.id}">
               Ders Notu
             </button>
@@ -626,7 +626,7 @@ function renderCatalog() {
               Sunum
             </button>
             <a ${pptxHref ? "" : "hidden"} href="${escapeXml(pptxHref)}" download="${escapeXml(downloadFileName)}" class="btn btn-outline btn-protected-pptx${pptxHref ? "" : " hidden"}" data-pptx-href="${escapeXml(pptxHref)}" data-pptx-name="${escapeXml(downloadFileName)}" title="Kaynak dosyayı indir">
-              ${lec.pdfUrl ? "PDF" : "PPTX"}
+              ${lec.pdfUrl ? "PDF" : lec.managedWeek && /\.html?$/i.test(lec.file.name) ? "HTML" : "PPTX"}
             </a>
           </div>
         </div>
@@ -726,9 +726,15 @@ function openLecture(lectureId, startInPresentation = false) {
     openStudentLoginModal({ type: "lecture", lecId: lectureId, startInPresentation });
     return;
   }
-  const lec = LECTURES.find((l) => l.id === lectureId);
+  const lec = LECTURES.find((l) => l.id === lectureId) || WeeklyFiles.find(lectureId);
+  if (lec?.managedWeek && !lec.loaded) {
+    WeeklyFiles.load(lec).then(() => { renderCatalog(); openLecture(lectureId, startInPresentation); })
+      .catch(error => alert(error.message));
+    return;
+  }
   if (!lec) return;
   currentLecture = lec;
+  updateAdminUI();
   preferredSlideViewMode = DEFAULT_SLIDE_VIEW_MODE;
   currentSlideIndex = 0;
 
@@ -777,7 +783,7 @@ function openLecture(lectureId, startInPresentation = false) {
 
     slideEl.innerHTML = `
       <div class="slide-top-controls interactive-zone">
-        ${isAdminAuthenticated ? `<button type="button" class="btn-edit-lecture btn-edit-this-slide" data-edit-slide-idx="${idx}" title="Bu slaytı düzenle">&#9998; Slaytı Düzenle</button>` : ""}
+        ${isAdminAuthenticated && !lec.managedWeek ? `<button type="button" class="btn-edit-lecture btn-edit-this-slide" data-edit-slide-idx="${idx}" title="Bu slaytı düzenle">&#9998; Slaytı Düzenle</button>` : ""}
         <select class="btn-slide-mode-switch slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="pdf">Slayt</option><option value="web">Notlar</option></select>
         <span class="slide-number-badge">Slayt ${idx + 1} / ${lec.slides.length}</span>
       </div>
@@ -3034,6 +3040,7 @@ async function initializeLectures() {
   LECTURES.splice(0, LECTURES.length, ...visibleLectures);
   const hasLocalData = Array.isArray(stored) || Boolean(localStorage.getItem(ALL_LECTURES_STORAGE_KEY) || localStorage.getItem(CUSTOM_LECTURES_KEY));
   renderCatalog();
+  await WeeklyFiles.initialize(renderCatalog);
   await LecturePublishing.initialize({
     getLectures: () => LECTURES,
     hasLocalData,

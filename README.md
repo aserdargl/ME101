@@ -1,5 +1,37 @@
 # MEE 101 Ders Portalı
 
+## Drive klasöründen BAT ile hafta eşitleme
+
+Drive masaüstü uygulamasının eşitlediği yerel bir klasör kaynak seçilir. Bilgisayar ve
+Drive uygulaması açık, dosyalar yerel olarak okunabilir olmalıdır. Git for Windows
+ve depoya yazma yetkisi olan GitHub oturumu gerekir. Hazır EXE yoksa ilk çalıştırma
+Rust/Cargo ile `tools/week-sync/` uygulamasını derler; GitHub/Google anahtarı kodda
+saklanmaz. Git'in mevcut kimlik bilgileri kullanılır.
+
+- `Dersleri-Senkronize-Et.bat`: hemen bir kez eşitler.
+- `Dersleri-Izle.bat`: açık kaldığı sürece yaklaşık üç saniyede bir kontrol eder;
+  değişiklikler iki saniye sabit kaldıktan sonra aktarılır. Ctrl+C ile durur.
+- İlk çalıştırmada klasör yolu istenir ve `%LOCALAPPDATA%/ME101-WeekSync/source.json`
+  içinde saklanır. Farklı kaynak için BAT'a `-Source "C:\Dersler"` verilebilir.
+- Dosyaları `1.Week.pdf`, `2.Week.html` şeklinde adlandırın veya `1.Week/Notes.pdf`
+  gibi haftalık alt klasörler kullanın. Haftalar sayısal sıralanır. Aynı haftada
+  birden fazla dosya ayrı satır olarak gösterilir. PDF ve bağımsız HTML site içinde
+  açılır; PPTX indirilir. HTML'de harici göreli dosyalar yerine gömülü içerik kullanın.
+- Ekleme/güncelleme/yeniden adlandırma ve silme `weeks/manifest.json` ile
+  `weeks/files/` içindeki araç tarafından kaydedilmiş dosyalara uygulanır. Kaynakta
+  bütün derslerin silinmesi bu yönetilen listeyi boşaltır. `data/`, eski dersler,
+  notlar, öğrenci kayıtları, puanlar ve ayarlar değiştirilmez. Git geçmişi korunur.
+- Kaynak kökündeki `.me101-week-source` işaretini silmeyin. Klasör veya işaret
+  okunamazsa, dosya yükleme sırasında değişirse ya da GitHub erişimi başarısızsa
+  işlem durur. Kayıtlı kaynağın kayıp işareti otomatik yeniden oluşturulmaz.
+- Eşitleme ayrı yerel Git kopyasında çalışır; uzak değişiklikler alınır, force-push
+  yapılmaz. Aynı anda ikinci eşitleme Windows dosya kilidiyle engellenir.
+- Dosya başına sınır 95 MiB'dir. GitHub'a aktarılan dosyalar herkese açıktır.
+  Aktarım sonrası GitHub Pages yayınının tamamlanması gerekir; açık sayfayı yenileyin.
+
+Kontrol: `cargo test --locked --manifest-path tools/week-sync/Cargo.toml`, `npm test`
+ve `node tests/weekly-files-browser.cjs` (Playwright/Edge, yalnız localhost).
+
 ## Yayın listesinin değiştirilmesi ve dosya temizliği
 
 **Yayımla**, ekrandaki mevcut ders listesini aynen yayımlar: silinen dersler birleştirmeyle geri eklenmez, yeni dersler ve düzenlemeler güncel listeye aktarılır. Sunucu, manifest ile `data/snapshots/` klasörünü aynı Git işleminde değiştirir; bu klasörde yalnızca yeni yayının parçaları kalır. Artık kullanılmayan eski yayın dosyaları GitHub Pages üzerinden sunulmaz. Kaynak dosyalar, bu klasör dışındaki dosyalar, Git geçmişi ve bağımsız Drive yedekleri korunur. Başka cihazdan araya yeni yayın girerse işlem durur; yerel değişiklikler korunur. Güncel derslerde hiçbir referansı kalmadığı doğrulanan sekiz eski örnek PPTX dosyası da depodan kaldırılmıştır.
