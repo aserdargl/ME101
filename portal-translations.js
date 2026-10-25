@@ -168,6 +168,8 @@ window.PORTAL_ENGLISH = {
   "DERS PORTALI": "COURSE PORTAL",
   "Öğrenci Listesi": "Student Roster",
   "Yönetim": "Management",
+  "İçerik": "Content",
+  "Görsel": "Image",
   "Tüm Yıldızları Temizle": "Clear All Ratings",
   "+ Ders Ekle": "+ Add Lesson",
   "Öğrenci Girişi": "Student Login",

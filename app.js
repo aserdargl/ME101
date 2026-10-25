@@ -1731,6 +1731,19 @@ function loadSlideIntoEditForm(slideIdx, rebuildTabs = true) {
   updateEditLivePreview();
 }
 
+/** Positions the insertion dropdown inside the viewport, outside sidebar clipping. */
+function toggleSlideInsertMenu(button, menu) {
+  if (menu.matches(":popover-open")) return menu.hidePopover();
+  menu.showPopover();
+  const anchor = button.getBoundingClientRect();
+  const bounds = menu.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.max(margin, Math.min(anchor.left, innerWidth - bounds.width - margin));
+  const top = Math.max(margin, Math.min(anchor.bottom + margin, innerHeight - bounds.height - margin));
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+}
+
 function createInsertBetweenBar(insertPos, totalSlides) {
   const bar = document.createElement("div");
   bar.className = "edit-insert-between";
@@ -1742,19 +1755,25 @@ function createInsertBetweenBar(insertPos, totalSlides) {
   }
 
   bar.innerHTML = `
-    <span class="edit-insert-label">${posLabel}</span>
-    <div class="edit-insert-btns">
-      <button type="button" class="btn-insert-here" data-ins-type="pdf" data-ins-pos="${insertPos}" title="Bu araya PDF sayfaları ekle">+PDF</button>
-      <button type="button" class="btn-insert-here" data-ins-type="html" data-ins-pos="${insertPos}" title="Bu araya çalışan HTML sayfası ekle">+HTML</button>
-      <button type="button" class="btn-insert-here" data-ins-type="slide" data-ins-pos="${insertPos}" title="Bu araya yeni konu/metin slaytı ekle">+Konu</button>
-      <button type="button" class="btn-insert-here" data-ins-type="sim" data-ins-pos="${insertPos}" title="Bu araya teknik simülasyon slaytı ekle">+Sim</button>
-      <button type="button" class="btn-insert-here" data-ins-type="img" data-ins-pos="${insertPos}" title="Bu araya görsel (PNG/JPG) slayt ekle">+Görsel</button>
+    <button type="button" class="btn-slide-insert-toggle" aria-label="${posLabel}" title="${posLabel}" aria-expanded="false" aria-controls="slide-insert-menu-${insertPos}">+</button>
+    <div id="slide-insert-menu-${insertPos}" class="slide-insert-menu" popover="auto">
+      <button type="button" class="btn-insert-here" data-ins-type="pdf" data-ins-pos="${insertPos}" title="Bu araya PDF sayfaları ekle">PDF</button>
+      <button type="button" class="btn-insert-here" data-ins-type="html" data-ins-pos="${insertPos}" title="Bu araya çalışan HTML sayfası ekle">HTML</button>
+      <button type="button" class="btn-insert-here" data-ins-type="slide" data-ins-pos="${insertPos}" title="Bu araya yeni konu/metin slaytı ekle">İçerik</button>
+      <button type="button" class="btn-insert-here" data-ins-type="sim" data-ins-pos="${insertPos}" title="Bu araya teknik simülasyon slaytı ekle">Sim</button>
+      <button type="button" class="btn-insert-here" data-ins-type="img" data-ins-pos="${insertPos}" title="Bu araya görsel (PNG/JPG) slayt ekle">Görsel</button>
     </div>
   `;
+
+  const toggle = bar.querySelector(".btn-slide-insert-toggle");
+  const menu = bar.querySelector(".slide-insert-menu");
+  toggle.addEventListener("click", () => toggleSlideInsertMenu(toggle, menu));
+  menu.addEventListener("toggle", () => toggle.setAttribute("aria-expanded", String(menu.matches(":popover-open"))));
 
   bar.querySelectorAll(".btn-insert-here").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
+      menu.hidePopover();
       const pos = parseInt(btn.dataset.insPos, 10);
       const type = btn.dataset.insType;
       if (type === "pdf") {

@@ -104,6 +104,18 @@ body:has(> .course-editor:not(.hidden)) { overflow: hidden; }
 .course-editor .edit-insert-label { font-size: 8px; font-weight: 500; color: #818a94; }
 .course-editor .btn-insert-here { border: 0; background: transparent; color: #84664d; font-size: 9px; padding: 4px; }
 .course-editor .btn-insert-here:hover { background: #eee6dc; color: #60432e; border-radius: 4px; }
+.course-editor .edit-insert-between { border: 0; padding: 0; }
+.course-editor .btn-slide-insert-toggle {
+  width: 28px; height: 28px; padding: 0; border: 1px solid var(--button-border);
+  border-radius: 50%; font-size: 20px; line-height: 1; cursor: pointer;
+}
+.course-editor .slide-insert-menu {
+  position: fixed; inset: auto; margin: 0; width: 148px; padding: 5px;
+  border: 1px solid var(--button-border); border-radius: 8px;
+  background: white; box-shadow: 0 8px 24px #1e293b26;
+}
+.course-editor .slide-insert-menu:popover-open { display: grid; gap: 3px; }
+.course-editor .slide-insert-menu .btn-insert-here { padding: 7px 10px; font-size: 12px; text-align: left; }
 .course-editor .edit-slide-form-area { border: 0; padding: 0; min-width: 0; }
 .course-editor .edit-slide-toolbar { gap: 10px; padding-bottom: 12px; margin-bottom: 14px; border-color: #e7eaee; }
 .course-editor .edit-current-slide-badge,
@@ -150,7 +162,7 @@ body:has(> .course-editor:not(.hidden)) { overflow: hidden; }
   .course-editor .edit-slides-sidebar { max-height: 210px; }
   .course-editor .edit-slide-filmstrip { flex-direction: row; align-items: flex-start; overflow-x: auto; }
   .course-editor .edit-thumb-card { flex: 0 0 132px; }
-  .course-editor .edit-insert-between { flex: 0 0 75px; align-self: center; white-space: normal; }
+  .course-editor .edit-insert-between { flex: 0 0 32px; align-self: center; white-space: normal; }
   .course-editor .edit-insert-label { white-space: normal; text-align: center; }
   .course-editor .edit-insert-btns { flex-wrap: wrap; justify-content: center; }
   .course-editor .edit-slide-toolbar > div { gap: 4px !important; }
