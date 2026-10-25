@@ -126,7 +126,47 @@ async function verifyAnimations(frame) {
     await page.locator("#btn-next-slide").click();
     await page.waitForFunction(() => document.querySelector(".active-slide [data-pdf-page='2'][data-pdf-ready='true']"));
     assert.equal(await page.evaluate(() => currentSlideIndex), 2);
+    // The outer frame and the complete inner page must both fit, including its bottom edge.
+    await page.evaluate(() => {
+      const slides = [[1600, 900], [900, 1600]].map(([width, height]) => ({
+        ...HtmlSlides.create("5. & 6. Week"),
+        htmlDocument: `<style>body{margin:0}.page{position:relative;width:${width}px;height:${height}px;background:lightblue}#bottom{position:absolute;bottom:24px;right:24px;font:32px system-ui;padding:20px}</style><div class="page"><button id="bottom" onclick="this.textContent='42'">BOTTOM EDGE</button></div>`
+      }));
+      LECTURES.push({ id: "qa-html-fit", week: "QA", title: "Fit", slides });
+      window.qaFitBefore = JSON.stringify(LECTURES);
+      openLecture("qa-html-fit", true);
+    });
+    for (const viewport of [{width:1366,height:768}, {width:1920,height:1080}, {width:1024,height:600}, {width:390,height:844}, {width:844,height:390}]) {
+      await page.setViewportSize(viewport);
+      for (let index = 0; index < 2; index++) {
+        await page.evaluate(i => { currentSlideIndex = i; updateActiveSlide(); }, index);
+        const frame = page.frameLocator(".active-slide iframe");
+        await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.active-slide')).opacity) > 0.99);
+        await frame.locator(".page").evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        const inner = await frame.locator(".page").evaluate(element => {
+          const rect = element.getBoundingClientRect();
+          return { fits: rect.x >= -1 && rect.y >= -1 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight + 1, rect: rect.toJSON(), width: innerWidth, height: innerHeight, transform: document.body.style.transform, scrollWidth:document.body.scrollWidth, scrollHeight:document.body.scrollHeight };
+        });
+        assert.equal(inner.fits, true, JSON.stringify({viewport,inner,errors}));
+        const outer = await page.locator(".active-slide").evaluate(slide => {
+          const rect = slide.querySelector("iframe").getBoundingClientRect();
+          const bounds = slide.getBoundingClientRect();
+          const toolbar = document.getElementById("presentation-toolbar").getBoundingClientRect();
+          return { fits: rect.x >= bounds.x - 1 && rect.right <= bounds.right + 1 && rect.y >= bounds.y - 1 && rect.bottom <= Math.min(bounds.bottom, toolbar.y) + 1,
+            headingsHidden: [...slide.querySelectorAll(".slide-content > .slide-kicker, .slide-content > h2")].every(element => getComputedStyle(element).display === "none") };
+        });
+        assert.deepEqual(outer, { fits: true, headingsHidden: true });
+        const button = await frame.locator("#bottom").evaluate(element => { const r = element.getBoundingClientRect(); return {x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,width:innerWidth,height:innerHeight}; });
+        const frameBox = await page.locator(".active-slide iframe").boundingBox();
+        await page.mouse.click(frameBox.x + button.x * frameBox.width / button.width, frameBox.y + button.y * frameBox.height / button.height);
+        assert.equal(await frame.locator("#bottom").textContent(), "42", JSON.stringify({viewport, index, inner}));
+      }
+    }
+    await page.screenshot({path:".jtmp/html-fit-mobile-landscape.png"});
+    await page.evaluate(() => exitPresentationMode());
+    assert.equal(await page.locator('.slide-content > h2').first().isVisible(), false);
+    assert.equal(await page.evaluate(() => JSON.stringify(LECTURES) === qaFitBefore), true);
     assert.deepEqual(errors, []);
-    console.info("Passed: file picker and exact insertion, empty-file recovery, CSS/JS animations, canvas, preview, isolated execution, cancel/save/reload, unchanged legacy notes, PDF navigation, view switching and mobile.");
+    console.info("Passed: complete landscape/portrait HTML fits five screen sizes with clickable bottom controls and hidden outer headings; file picker and exact insertion, empty-file recovery, CSS/JS animations, canvas, preview, isolated execution, cancel/save/reload, unchanged legacy notes, PDF navigation, view switching and mobile.");
   } finally { await browser?.close(); server.kill(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -850,9 +850,46 @@ window.PdfSlides = (() => {
     return { ok: true, slide: { ...create(week), title: file.name.replace(/\.html?$/i, ""), htmlDocument: source } };
   }
 
+  /** Runs inside the isolated frame and fits the page without changing saved HTML. */
+  function fitDocument() {
+    if (!document.body) {
+      document.addEventListener("DOMContentLoaded", fitDocument, { once: true });
+      return;
+    }
+    let pending = false;
+    function fit() {
+      pending = false;
+      const body = document.body;
+      if (!body || !innerWidth || !innerHeight) return;
+      const style = getComputedStyle(body);
+      const horizontalMargin = parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+      const verticalMargin = parseFloat(style.marginTop) + parseFloat(style.marginBottom);
+      const width = Math.max(1, body.scrollWidth, body.offsetWidth);
+      const height = Math.max(1, body.scrollHeight, body.offsetHeight);
+      const scale = Math.min(1, (innerWidth - horizontalMargin) / width, (innerHeight - verticalMargin) / height);
+      body.style.transformOrigin = "top left";
+      body.style.transform = `scale(${Math.max(0, scale)})`;
+      document.documentElement.style.overflow = "hidden";
+    }
+    function schedule() {
+      if (!pending) { pending = true; requestAnimationFrame(fit); }
+    }
+    const resize = new ResizeObserver(schedule);
+    resize.observe(document.body);
+    for (const child of document.body.children) resize.observe(child);
+    document.addEventListener("load", schedule, true);
+    window.addEventListener("resize", schedule);
+    document.fonts.ready.then(schedule);
+    schedule();
+  }
+
+  function fittedSource(source) {
+    return `${source}<script>(${fitDocument.toString()})();<\/script>`;
+  }
+
   /** Scripts run in an opaque-origin frame without access to portal storage or controls. */
   function render(slide) {
-    return `<div class="html-slide-frame interactive-zone"><iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="${escape(slide.title || "HTML")}" srcdoc="${escape(slide.htmlDocument)}"></iframe></div>`;
+    return `<div class="html-slide-frame interactive-zone"><iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="${escape(slide.title || "HTML")}" srcdoc="${escape(fittedSource(slide.htmlDocument))}"></iframe></div>`;
   }
 
   function thumbnail(slide) {
@@ -862,7 +899,7 @@ window.PdfSlides = (() => {
   /** Reuses a running preview while unrelated title fields change. */
   function preview(stage, source, title) {
     const frame = stage.querySelector(".html-slide-frame iframe");
-    if (frame && frame.srcdoc === source) { frame.title = title; return; }
+    if (frame && frame.srcdoc === fittedSource(source)) { frame.title = title; return; }
     stage.innerHTML = render({ htmlDocument: source, title });
   }
 

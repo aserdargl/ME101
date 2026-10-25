@@ -111,6 +111,8 @@ body.presentation-mode :is(.toolbar-left, .toolbar-center, .toolbar-right) { fle
 
 .html-slide-frame { width: 100%; aspect-ratio: 16 / 9; background: white; min-width: 0; }
 .html-slide-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+/* Imported HTML already supplies its own visible headings. */
+.slide:has(.html-slide-frame) .slide-content > :is(.slide-kicker, h2) { display: none; }
 .html-slide-thumbnail { display: grid; place-content: center; gap: 5px; height: 100%; text-align: center; padding: 8px; background: #edf4f0; color: #3b6650; }
 .html-slide-thumbnail span { font-size: 9px; overflow-wrap: anywhere; }
 .html-source-editor { font: 12px/1.5 Consolas, monospace; min-height: 220px; tab-size: 2; resize: vertical; }
