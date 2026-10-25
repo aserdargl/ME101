@@ -215,3 +215,21 @@ body:has(> .course-editor:not(.hidden)) { overflow: hidden; }
 .course-editor .registered-roster-table .roster-cell-editor:focus { border-color: #748ba3; background: white; outline: 1px solid #748ba3; }
 .course-editor .registered-roster-table .roster-cell-editor:disabled { opacity: .6; }
 .course-editor .registered-roster-actions { min-width: 230px; }
+
+/* Direct text/table composition stays inside the existing compact slide editor. */
+#edit-text-slide-fields { margin-top: .65rem; min-width: 0; }
+.text-slide-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; margin: .4rem 0; }
+.text-slide-toolbar button { border: 1px solid #cfc8bd; border-radius: 5px; padding: .3rem .5rem; background: #fff; color: #334155; cursor: pointer; font-size: .75rem; }
+.text-slide-toolbar button:hover { background: #edf2f6; }
+.text-slide-toolbar label { display: flex; align-items: center; gap: .25rem; font-size: .72rem; }
+.text-slide-toolbar input { width: 3.5rem; padding: .25rem; }
+.text-slide-toolbar [role="status"] { flex-basis: 100%; color: #97451b; }
+.text-slide-toolbar [role="status"]:empty { display: none; }
+.text-slide-editor { min-height: 180px; max-height: 480px; overflow: auto; padding: 1rem; border: 1px solid #cfc8bd; border-radius: 6px; background: #fff; color: #263445; font: 1rem/1.5 system-ui; overflow-wrap: anywhere; white-space: pre-wrap; }
+.text-slide-editor:focus { outline: 2px solid #72889b; outline-offset: 1px; }
+.text-slide-editor:empty::before { content: "Metni buraya yazın…"; color: #8a8f97; pointer-events: none; }
+.text-slide-editor p { margin: 0 0 .75rem; }
+.text-slide-editor table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: .75rem 0; white-space: normal; }
+.text-slide-editor td, .text-slide-editor th { border: 1px solid #b9c4ce; padding: .5rem; min-width: 2rem; vertical-align: top; overflow-wrap: anywhere; }
+.text-slide-editor th { background: #edf2f6; text-align: left; }
+#text-slide-help { display: block; margin-top: .4rem; font-size: .74rem; color: #6e6256; }

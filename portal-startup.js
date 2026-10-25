@@ -3,6 +3,28 @@
 /* portal-translations.js */
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "+ Metin / Tablo": "+ Text / Table",
+  "Metin / Tablo": "Text / Table",
+  "Metin ve Tablo": "Text and Table",
+  "Slayt Metni ve Tablosu": "Slide Text and Table",
+  "Metin ve tablo araçları": "Text and table tools",
+  "Bu araya metin ve tablo sayfası ekle": "Insert a text and table page here",
+  "Seçili slayttan sonra metin ve tablo sayfası ekle": "Insert a text and table page after this slide",
+  "Kalın": "Bold",
+  "İtalik": "Italic",
+  "Madde işaretleri": "Bullet list",
+  "• Liste": "• List",
+  "Satır": "Rows",
+  "Sütun": "Columns",
+  "+ Tablo": "+ Table",
+  "+ Satır": "+ Row",
+  "+ Sütun": "+ Column",
+  "Tabloyu Sil": "Delete Table",
+  "Önce bir tablo hücresine tıklayın.": "Click a table cell first.",
+  "Tablo boyutu sınırına ulaşıldı.": "Table size limit reached.",
+  "1–30 satır ve 1–12 sütun seçin.": "Choose 1–30 rows and 1–12 columns.",
+  "Metni doğrudan yazın. Tablo ekleyip hücreleri doldurun veya Excel / Word'den bir tablo yapıştırın. Kaydettiğiniz içerik ayrı bir slayt sayfası olur.": "Type directly. Insert a table and fill its cells, or paste a table from Excel / Word. Save to keep the content as a separate slide page.",
+
   "Önceki kayıt yayımlandı · Yeni kaydedilen değişiklikler sırayla otomatik yayımlanıyor.": "Previous save published · New saved changes are being published automatically in order.",
   "Drive bağlantısı hazır · Sonraki kayıtlar otomatik yayımlanır.": "Drive connected · Future saves will publish automatically.",
   "Hoca oturumu açık · Kaydedilen değişiklikler otomatik yayımlanır.": "Instructor session active · Saved changes publish automatically.",
@@ -920,6 +942,134 @@ window.PdfSlides = (() => {
   root.HtmlSlides = { isHtmlSlide, create, fromFile, render, thumbnail, preview };
   if (typeof module !== "undefined") module.exports = root.HtmlSlides;
 })(typeof window !== "undefined" ? window : globalThis);
+;
+
+/* text-slides.js */
+(function (root) {
+  const MAX_ROWS = 30;
+  const MAX_COLUMNS = 12;
+  const ALLOWED = new Set('P DIV BR STRONG B EM I U S UL OL LI H2 H3 BLOCKQUOTE TABLE THEAD TBODY TFOOT TR TH TD'.split(' '));
+  const DROP = new Set('SCRIPT STYLE IFRAME OBJECT EMBED SVG MATH TEMPLATE FORM INPUT BUTTON IMG LINK META'.split(' '));
+  const escape = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+
+  /** Keeps editable text and tables while removing pasted scripts, styles and attributes. */
+  function sanitize(html) {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    function clean(node) {
+      if (node.nodeType === 3) return escape(node.textContent);
+      if (node.nodeType !== 1 || DROP.has(node.tagName)) return '';
+      const content = Array.from(node.childNodes, clean).join('');
+      if (!ALLOWED.has(node.tagName)) return content;
+      const tag = node.tagName.toLowerCase();
+      const spans = ['TD', 'TH'].includes(node.tagName) ? ['colspan', 'rowspan'].map(name => {
+        const value = Number(node.getAttribute(name));
+        return Number.isInteger(value) && value > 1 && value <= MAX_ROWS ? ` ${name}="${value}"` : '';
+      }).join('') : '';
+      return tag === 'br' ? '<br>' : `<${tag}${spans}>${content}</${tag}>`;
+    }
+    return Array.from(template.content.childNodes, clean).join('');
+  }
+
+  function isTextSlide(slide) { return typeof slide?.textSlideHtml === 'string'; }
+
+  /** Produces a complete slide page using the existing isolated HTML renderer. */
+  function documentFor(content, title, kicker) {
+    return `<!doctype html><html lang="tr"><meta charset="utf-8"><title>${escape(title)}</title>
+<style>body{margin:0;color:#263445;font:24px/1.5 system-ui;background:#fff}.page{box-sizing:border-box;width:960px;min-height:540px;padding:40px 48px}small{color:#786c5b;font-size:16px}h1{font-size:36px;line-height:1.2;margin:12px 0 28px}.text-slide-content{overflow-wrap:anywhere;white-space:pre-wrap}.text-slide-content p{margin:0 0 16px}table{width:100%;border-collapse:collapse;margin:16px 0;table-layout:fixed;white-space:normal}td,th{border:1px solid #b9c4ce;padding:10px;vertical-align:top;overflow-wrap:anywhere}th{background:#edf2f6;text-align:left}h2,h3{line-height:1.3}</style>
+<body><main class="page"><small>${escape(kicker)}</small><h1>${escape(title)}</h1><div class="text-slide-content">${sanitize(content)}</div></main></body></html>`;
+  }
+
+  function create(week) {
+    const slide = { title: 'Metin ve Tablo', kicker: week, defaultViewMode: 'web', html: '', textSlideHtml: '', pptSummaryBullets: [] };
+    slide.htmlDocument = documentFor('', slide.title, week);
+    return slide;
+  }
+
+  /** Binds a single visual editor; injected callback updates the surrounding preview. */
+  function bind(editor, toolbar, onChange) {
+    let savedRange = null;
+    const status = toolbar.querySelector('[role="status"]');
+    const changed = () => { status.textContent = ''; onChange(); };
+    document.addEventListener('selectionchange', () => {
+      const selection = window.getSelection();
+      if (selection.rangeCount && editor.contains(selection.anchorNode) && editor.contains(selection.focusNode)) {
+        savedRange = selection.getRangeAt(0).cloneRange();
+      }
+    });
+    function restore() {
+      editor.focus();
+      const selection = window.getSelection();
+      if (!savedRange || !editor.contains(savedRange.commonAncestorContainer)) {
+        savedRange = document.createRange();
+        savedRange.selectNodeContents(editor);
+        savedRange.collapse(false);
+      }
+      selection.removeAllRanges();
+      selection.addRange(savedRange);
+    }
+    function insert(html) {
+      restore();
+      document.execCommand('insertHTML', false, html);
+      changed();
+    }
+    toolbar.addEventListener('mousedown', event => {
+      if (event.target.closest('button')) event.preventDefault();
+    });
+    toolbar.addEventListener('click', event => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.dataset.command) {
+        restore();
+        document.execCommand(button.dataset.command, false);
+        changed();
+      } else if (button.dataset.table === 'insert') {
+        const rows = Number(toolbar.querySelector('[name="rows"]').value);
+        const columns = Number(toolbar.querySelector('[name="columns"]').value);
+        if (!Number.isInteger(rows) || rows < 1 || rows > MAX_ROWS || !Number.isInteger(columns) || columns < 1 || columns > MAX_COLUMNS) {
+          status.textContent = `1–${MAX_ROWS} satır ve 1–${MAX_COLUMNS} sütun seçin.`;
+          return;
+        }
+        insert(`<table><tbody>${Array.from({ length: rows }, () => `<tr>${'<td><br></td>'.repeat(columns)}</tr>`).join('')}</tbody></table><p><br></p>`);
+      } else if (button.dataset.table) {
+        restore();
+        const node = window.getSelection().anchorNode;
+        const cell = (node.nodeType === 1 ? node : node.parentElement).closest('td,th');
+        const table = cell?.closest('table');
+        if (!table || !editor.contains(table)) { status.textContent = 'Önce bir tablo hücresine tıklayın.'; return; }
+        if (button.dataset.table === 'remove') table.remove();
+        else if (button.dataset.table === 'row' && table.rows.length < MAX_ROWS) {
+          const row = table.insertRow(cell.parentElement.rowIndex + 1);
+          for (let index = 0; index < cell.parentElement.cells.length; index++) row.insertCell().innerHTML = '<br>';
+        } else if (button.dataset.table === 'column' && Array.from(table.rows).every(row => row.cells.length < MAX_COLUMNS)) {
+          for (const row of table.rows) row.insertCell(Math.min(cell.cellIndex + 1, row.cells.length)).innerHTML = '<br>';
+        } else { status.textContent = 'Tablo boyutu sınırına ulaşıldı.'; return; }
+        changed();
+      }
+    });
+    editor.addEventListener('input', changed);
+    editor.addEventListener('paste', event => {
+      event.preventDefault();
+      const html = event.clipboardData.getData('text/html');
+      const text = event.clipboardData.getData('text/plain');
+      if (html) insert(sanitize(html));
+      else if (text.includes('\t')) {
+        const rows = text.replace(/\r/g, '').replace(/\n$/, '').split('\n');
+        insert(`<table><tbody>${rows.map(row => `<tr>${row.split('\t').map(cell => `<td>${escape(cell) || '<br>'}</td>`).join('')}</tr>`).join('')}</tbody></table><p><br></p>`);
+      } else insert(escape(text).replace(/\r?\n/g, '<br>'));
+    });
+    // Drops use the same plain-text path; never allow external markup or files into the editor.
+    editor.addEventListener('dragover', event => event.preventDefault());
+    editor.addEventListener('drop', event => { event.preventDefault(); insert(escape(event.dataTransfer.getData('text/plain')).replace(/\r?\n/g, '<br>')); });
+    return { reset() { savedRange = null; status.textContent = ''; } };
+  }
+
+  function thumbnail(slide) {
+    return `<div class="html-slide-thumbnail"><strong>Aa · ▦</strong><span>${escape(slide.title)}</span></div>`;
+  }
+
+  root.TextSlides = { isTextSlide, create, sanitize, documentFor, bind, thumbnail };
+})(typeof window !== 'undefined' ? window : globalThis);
 ;
 
 /* slide-visual.js */
@@ -4879,6 +5029,18 @@ function updateEditLivePreview() {
   if (!stage || !editingLectureDraft || !editingLectureDraft.slides[editingSlideIndex]) return;
 
   const slide = editingLectureDraft.slides[editingSlideIndex];
+  if (TextSlides.isTextSlide(slide)) {
+    const title = document.getElementById("edit-slide-title").value.trim() || slide.title;
+    const kicker = document.getElementById("edit-slide-kicker").value.trim() || slide.kicker;
+    HtmlSlides.preview(stage, TextSlides.documentFor(document.getElementById("edit-text-content").innerHTML, title, kicker), title);
+    if (typeLabel) typeLabel.textContent = "Metin ve Tablo";
+    const card = document.querySelector("#edit-slide-tabs .edit-thumb-card.active");
+    if (card) {
+      card.querySelector(".edit-thumb-title").textContent = title;
+      card.querySelector(".edit-thumb-preview").innerHTML = TextSlides.thumbnail({ title });
+    }
+    return;
+  }
   if (HtmlSlides.isHtmlSlide(slide)) {
     const title = document.getElementById("edit-slide-title").value.trim() || slide.title;
     editPreviewMarkup.delete(stage);
@@ -4984,7 +5146,10 @@ function loadSlideIntoEditForm(slideIdx, rebuildTabs = true) {
   slide._imageChanged = false;
   updateSlideImageStatusUI(fields.imageUrl);
 
-  document.getElementById("edit-html-slide-fields").classList.toggle("hidden", !HtmlSlides.isHtmlSlide(slide));
+  textSlideEditor.reset();
+  document.getElementById("edit-text-slide-fields").classList.toggle("hidden", !TextSlides.isTextSlide(slide));
+  document.getElementById("edit-text-content").innerHTML = TextSlides.sanitize(slide.textSlideHtml || "");
+  document.getElementById("edit-html-slide-fields").classList.toggle("hidden", !HtmlSlides.isHtmlSlide(slide) || TextSlides.isTextSlide(slide));
   document.getElementById("edit-html-document").value = slide.htmlDocument || "";
   const standardFieldsBox = document.getElementById("edit-slide-standard-fields");
   if (standardFieldsBox) {
@@ -5024,6 +5189,7 @@ function createInsertBetweenBar(insertPos, totalSlides) {
   bar.innerHTML = `
     <button type="button" class="btn-slide-insert-toggle" aria-label="${posLabel}" title="${posLabel}" aria-expanded="false" aria-controls="slide-insert-menu-${insertPos}">+</button>
     <div id="slide-insert-menu-${insertPos}" class="slide-insert-menu" popover="auto">
+      <button type="button" class="btn-insert-here" data-ins-type="text" data-ins-pos="${insertPos}" title="Bu araya metin ve tablo sayfası ekle">Metin / Tablo</button>
       <button type="button" class="btn-insert-here" data-ins-type="pdf" data-ins-pos="${insertPos}" title="Bu araya PDF sayfaları ekle">PDF</button>
       <button type="button" class="btn-insert-here" data-ins-type="html-file" data-ins-pos="${insertPos}" title="Bu araya HTML dosyası ekle">HTML Dosyası</button>
       <button type="button" class="btn-insert-here" data-ins-type="html" data-ins-pos="${insertPos}" title="Bu araya çalışan HTML sayfası ekle">HTML Kodu</button>
@@ -5044,7 +5210,9 @@ function createInsertBetweenBar(insertPos, totalSlides) {
       menu.hidePopover();
       const pos = parseInt(btn.dataset.insPos, 10);
       const type = btn.dataset.insType;
-      if (type === "pdf") {
+      if (type === "text") {
+        insertTextSlideAt(pos);
+      } else if (type === "pdf") {
         pendingPdfInsertIndex = pos;
         document.getElementById("inp-edit-pdf-file").click();
       } else if (type === "html") {
@@ -5080,7 +5248,7 @@ function renderEditSlideTabs() {
       if (!entry.isIntersecting || !editingLectureDraft || !entry.target.isConnected) return;
       const index = Number(entry.target.dataset.slideIndex);
       if (index !== editingSlideIndex) {
-        entry.target.innerHTML = HtmlSlides.isHtmlSlide(editingLectureDraft.slides[index]) ? HtmlSlides.thumbnail(editingLectureDraft.slides[index]) : buildPptExactVisualHtml(editingLectureDraft.slides[index], index, total, weekVal);
+        entry.target.innerHTML = TextSlides.isTextSlide(editingLectureDraft.slides[index]) ? TextSlides.thumbnail(editingLectureDraft.slides[index]) : HtmlSlides.isHtmlSlide(editingLectureDraft.slides[index]) ? HtmlSlides.thumbnail(editingLectureDraft.slides[index]) : buildPptExactVisualHtml(editingLectureDraft.slides[index], index, total, weekVal);
       }
       editThumbnailObserver.unobserve(entry.target);
     });
@@ -5096,7 +5264,7 @@ function renderEditSlideTabs() {
     const simType = detectSlideSimType(s);
     const hasImg = Boolean(s.pptImageUrl || (s.extractedImages && s.extractedImages.length > 0));
     const typeTagText =
-      HtmlSlides.isHtmlSlide(s) ? "HTML Sayfası" : s.pdf ? "PDF Sayfası" : simType !== "none" ? `Simülasyon (${simType})` : hasImg ? "Görsel Slayt" : "Konu Slaytı";
+      TextSlides.isTextSlide(s) ? "Metin / Tablo" : HtmlSlides.isHtmlSlide(s) ? "HTML Sayfası" : s.pdf ? "PDF Sayfası" : simType !== "none" ? `Simülasyon (${simType})` : hasImg ? "Görsel Slayt" : "Konu Slaytı";
 
     card.innerHTML = `
       <div class="edit-thumb-top">
@@ -5124,6 +5292,18 @@ function renderEditSlideTabs() {
 function commitCurrentSlideFormToDraft() {
   if (!editingLectureDraft || !editingLectureDraft.slides[editingSlideIndex]) return;
   const slide = editingLectureDraft.slides[editingSlideIndex];
+  if (TextSlides.isTextSlide(slide)) {
+    const content = TextSlides.sanitize(document.getElementById("edit-text-content").innerHTML);
+    const title = document.getElementById("edit-slide-title").value.trim() || slide.title;
+    const kicker = document.getElementById("edit-slide-kicker").value.trim() || slide.kicker;
+    if (content !== slide.textSlideHtml || title !== slide.title || kicker !== slide.kicker) {
+      slide.textSlideHtml = content;
+      slide.title = title;
+      slide.kicker = kicker;
+      slide.htmlDocument = TextSlides.documentFor(content, title, kicker);
+    }
+    return;
+  }
   if (HtmlSlides.isHtmlSlide(slide)) {
     slide.htmlDocument = document.getElementById("edit-html-document").value;
     slide.title = document.getElementById("edit-slide-title").value.trim() || slide.title;
@@ -5406,6 +5586,25 @@ document.getElementById("btn-run-html-preview").addEventListener("click", () => 
   stage.replaceChildren();
   updateEditLivePreview();
 });
+
+const textSlideEditor = TextSlides.bind(
+  document.getElementById("edit-text-content"),
+  document.getElementById("text-slide-toolbar"),
+  scheduleEditLivePreview
+);
+
+/** Inserts a visual text/table page without changing existing slide content. */
+function insertTextSlideAt(insertPos) {
+  if (!editingLectureDraft) return;
+  commitCurrentSlideFormToDraft();
+  const position = Math.max(0, Math.min(insertPos, editingLectureDraft.slides.length));
+  const week = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
+  editingLectureDraft.slides.splice(position, 0, TextSlides.create(week));
+  loadSlideIntoEditForm(position);
+  document.getElementById("edit-text-content").focus();
+}
+
+document.getElementById("btn-edit-add-text").addEventListener("click", () => insertTextSlideAt(editingSlideIndex + 1));
 
 /** Inserts an editable, executable page into the same sequence as PDF pages. */
 function insertHtmlSlideAt(insertPos) {

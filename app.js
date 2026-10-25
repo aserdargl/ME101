@@ -1629,6 +1629,18 @@ function updateEditLivePreview() {
   if (!stage || !editingLectureDraft || !editingLectureDraft.slides[editingSlideIndex]) return;
 
   const slide = editingLectureDraft.slides[editingSlideIndex];
+  if (TextSlides.isTextSlide(slide)) {
+    const title = document.getElementById("edit-slide-title").value.trim() || slide.title;
+    const kicker = document.getElementById("edit-slide-kicker").value.trim() || slide.kicker;
+    HtmlSlides.preview(stage, TextSlides.documentFor(document.getElementById("edit-text-content").innerHTML, title, kicker), title);
+    if (typeLabel) typeLabel.textContent = "Metin ve Tablo";
+    const card = document.querySelector("#edit-slide-tabs .edit-thumb-card.active");
+    if (card) {
+      card.querySelector(".edit-thumb-title").textContent = title;
+      card.querySelector(".edit-thumb-preview").innerHTML = TextSlides.thumbnail({ title });
+    }
+    return;
+  }
   if (HtmlSlides.isHtmlSlide(slide)) {
     const title = document.getElementById("edit-slide-title").value.trim() || slide.title;
     editPreviewMarkup.delete(stage);
@@ -1734,7 +1746,10 @@ function loadSlideIntoEditForm(slideIdx, rebuildTabs = true) {
   slide._imageChanged = false;
   updateSlideImageStatusUI(fields.imageUrl);
 
-  document.getElementById("edit-html-slide-fields").classList.toggle("hidden", !HtmlSlides.isHtmlSlide(slide));
+  textSlideEditor.reset();
+  document.getElementById("edit-text-slide-fields").classList.toggle("hidden", !TextSlides.isTextSlide(slide));
+  document.getElementById("edit-text-content").innerHTML = TextSlides.sanitize(slide.textSlideHtml || "");
+  document.getElementById("edit-html-slide-fields").classList.toggle("hidden", !HtmlSlides.isHtmlSlide(slide) || TextSlides.isTextSlide(slide));
   document.getElementById("edit-html-document").value = slide.htmlDocument || "";
   const standardFieldsBox = document.getElementById("edit-slide-standard-fields");
   if (standardFieldsBox) {
@@ -1774,6 +1789,7 @@ function createInsertBetweenBar(insertPos, totalSlides) {
   bar.innerHTML = `
     <button type="button" class="btn-slide-insert-toggle" aria-label="${posLabel}" title="${posLabel}" aria-expanded="false" aria-controls="slide-insert-menu-${insertPos}">+</button>
     <div id="slide-insert-menu-${insertPos}" class="slide-insert-menu" popover="auto">
+      <button type="button" class="btn-insert-here" data-ins-type="text" data-ins-pos="${insertPos}" title="Bu araya metin ve tablo sayfası ekle">Metin / Tablo</button>
       <button type="button" class="btn-insert-here" data-ins-type="pdf" data-ins-pos="${insertPos}" title="Bu araya PDF sayfaları ekle">PDF</button>
       <button type="button" class="btn-insert-here" data-ins-type="html-file" data-ins-pos="${insertPos}" title="Bu araya HTML dosyası ekle">HTML Dosyası</button>
       <button type="button" class="btn-insert-here" data-ins-type="html" data-ins-pos="${insertPos}" title="Bu araya çalışan HTML sayfası ekle">HTML Kodu</button>
@@ -1794,7 +1810,9 @@ function createInsertBetweenBar(insertPos, totalSlides) {
       menu.hidePopover();
       const pos = parseInt(btn.dataset.insPos, 10);
       const type = btn.dataset.insType;
-      if (type === "pdf") {
+      if (type === "text") {
+        insertTextSlideAt(pos);
+      } else if (type === "pdf") {
         pendingPdfInsertIndex = pos;
         document.getElementById("inp-edit-pdf-file").click();
       } else if (type === "html") {
@@ -1830,7 +1848,7 @@ function renderEditSlideTabs() {
       if (!entry.isIntersecting || !editingLectureDraft || !entry.target.isConnected) return;
       const index = Number(entry.target.dataset.slideIndex);
       if (index !== editingSlideIndex) {
-        entry.target.innerHTML = HtmlSlides.isHtmlSlide(editingLectureDraft.slides[index]) ? HtmlSlides.thumbnail(editingLectureDraft.slides[index]) : buildPptExactVisualHtml(editingLectureDraft.slides[index], index, total, weekVal);
+        entry.target.innerHTML = TextSlides.isTextSlide(editingLectureDraft.slides[index]) ? TextSlides.thumbnail(editingLectureDraft.slides[index]) : HtmlSlides.isHtmlSlide(editingLectureDraft.slides[index]) ? HtmlSlides.thumbnail(editingLectureDraft.slides[index]) : buildPptExactVisualHtml(editingLectureDraft.slides[index], index, total, weekVal);
       }
       editThumbnailObserver.unobserve(entry.target);
     });
@@ -1846,7 +1864,7 @@ function renderEditSlideTabs() {
     const simType = detectSlideSimType(s);
     const hasImg = Boolean(s.pptImageUrl || (s.extractedImages && s.extractedImages.length > 0));
     const typeTagText =
-      HtmlSlides.isHtmlSlide(s) ? "HTML Sayfası" : s.pdf ? "PDF Sayfası" : simType !== "none" ? `Simülasyon (${simType})` : hasImg ? "Görsel Slayt" : "Konu Slaytı";
+      TextSlides.isTextSlide(s) ? "Metin / Tablo" : HtmlSlides.isHtmlSlide(s) ? "HTML Sayfası" : s.pdf ? "PDF Sayfası" : simType !== "none" ? `Simülasyon (${simType})` : hasImg ? "Görsel Slayt" : "Konu Slaytı";
 
     card.innerHTML = `
       <div class="edit-thumb-top">
@@ -1874,6 +1892,18 @@ function renderEditSlideTabs() {
 function commitCurrentSlideFormToDraft() {
   if (!editingLectureDraft || !editingLectureDraft.slides[editingSlideIndex]) return;
   const slide = editingLectureDraft.slides[editingSlideIndex];
+  if (TextSlides.isTextSlide(slide)) {
+    const content = TextSlides.sanitize(document.getElementById("edit-text-content").innerHTML);
+    const title = document.getElementById("edit-slide-title").value.trim() || slide.title;
+    const kicker = document.getElementById("edit-slide-kicker").value.trim() || slide.kicker;
+    if (content !== slide.textSlideHtml || title !== slide.title || kicker !== slide.kicker) {
+      slide.textSlideHtml = content;
+      slide.title = title;
+      slide.kicker = kicker;
+      slide.htmlDocument = TextSlides.documentFor(content, title, kicker);
+    }
+    return;
+  }
   if (HtmlSlides.isHtmlSlide(slide)) {
     slide.htmlDocument = document.getElementById("edit-html-document").value;
     slide.title = document.getElementById("edit-slide-title").value.trim() || slide.title;
@@ -2156,6 +2186,25 @@ document.getElementById("btn-run-html-preview").addEventListener("click", () => 
   stage.replaceChildren();
   updateEditLivePreview();
 });
+
+const textSlideEditor = TextSlides.bind(
+  document.getElementById("edit-text-content"),
+  document.getElementById("text-slide-toolbar"),
+  scheduleEditLivePreview
+);
+
+/** Inserts a visual text/table page without changing existing slide content. */
+function insertTextSlideAt(insertPos) {
+  if (!editingLectureDraft) return;
+  commitCurrentSlideFormToDraft();
+  const position = Math.max(0, Math.min(insertPos, editingLectureDraft.slides.length));
+  const week = document.getElementById("edit-lec-week").value.trim() || editingLectureDraft.week || "Ders";
+  editingLectureDraft.slides.splice(position, 0, TextSlides.create(week));
+  loadSlideIntoEditForm(position);
+  document.getElementById("edit-text-content").focus();
+}
+
+document.getElementById("btn-edit-add-text").addEventListener("click", () => insertTextSlideAt(editingSlideIndex + 1));
 
 /** Inserts an editable, executable page into the same sequence as PDF pages. */
 function insertHtmlSlideAt(insertPos) {
