@@ -128,7 +128,7 @@ async function verifyAnimations(frame) {
     assert.equal(await page.evaluate(() => currentSlideIndex), 2);
     // The outer frame and the complete inner page must both fit, including its bottom edge.
     await page.evaluate(() => {
-      const slides = [[1600, 900], [900, 1600]].map(([width, height]) => ({
+      const slides = [[1600, 900], [900, 1600], [400, 225]].map(([width, height]) => ({
         ...HtmlSlides.create("5. & 6. Week"),
         htmlDocument: `<style>body{margin:0}.page{position:relative;width:${width}px;height:${height}px;background:lightblue}#bottom{position:absolute;bottom:24px;right:24px;font:32px system-ui;padding:20px}</style><div class="page"><button id="bottom" onclick="this.textContent='42'">BOTTOM EDGE</button></div>`
       }));
@@ -138,24 +138,32 @@ async function verifyAnimations(frame) {
     });
     for (const viewport of [{width:1366,height:768}, {width:1920,height:1080}, {width:1024,height:600}, {width:390,height:844}, {width:844,height:390}]) {
       await page.setViewportSize(viewport);
-      for (let index = 0; index < 2; index++) {
+      for (let index = 0; index < 3; index++) {
         await page.evaluate(i => { currentSlideIndex = i; updateActiveSlide(); }, index);
         const frame = page.frameLocator(".active-slide iframe");
         await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.active-slide')).opacity) > 0.99);
         await frame.locator(".page").evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         const inner = await frame.locator(".page").evaluate(element => {
           const rect = element.getBoundingClientRect();
-          return { fits: rect.x >= -1 && rect.y >= -1 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight + 1, rect: rect.toJSON(), width: innerWidth, height: innerHeight, transform: document.body.style.transform, scrollWidth:document.body.scrollWidth, scrollHeight:document.body.scrollHeight };
+          const ratio = element.offsetWidth / element.offsetHeight;
+          const expectedWidth = Math.min(innerWidth, innerHeight * ratio);
+          return { fits: rect.x >= -1 && rect.y >= -1 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight + 1,
+            fills: Math.abs(rect.width - expectedWidth) <= 1,
+            proportional: Math.abs(rect.width / rect.height - ratio) < 0.001,
+            centered: Math.abs((innerWidth - rect.width) / 2 - rect.x) <= 1 && Math.abs((innerHeight - rect.height) / 2 - rect.y) <= 1,
+            rect: rect.toJSON(), width: innerWidth, height: innerHeight };
         });
         assert.equal(inner.fits, true, JSON.stringify({viewport,inner,errors}));
+        assert.equal(inner.fills && inner.proportional && inner.centered, true, JSON.stringify({viewport, inner}));
         const outer = await page.locator(".active-slide").evaluate(slide => {
           const rect = slide.querySelector("iframe").getBoundingClientRect();
           const bounds = slide.getBoundingClientRect();
           const toolbar = document.getElementById("presentation-toolbar").getBoundingClientRect();
           return { fits: rect.x >= bounds.x - 1 && rect.right <= bounds.right + 1 && rect.y >= bounds.y - 1 && rect.bottom <= Math.min(bounds.bottom, toolbar.y) + 1,
+            fills: rect.x <= bounds.x + 14 && rect.right >= bounds.right - 14 && rect.bottom >= bounds.bottom - 14,
             headingsHidden: [...slide.querySelectorAll(".slide-content > .slide-kicker, .slide-content > h2")].every(element => getComputedStyle(element).display === "none") };
         });
-        assert.deepEqual(outer, { fits: true, headingsHidden: true });
+        assert.deepEqual(outer, { fits: true, fills: true, headingsHidden: true });
         const button = await frame.locator("#bottom").evaluate(element => { const r = element.getBoundingClientRect(); return {x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,width:innerWidth,height:innerHeight}; });
         const frameBox = await page.locator(".active-slide iframe").boundingBox();
         await page.mouse.click(frameBox.x + button.x * frameBox.width / button.width, frameBox.y + button.y * frameBox.height / button.height);

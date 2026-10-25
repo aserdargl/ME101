@@ -21,6 +21,8 @@ window.PresentationFit = (() => {
     const controls = slide.querySelector(".slide-top-controls");
     const top = Math.max(parseFloat(style.paddingTop), controls.offsetTop + controls.offsetHeight + CONTROL_GAP);
     const height = Math.max(1, slide.clientHeight - top - paddingBottom);
+    // HTML uses the complete available rectangle; only its inner page is scaled.
+    content.style.setProperty("--presentation-html-height", `${height}px`);
     const naturalWidth = Math.max(width, content.scrollWidth);
     const naturalHeight = Math.max(1, content.scrollHeight, content.offsetHeight);
     const scale = Math.min(1, width / naturalWidth, height / naturalHeight);

@@ -117,6 +117,12 @@ body.presentation-mode :is(.toolbar-left, .toolbar-center, .toolbar-right) { fle
 .html-slide-thumbnail span { font-size: 9px; overflow-wrap: anywhere; }
 .html-source-editor { font: 12px/1.5 Consolas, monospace; min-height: 220px; tab-size: 2; resize: vertical; }
 .edit-live-preview-stage:has(.html-slide-frame) { display: block; }
-body.presentation-mode .html-slide-frame { min-height: 0; }
+body.presentation-mode .html-slide-frame {
+  min-height: 0; height: var(--presentation-html-height); aspect-ratio: auto;
+}
+body.presentation-mode .slides-viewport:has(.active-slide .html-slide-frame) { padding: 8px; }
+body.presentation-mode .slides-container:has(.active-slide .html-slide-frame) { max-width: none; max-height: none; }
+body.presentation-mode .slide:has(.html-slide-frame) { padding: 12px; }
+body.presentation-mode .slide:has(.html-slide-frame) .slide-top-controls { top: 8px; right: 12px; }
 
 .course-editor .edit-insert-btns { flex-wrap: wrap; gap: 4px; }

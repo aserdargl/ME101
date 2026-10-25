@@ -857,18 +857,32 @@ window.PdfSlides = (() => {
       return;
     }
     let pending = false;
+    function measure(body) {
+      body.style.transform = "none";
+      const origin = body.getBoundingClientRect();
+      const children = [...body.children].filter(child => child.getBoundingClientRect().width && child.getBoundingClientRect().height);
+      const hasText = [...body.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+      if (children.length === 1 && !hasText) {
+        const child = children[0];
+        const rect = child.getBoundingClientRect();
+        return { origin, left: rect.left, top: rect.top,
+          width: Math.max(1, child.offsetWidth, child.scrollWidth), height: Math.max(1, child.offsetHeight, child.scrollHeight) };
+      }
+      const style = getComputedStyle(body);
+      return { origin, left: 0, top: 0,
+        width: Math.max(1, body.scrollWidth, body.offsetWidth) + parseFloat(style.marginLeft) + parseFloat(style.marginRight),
+        height: Math.max(1, body.scrollHeight, body.offsetHeight) + parseFloat(style.marginTop) + parseFloat(style.marginBottom) };
+    }
     function fit() {
       pending = false;
       const body = document.body;
       if (!body || !innerWidth || !innerHeight) return;
-      const style = getComputedStyle(body);
-      const horizontalMargin = parseFloat(style.marginLeft) + parseFloat(style.marginRight);
-      const verticalMargin = parseFloat(style.marginTop) + parseFloat(style.marginBottom);
-      const width = Math.max(1, body.scrollWidth, body.offsetWidth);
-      const height = Math.max(1, body.scrollHeight, body.offsetHeight);
-      const scale = Math.min(1, (innerWidth - horizontalMargin) / width, (innerHeight - verticalMargin) / height);
+      const bounds = measure(body);
+      const scale = Math.min(innerWidth / bounds.width, innerHeight / bounds.height);
+      const left = (innerWidth - bounds.width * scale) / 2 - bounds.origin.left - (bounds.left - bounds.origin.left) * scale;
+      const top = (innerHeight - bounds.height * scale) / 2 - bounds.origin.top - (bounds.top - bounds.origin.top) * scale;
       body.style.transformOrigin = "top left";
-      body.style.transform = `scale(${Math.max(0, scale)})`;
+      body.style.transform = `translate(${left}px, ${top}px) scale(${scale})`;
       document.documentElement.style.overflow = "hidden";
     }
     function schedule() {
@@ -3197,6 +3211,8 @@ window.PresentationFit = (() => {
     const controls = slide.querySelector(".slide-top-controls");
     const top = Math.max(parseFloat(style.paddingTop), controls.offsetTop + controls.offsetHeight + CONTROL_GAP);
     const height = Math.max(1, slide.clientHeight - top - paddingBottom);
+    // HTML uses the complete available rectangle; only its inner page is scaled.
+    content.style.setProperty("--presentation-html-height", `${height}px`);
     const naturalWidth = Math.max(width, content.scrollWidth);
     const naturalHeight = Math.max(1, content.scrollHeight, content.offsetHeight);
     const scale = Math.min(1, width / naturalWidth, height / naturalHeight);
