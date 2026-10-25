@@ -1782,3 +1782,13 @@ body.presentation-mode .fragment.visible {
     font-size: 1.55rem;
   }
 }
+
+/* One compact native menu across reading, slide and presentation controls. */
+.slide-view-select {
+  width: auto;
+  min-width: 5.2rem;
+  padding-right: 1.1rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.slide-view-select option { color: #263442; background: #fff; }

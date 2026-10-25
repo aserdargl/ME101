@@ -84,4 +84,4 @@ Kullanıcı canlı açılış ölçümü istediğinde `node tests/live-startup.c
 
 ## Resim görünümü
 
-Ders görünümündeki **Resim olarak göster** düğmesi PPTX slaytlarını tarayıcıda PNG olarak gösterir. Kayıtlı bir görünüm tercihi yoksa varsayılan resim görünümüdür; mevcut tercihler korunur. Web/PPT görünümleri, HTML notları, etkileşimli içerik ve özgün PPTX dosyaları korunur. Resimler yalnız görüntüleme belleğinde üretilir; ders kaydı değiştirilmez. Dönüşüm mevcut PPTX görüntüleyicisini kullanır; PowerPoint masaüstü dışa aktarımı değildir. Dönüşüm başarısızsa mevcut slayt görünümü korunur.
+Ders, slayt ve sunum kontrollerindeki **Resim / Web / PPT** açılır menüsü PPTX slaytlarını tarayıcıda PNG olarak gösterir. Her ders açılışı resim görünümünde başlar. Açık derste seçilen görünüm sonraki slaytlara da uygulanır; eski kayıtlar silinmez. Web/PPT görünümleri, HTML notları, etkileşimli içerik ve özgün PPTX dosyaları korunur. Resimler yalnız görüntüleme belleğinde üretilir; ders kaydı değiştirilmez. Dönüşüm mevcut PPTX görüntüleyicisini kullanır; PowerPoint masaüstü dışa aktarımı değildir. Dönüşüm başarısızsa mevcut slayt görünümü korunur.

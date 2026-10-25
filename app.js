@@ -247,7 +247,6 @@ let preferredSlideViewMode = (function () {
     return DEFAULT_SLIDE_VIEW_MODE;
   }
 })();
-let allSlidesInPptVisualMode = preferredSlideViewMode === "ppt";
 
 let gearAngle1 = 0;
 let gearAngle2 = 0;
@@ -301,7 +300,6 @@ const ALL_LECTURES_STORAGE_KEY = "me101_all_lectures_v2";
 const STUDENT_ROSTER_KEY = "me101_student_roster_v1";
 const ADMIN_SESSION_KEY = "me101_instructor_unlocked";
 const STUDENT_SESSION_KEY = "me101_active_student_no";
-
 
 const CUSTOM_ADMIN_PASS_HASH_KEY = "mee101_custom_admin_hash_v1";
 const DEFAULT_INSTRUCTOR_HASH = "a7dc91fb2b6975cf";
@@ -732,8 +730,8 @@ function openLecture(lectureId, startInPresentation = false) {
   const lec = LECTURES.find((l) => l.id === lectureId);
   if (!lec) return;
   currentLecture = lec;
+  preferredSlideViewMode = DEFAULT_SLIDE_VIEW_MODE;
   currentSlideIndex = 0;
-  allSlidesInPptVisualMode = preferredSlideViewMode === "ppt";
 
   catalogView.classList.add("hidden");
   lectureView.classList.remove("hidden");
@@ -781,7 +779,6 @@ function openLecture(lectureId, startInPresentation = false) {
     const effectiveMode = preferredSlideViewMode || DEFAULT_SLIDE_VIEW_MODE;
     slideEl.dataset.viewMode = effectiveMode;
 
-    const isPptMode = effectiveMode === "ppt";
     const visibility = SlideVisual.contentVisibility(s, effectiveMode);
     // Simulation controls must exist for setup even when the PPT view is selected.
     const needsWebBody = visibility.web || detectSlideSimType(s) !== "none";
@@ -789,9 +786,7 @@ function openLecture(lectureId, startInPresentation = false) {
     slideEl.innerHTML = `
       <div class="slide-top-controls interactive-zone">
         ${isAdminAuthenticated ? `<button type="button" class="btn-edit-lecture btn-edit-this-slide" data-edit-slide-idx="${idx}" title="Bu slaytı düzenle">&#9998; Slaytı Düzenle</button>` : ""}
-        <button class="btn-slide-mode-switch ${isPptMode ? "ppt-visual-active" : ""}" data-slide-idx="${idx}">
-          ${isPptMode ? "Web Görünümüne Geç" : "PPT Levha Görünümü"}
-        </button>
+        <select class="btn-slide-mode-switch slide-view-select" data-slide-view-select aria-label="Görünüm"><option value="image">Resim</option><option value="web">Web</option><option value="ppt">PPT</option></select>
         <span class="slide-number-badge">Slayt ${idx + 1} / ${lec.slides.length}</span>
       </div>
       <div class="slide-kicker">${escapeXml(s.kicker)}</div>
@@ -801,14 +796,8 @@ function openLecture(lectureId, startInPresentation = false) {
     `;
     slidesContainer.appendChild(slideEl);
     PptxDisplay.setImageMode(slideEl, effectiveMode);
+    slideEl.querySelector("[data-slide-view-select]").value = effectiveMode;
   });
-
-  const toggleAllBtn = document.getElementById("btn-toggle-all-slide-modes");
-  if (toggleAllBtn) {
-    toggleAllBtn.textContent = allSlidesInPptVisualMode
-      ? "Tümünü Web Görünümüne Al"
-      : "Tümünü PPT Levha Görünümüne Al";
-  }
 
   document.querySelectorAll(".btn-edit-this-slide").forEach((btn) => {
     btn.addEventListener("click", (e) => {
@@ -819,15 +808,7 @@ function openLecture(lectureId, startInPresentation = false) {
     });
   });
 
-  document.querySelectorAll(".btn-slide-mode-switch").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.slideIdx, 10);
-      toggleSingleSlideViewMode(idx);
-    });
-  });
-
-  updateImageViewButton();
+  syncSlideViewSelectors();
   initSimulations();
 
   if (startInPresentation) {
@@ -861,19 +842,12 @@ function setSlideElementViewMode(slideEl, mode) {
   slideEl.dataset.viewMode = mode;
   PptxDisplay.setImageMode(pptBody, mode);
 
-  if (mode === "ppt") {
-    switchBtn.classList.add("ppt-visual-active");
-    switchBtn.textContent = "Web Görünümüne Geç";
-  } else {
-    switchBtn.classList.remove("ppt-visual-active");
-    switchBtn.textContent = "PPT Levha Görünümü";
-  }
+  switchBtn.value = mode;
 }
 
 function applyPersistentSlideViewMode(targetMode) {
   const mode = ["ppt", "web", "image"].includes(targetMode) ? targetMode : DEFAULT_SLIDE_VIEW_MODE;
   preferredSlideViewMode = mode;
-  allSlidesInPptVisualMode = mode === "ppt";
   try {
     localStorage.setItem(PREFERRED_VIEW_MODE_KEY, mode);
   } catch {
@@ -884,38 +858,26 @@ function applyPersistentSlideViewMode(targetMode) {
     setSlideElementViewMode(slideEl, mode);
   });
 
-  const toggleAllBtn = document.getElementById("btn-toggle-all-slide-modes");
-  if (toggleAllBtn) {
-    toggleAllBtn.textContent = allSlidesInPptVisualMode
-      ? "Tümünü Web Görünümüne Al"
-      : "Tümünü PPT Levha Görünümüne Al";
-  }
-
-  updateImageViewButton();
+  syncSlideViewSelectors();
   updatePresentationHUD();
 }
 
-function updateImageViewButton() {
-  const active = preferredSlideViewMode === "image";
-  const button = document.getElementById("btn-image-slide-mode");
-  button.setAttribute("aria-pressed", String(active));
-  button.textContent = active ? "Resim görünümü açık" : "Resim olarak göster";
+function syncSlideViewSelectors() {
+  document.querySelectorAll("[data-slide-view-select]").forEach(select => {
+    select.value = preferredSlideViewMode;
+  });
 }
 
-document.getElementById("btn-image-slide-mode").addEventListener("click", () => applyPersistentSlideViewMode("image"));
+document.addEventListener("change", event => {
+  if (event.target.matches("[data-slide-view-select]")) applyPersistentSlideViewMode(event.target.value);
+});
 
 function toggleSingleSlideViewMode(slideIdx) {
   const slideEl = document.querySelector(`.slide[data-index="${slideIdx}"]`);
   if (!slideEl) return;
-  const nextMode = slideEl.dataset.viewMode === "web" ? "ppt" : "web";
-  // Seçilen görünüm (PPT veya Web) sonraki slaytlara geçildiğinde de kalıcı olur
-  applyPersistentSlideViewMode(nextMode);
+  const modes = ["image", "web", "ppt"];
+  applyPersistentSlideViewMode(modes[(modes.indexOf(slideEl.dataset.viewMode) + 1) % modes.length]);
 }
-
-document.getElementById("btn-toggle-all-slide-modes").addEventListener("click", () => {
-  const targetMode = allSlidesInPptVisualMode ? "web" : "ppt";
-  applyPersistentSlideViewMode(targetMode);
-});
 
 function goHome() {
   if (isPresentationMode) {
@@ -981,7 +943,7 @@ function updatePresentationHUD() {
     const isPptMode = activeSlide.dataset.viewMode === "ppt";
     const presViewBtn = document.getElementById("btn-pres-view-mode");
     if (presViewBtn) {
-      presViewBtn.textContent = isPptMode ? "Web Görünümü" : "PPT Levhası";
+      presViewBtn.value = activeSlide.dataset.viewMode;
     }
 
     const allFragments = activeSlide.querySelectorAll(".slide-body-web .fragment");
@@ -3029,9 +2991,6 @@ document.getElementById("btn-banner-present").addEventListener("click", enterPre
 
 document.getElementById("btn-prev-slide").addEventListener("click", prevStepOrSlide);
 document.getElementById("btn-next-slide").addEventListener("click", nextStepOrSlide);
-document.getElementById("btn-pres-view-mode").addEventListener("click", () => {
-  toggleSingleSlideViewMode(currentSlideIndex);
-});
 document.getElementById("btn-toggle-laser").addEventListener("click", () => toggleLaser());
 document.getElementById("btn-toggle-pen").addEventListener("click", () => togglePen());
 document.getElementById("btn-clear-pen").addEventListener("click", clearCanvas);
@@ -3054,6 +3013,7 @@ slidesViewport.addEventListener("click", (e) => {
 
 window.addEventListener("keydown", (e) => {
   if (!isPresentationMode) return;
+  if (e.target.closest("select, input, textarea, button, a, [contenteditable]")) return;
 
   if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) {
     e.preventDefault();

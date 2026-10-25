@@ -1,5 +1,9 @@
 /** Interface copy only. Lecture content is never translated or rewritten. */
 window.PORTAL_ENGLISH = {
+  "Resim": "Image",
+  "Görünüm": "View",
+  "Görünüm (V)": "View (V)",
+  "Slaytın sağ üstündeki menüden Resim, Web veya PPT görünümünü seçebilirsiniz.": "Choose Image, Web or PPT from the menu at the top right of the slide.",
   "Resim olarak göster": "Show as images",
   "Resim görünümü açık": "Image view active",
   "Geniş Görünümden Çık": "Exit Expanded View",
