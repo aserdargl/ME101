@@ -146,8 +146,21 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .lecture-desc-wrap p { font-size: 11px; line-height: 1.85; white-space: normal; overflow: visible; }
 .lecture-controls-right { justify-content: flex-end; padding: 0; gap: 12px; margin: 0; }
 .rating-box { border: 0; background: transparent; padding: 0; gap: 7px; flex-wrap: wrap; }
-.star-group { gap: 0; }
-.star-btn { font-size: 16px; min-width: 20px; min-height: 28px; color: #c7cbd0; }
+.star-group { gap: 2px; }
+.star-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI Symbol", sans-serif;
+  font-size: 22px;
+  min-width: 26px;
+  min-height: 32px;
+  color: #68717c;
+  border-radius: 4px;
+}
+.star-btn.filled { color: #ad6500; background: #fff3d0; }
+.star-btn.hover-preview { color: #a65b00; background: #ffe7a3; }
+.star-btn:focus-visible { outline: 2px solid #225c83; outline-offset: 2px; }
 .rating-meta { font-size: 9px; color: #727b85; }
 .card-actions-3 { flex-wrap: wrap; gap: 5px; }
 .card-actions-3 .btn { padding: 7px 10px; font-size: 10px; border-radius: 6px; min-height: 30px; }
@@ -211,7 +224,7 @@ body:not(.presentation-mode) .slide { border-radius: 12px; box-shadow: var(--sha
   .lecture-title-wrap h4 { min-height: 0; font-size: 14px; }
   .lecture-row-bottom { flex-direction: column; align-items: stretch; }
   .lecture-controls-right { flex-direction: row; align-items: center; justify-content: space-between; }
-  .star-btn { min-width: 22px; min-height: 32px; }
+  .star-btn { min-width: 26px; min-height: 32px; }
   .card-actions-3 .btn { min-height: 34px; }
   .catalog-footer { align-items: flex-start; font-size: 9px; }
   .catalog-footer > span:last-child { text-align: right; max-width: 210px; }
